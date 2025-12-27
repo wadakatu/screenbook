@@ -11,6 +11,7 @@
 		"format:check": "prettier --check \"**/*.astro\""
 	},
 	"dependencies": {
+		"@astrojs/node": "^9.5.1",
 		"@screenbook/core": "workspace:*",
 		"@tailwindcss/vite": "^4.0.0",
 		"astro": "^5.16.0",
