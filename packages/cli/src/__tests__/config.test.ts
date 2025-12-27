@@ -26,9 +26,8 @@ describe("loadConfig", () => {
 		try {
 			const config = await loadConfig()
 
-			expect(config.screensDir).toBe("src/screens")
 			expect(config.outDir).toBe(".screenbook")
-			expect(config.metaPattern).toBe("**/screen.meta.ts")
+			expect(config.metaPattern).toBe("src/**/screen.meta.ts")
 		} finally {
 			process.chdir(originalCwd)
 		}
@@ -49,7 +48,7 @@ describe("loadConfig", () => {
 			`
 			import { defineConfig } from "@screenbook/core"
 			export default defineConfig({
-				screensDir: "custom/screens",
+				metaPattern: "custom/**/*.screen.ts",
 				outDir: "custom/output",
 			})
 		`,
@@ -60,7 +59,7 @@ describe("loadConfig", () => {
 		try {
 			const config = await loadConfig()
 
-			expect(config.screensDir).toBe("custom/screens")
+			expect(config.metaPattern).toBe("custom/**/*.screen.ts")
 			expect(config.outDir).toBe("custom/output")
 		} finally {
 			process.chdir(originalCwd)
@@ -75,13 +74,13 @@ describe("loadConfig", () => {
 			`
 			import { defineConfig } from "@screenbook/core"
 			export default defineConfig({
-				screensDir: "my/screens",
+				metaPattern: "app/**/screen.meta.ts",
 			})
 		`,
 		)
 
 		const config = await loadConfig(configPath)
 
-		expect(config.screensDir).toBe("my/screens")
+		expect(config.metaPattern).toBe("app/**/screen.meta.ts")
 	})
 })

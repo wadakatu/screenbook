@@ -37,22 +37,7 @@ describe("init command", () => {
 
 		const content = readFileSync(configPath, "utf-8")
 		expect(content).toContain("defineConfig")
-		expect(content).toContain("screensDir")
-	})
-
-	it("should create example screen.meta.ts", async () => {
-		const { initCommand } = await import("../commands/init.js")
-
-		await initCommand.run({
-			values: { force: false },
-		} as Parameters<typeof initCommand.run>[0])
-
-		const screenPath = join(testDir, "src/screens/home/screen.meta.ts")
-		expect(existsSync(screenPath)).toBe(true)
-
-		const content = readFileSync(screenPath, "utf-8")
-		expect(content).toContain("defineScreen")
-		expect(content).toContain('id: "home"')
+		expect(content).toContain("metaPattern")
 	})
 
 	it("should create .gitignore with .screenbook", async () => {

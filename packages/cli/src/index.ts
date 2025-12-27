@@ -3,6 +3,7 @@
 import { cli, define } from "gunshi"
 import { buildCommand } from "./commands/build.js"
 import { devCommand } from "./commands/dev.js"
+import { generateCommand } from "./commands/generate.js"
 import { initCommand } from "./commands/init.js"
 import { lintCommand } from "./commands/lint.js"
 
@@ -13,10 +14,11 @@ const mainCommand = define({
 		console.log("Usage: screenbook <command>")
 		console.log("")
 		console.log("Commands:")
-		console.log("  init     Initialize Screenbook in a project")
-		console.log("  build    Build screen metadata JSON")
-		console.log("  dev      Start the development server")
-		console.log("  lint     Detect routes without screen.meta")
+		console.log("  init       Initialize Screenbook in a project")
+		console.log("  generate   Auto-generate screen.meta.ts from routes")
+		console.log("  build      Build screen metadata JSON")
+		console.log("  dev        Start the development server")
+		console.log("  lint       Detect routes without screen.meta")
 		console.log("")
 		console.log("Run 'screenbook <command> --help' for more information")
 	},
@@ -27,6 +29,7 @@ await cli(process.argv.slice(2), mainCommand, {
 	version: "0.0.1",
 	subCommands: {
 		init: initCommand,
+		generate: generateCommand,
 		build: buildCommand,
 		dev: devCommand,
 		lint: lintCommand,

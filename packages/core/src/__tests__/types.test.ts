@@ -89,18 +89,17 @@ describe("configSchema", () => {
 	it("should provide default values", () => {
 		const result = configSchema.parse({})
 
-		expect(result.screensDir).toBe("src/screens")
 		expect(result.outDir).toBe(".screenbook")
-		expect(result.metaPattern).toBe("**/screen.meta.ts")
-		expect(result.lintIgnore).toEqual([])
+		expect(result.metaPattern).toBe("src/**/screen.meta.ts")
+		expect(result.ignore).toEqual(["**/node_modules/**", "**/.git/**"])
 	})
 
 	it("should allow partial override", () => {
 		const result = configSchema.parse({
-			screensDir: "custom/screens",
+			metaPattern: "custom/**/screen.meta.ts",
 		})
 
-		expect(result.screensDir).toBe("custom/screens")
+		expect(result.metaPattern).toBe("custom/**/screen.meta.ts")
 		expect(result.outDir).toBe(".screenbook")
 	})
 
@@ -112,11 +111,11 @@ describe("configSchema", () => {
 		expect(result.routesPattern).toBe("src/pages/**/*.vue")
 	})
 
-	it("should accept lintIgnore array", () => {
+	it("should accept ignore array", () => {
 		const result = configSchema.parse({
-			lintIgnore: ["**/test/**", "**/fixtures/**"],
+			ignore: ["**/test/**", "**/fixtures/**"],
 		})
 
-		expect(result.lintIgnore).toEqual(["**/test/**", "**/fixtures/**"])
+		expect(result.ignore).toEqual(["**/test/**", "**/fixtures/**"])
 	})
 })

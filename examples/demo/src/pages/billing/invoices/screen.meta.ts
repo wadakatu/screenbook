@@ -9,8 +9,5 @@ export const screen = defineScreen({
 	description: "List of all invoices",
 	entryPoints: ["dashboard"],
 	next: ["billing.payments"],
-	dependsOn: ["InvoiceAPI.list"],
-	links: [
-		{ label: "API Docs", url: "https://docs.example.com/api/invoices" },
-	],
+	dependsOn: ["BillingAPI.listInvoices"],
 })

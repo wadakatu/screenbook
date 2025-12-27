@@ -56,20 +56,27 @@ export type ScreenInput = z.input<typeof screenSchema>
  * Schema for Screenbook configuration
  */
 export const configSchema = z.object({
-	/** Directory containing screen files */
-	screensDir: z.string().default("src/screens"),
-
 	/** Output directory for generated files */
 	outDir: z.string().default(".screenbook"),
 
-	/** Glob pattern for screen metadata files */
-	metaPattern: z.string().default("**/screen.meta.ts"),
+	/**
+	 * Glob pattern for screen metadata files
+	 * Supports colocation: place screen.meta.ts alongside your route files
+	 * @example "src/**\/screen.meta.ts" - scan entire src directory
+	 * @example "app/**\/screen.meta.ts" - for Next.js App Router
+	 */
+	metaPattern: z.string().default("src/**/screen.meta.ts"),
 
-	/** Glob pattern for route files (for lint command) */
+	/**
+	 * Glob pattern for route files (for generate/lint commands)
+	 * @example "src/pages/**\/page.tsx" - Vite/React
+	 * @example "app/**\/page.tsx" - Next.js App Router
+	 * @example "src/routes/**\/*.tsx" - React Router
+	 */
 	routesPattern: z.string().optional(),
 
-	/** Patterns to ignore when linting (glob patterns) */
-	lintIgnore: z.array(z.string()).default([]),
+	/** Patterns to ignore when scanning (glob patterns) */
+	ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
 })
 
 /**

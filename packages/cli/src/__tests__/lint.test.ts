@@ -32,69 +32,58 @@ describe("lint command", () => {
 		vi.resetModules()
 	})
 
-	it("should show message when routesPattern is not configured", async () => {
+	it("should exit with error when routesPattern is not configured", async () => {
 		const { lintCommand } = await import("../commands/lint.js")
 
-		// Should not throw when routesPattern is not configured
-		await lintCommand.run({
-			values: { config: undefined, fix: false },
-		} as Parameters<typeof lintCommand.run>[0])
-
-		// Should not exit with error
-		expect(mockExit).not.toHaveBeenCalled()
+		// Should exit with error when routesPattern is not configured
+		await expect(
+			lintCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof lintCommand.run>[0]),
+		).rejects.toThrow("Process exited with code 1")
 	})
 
-	it("should pass when all routes have screen.meta.ts", async () => {
+	it("should pass when all routes have colocated screen.meta.ts", async () => {
 		// Create config with routesPattern
 		writeFileSync(
 			join(testDir, "screenbook.config.ts"),
 			`
 			import { defineConfig } from "@screenbook/core"
 			export default defineConfig({
-				screensDir: "src/screens",
-				routesPattern: "src/pages/**/*.vue",
+				metaPattern: "src/pages/**/screen.meta.ts",
+				routesPattern: "src/pages/**/page.tsx",
 			})
 		`,
 		)
 
-		// Create route file
+		// Create route file with colocated screen.meta.ts
 		const pagesDir = join(testDir, "src/pages/home")
 		mkdirSync(pagesDir, { recursive: true })
-		writeFileSync(join(pagesDir, "index.vue"), "<template>Home</template>")
-
-		// Create corresponding screen.meta.ts
-		const screensDir = join(testDir, "src/screens/home")
-		mkdirSync(screensDir, { recursive: true })
+		writeFileSync(join(pagesDir, "page.tsx"), "export default function Home() {}")
 		writeFileSync(
-			join(screensDir, "screen.meta.ts"),
-			`
-			export const screen = {
-				id: "home",
-				title: "Home",
-				route: "/",
-			}
-		`,
+			join(pagesDir, "screen.meta.ts"),
+			`export const screen = { id: "home", title: "Home", route: "/" }`,
 		)
 
 		const { lintCommand } = await import("../commands/lint.js")
 
 		await lintCommand.run({
-			values: { config: undefined, fix: false },
+			values: { config: undefined },
 		} as Parameters<typeof lintCommand.run>[0])
 
 		// Should not exit with error when all routes are covered
 		expect(mockExit).not.toHaveBeenCalled()
 	})
 
-	it("should fail when routes are missing screen.meta.ts", async () => {
+	it("should fail when routes are missing colocated screen.meta.ts", async () => {
 		// Create config with routesPattern
 		writeFileSync(
 			join(testDir, "screenbook.config.ts"),
 			`
 			import { defineConfig } from "@screenbook/core"
 			export default defineConfig({
-				screensDir: "src/screens",
-				routesPattern: "src/pages/**/*.vue",
+				metaPattern: "src/pages/**/screen.meta.ts",
+				routesPattern: "src/pages/**/page.tsx",
 			})
 		`,
 		)
@@ -102,16 +91,13 @@ describe("lint command", () => {
 		// Create route file without corresponding screen.meta.ts
 		const pagesDir = join(testDir, "src/pages/about")
 		mkdirSync(pagesDir, { recursive: true })
-		writeFileSync(join(pagesDir, "index.vue"), "<template>About</template>")
-
-		// Create empty screens directory
-		mkdirSync(join(testDir, "src/screens"), { recursive: true })
+		writeFileSync(join(pagesDir, "page.tsx"), "export default function About() {}")
 
 		const { lintCommand } = await import("../commands/lint.js")
 
 		await expect(
 			lintCommand.run({
-				values: { config: undefined, fix: false },
+				values: { config: undefined },
 			} as Parameters<typeof lintCommand.run>[0]),
 		).rejects.toThrow("Process exited with code 1")
 	})
@@ -120,17 +106,14 @@ describe("lint command", () => {
 		// Create config with routesPattern pointing to non-existent directory
 		writeFileSync(
 			join(testDir, "screenbook.config.ts"),
-			`export default { screensDir: "src/screens", outDir: ".screenbook", metaPattern: "**/screen.meta.ts", routesPattern: "src/nonexistent/**/*.vue", lintIgnore: [] }`,
+			`export default { outDir: ".screenbook", metaPattern: "src/**/screen.meta.ts", routesPattern: "src/nonexistent/**/page.tsx", ignore: [] }`,
 		)
-
-		// Create empty screens directory
-		mkdirSync(join(testDir, "src/screens"), { recursive: true })
 
 		const { lintCommand } = await import("../commands/lint.js")
 
 		// Should not fail when no routes are found
 		await lintCommand.run({
-			values: { config: undefined, fix: false },
+			values: { config: undefined },
 		} as Parameters<typeof lintCommand.run>[0])
 
 		expect(mockExit).not.toHaveBeenCalled()

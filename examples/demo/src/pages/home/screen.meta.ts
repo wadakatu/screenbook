@@ -5,7 +5,7 @@ export const screen = defineScreen({
 	title: "Home",
 	route: "/",
 	owner: ["platform"],
-	tags: ["landing", "public"],
-	description: "The main landing page of the application",
-	next: ["dashboard", "settings"],
+	tags: ["landing"],
+	description: "The main landing page",
+	next: ["dashboard"],
 })

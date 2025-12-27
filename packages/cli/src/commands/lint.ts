@@ -1,4 +1,4 @@
-import { dirname, join, relative } from "node:path"
+import { dirname, join } from "node:path"
 import { define } from "gunshi"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
@@ -12,34 +12,21 @@ export const lintCommand = define({
 			short: "c",
 			description: "Path to config file",
 		},
-		fix: {
-			type: "boolean",
-			description: "Show fix suggestions",
-			default: false,
-		},
 	},
 	run: async (ctx) => {
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
-		const showFix = ctx.values.fix ?? false
 
 		if (!config.routesPattern) {
-			console.log("No routesPattern configured in screenbook.config")
+			console.log("Error: routesPattern not configured")
 			console.log("")
-			console.log("Add routesPattern to your config to enable linting:")
+			console.log("Add routesPattern to your screenbook.config.ts:")
 			console.log("")
-			console.log("  // screenbook.config.ts")
-			console.log("  export default defineConfig({")
-			console.log('    routesPattern: "src/pages/**/*.vue",  // for Vue')
-			console.log(
-				'    // routesPattern: "app/**/page.tsx",  // for Next.js App Router',
-			)
-			console.log(
-				'    // routesPattern: "src/routes/**/*.tsx",  // for React Router',
-			)
-			console.log("  })")
+			console.log('  routesPattern: "src/pages/**/page.tsx",   // Vite/React')
+			console.log('  routesPattern: "app/**/page.tsx",         // Next.js App Router')
+			console.log('  routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt')
 			console.log("")
-			return
+			process.exit(1)
 		}
 
 		console.log("Linting screen metadata coverage...")
@@ -48,7 +35,7 @@ export const lintCommand = define({
 		// Find all route files
 		const routeFiles = await glob(config.routesPattern, {
 			cwd,
-			ignore: config.lintIgnore,
+			ignore: config.ignore,
 		})
 
 		if (routeFiles.length === 0) {
@@ -57,30 +44,18 @@ export const lintCommand = define({
 		}
 
 		// Find all screen.meta.ts files
-		const metaPattern = join(config.screensDir, config.metaPattern)
-		const metaFiles = await glob(metaPattern, { cwd })
+		const metaFiles = await glob(config.metaPattern, {
+			cwd,
+			ignore: config.ignore,
+		})
 
-		// Build a map of directories that have screen.meta.ts
+		// Build a set of directories that have screen.meta.ts
 		const metaDirs = new Set<string>()
 		for (const metaFile of metaFiles) {
 			metaDirs.add(dirname(metaFile))
 		}
 
-		// Build a set of screen names (relative paths from screensDir)
-		const screenNames = new Set<string>()
-		for (const metaFile of metaFiles) {
-			const metaDir = dirname(metaFile)
-			const screenName = relative(config.screensDir, metaDir)
-			screenNames.add(screenName)
-		}
-
-		// Extract the base directory from routesPattern for relative path calculation
-		const routesPatternParts = config.routesPattern.split("*")[0]
-		const routesBaseDir = routesPatternParts.endsWith("/")
-			? routesPatternParts.slice(0, -1)
-			: dirname(routesPatternParts)
-
-		// Check each route file
+		// Check each route file - simple colocation check
 		const missingMeta: string[] = []
 		const covered: string[] = []
 
@@ -88,13 +63,7 @@ export const lintCommand = define({
 			const routeDir = dirname(routeFile)
 
 			// Check if there's a screen.meta.ts in the same directory
-			const hasMetaInSameDir = metaDirs.has(routeDir)
-
-			// Check by comparing relative paths (e.g., "home" matches "home")
-			const routeRelative = relative(routesBaseDir, routeDir)
-			const hasMatchingScreen = screenNames.has(routeRelative)
-
-			if (hasMetaInSameDir || hasMatchingScreen) {
+			if (metaDirs.has(routeDir)) {
 				covered.push(routeFile)
 			} else {
 				missingMeta.push(routeFile)
@@ -116,25 +85,18 @@ export const lintCommand = define({
 			console.log("")
 
 			for (const file of missingMeta) {
+				const suggestedMetaPath = join(dirname(file), "screen.meta.ts")
 				console.log(`  ✗ ${file}`)
-
-				if (showFix) {
-					const suggestedMetaPath = join(dirname(file), "screen.meta.ts")
-					console.log(`    → Create: ${suggestedMetaPath}`)
-				}
+				console.log(`    → ${suggestedMetaPath}`)
 			}
 
 			console.log("")
-
-			if (!showFix) {
-				console.log("Run with --fix to see suggestions for each file")
-				console.log("")
-			}
-
+			console.log("Run 'screenbook generate' to auto-create missing files")
+			console.log("")
 			console.log("Lint failed: Some routes are missing screen.meta.ts")
 			process.exit(1)
 		} else {
-			console.log("All routes have screen.meta.ts files")
+			console.log("✓ All routes have screen.meta.ts files")
 		}
 	},
 })

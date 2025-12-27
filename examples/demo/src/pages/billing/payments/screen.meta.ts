@@ -6,10 +6,7 @@ export const screen = defineScreen({
 	route: "/billing/payments",
 	owner: ["billing"],
 	tags: ["billing", "payments"],
-	description: "Payment history and management",
+	description: "Payment history and methods",
 	entryPoints: ["dashboard", "billing.invoices"],
-	dependsOn: ["PaymentAPI.list", "PaymentAPI.process"],
-	links: [
-		{ label: "Stripe Dashboard", url: "https://dashboard.stripe.com" },
-	],
+	dependsOn: ["BillingAPI.listPayments", "BillingAPI.getPaymentMethods"],
 })

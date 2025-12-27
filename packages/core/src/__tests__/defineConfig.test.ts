@@ -6,21 +6,10 @@ describe("defineConfig", () => {
 		const config = defineConfig()
 
 		expect(config).toEqual({
-			screensDir: "src/screens",
 			outDir: ".screenbook",
-			metaPattern: "**/screen.meta.ts",
-			lintIgnore: [],
+			metaPattern: "src/**/screen.meta.ts",
+			ignore: ["**/node_modules/**", "**/.git/**"],
 		})
-	})
-
-	it("should override screensDir", () => {
-		const config = defineConfig({
-			screensDir: "src/pages",
-		})
-
-		expect(config.screensDir).toBe("src/pages")
-		expect(config.outDir).toBe(".screenbook")
-		expect(config.metaPattern).toBe("**/screen.meta.ts")
 	})
 
 	it("should override outDir", () => {
@@ -33,13 +22,13 @@ describe("defineConfig", () => {
 
 	it("should override metaPattern", () => {
 		const config = defineConfig({
-			metaPattern: "**/*.screen.ts",
+			metaPattern: "app/**/*.screen.ts",
 		})
 
-		expect(config.metaPattern).toBe("**/*.screen.ts")
+		expect(config.metaPattern).toBe("app/**/*.screen.ts")
 	})
 
-	it("should set routesPattern for lint command", () => {
+	it("should set routesPattern for generate/lint commands", () => {
 		const config = defineConfig({
 			routesPattern: "src/pages/**/*.vue",
 		})
@@ -47,29 +36,27 @@ describe("defineConfig", () => {
 		expect(config.routesPattern).toBe("src/pages/**/*.vue")
 	})
 
-	it("should set lintIgnore patterns", () => {
+	it("should set ignore patterns", () => {
 		const config = defineConfig({
-			lintIgnore: ["**/components/**", "**/layouts/**"],
+			ignore: ["**/components/**", "**/layouts/**"],
 		})
 
-		expect(config.lintIgnore).toEqual(["**/components/**", "**/layouts/**"])
+		expect(config.ignore).toEqual(["**/components/**", "**/layouts/**"])
 	})
 
 	it("should allow all options together", () => {
 		const config = defineConfig({
-			screensDir: "app/screens",
 			outDir: "build/screenbook",
 			metaPattern: "**/meta.ts",
 			routesPattern: "app/**/page.tsx",
-			lintIgnore: ["app/api/**"],
+			ignore: ["app/api/**"],
 		})
 
 		expect(config).toEqual({
-			screensDir: "app/screens",
 			outDir: "build/screenbook",
 			metaPattern: "**/meta.ts",
 			routesPattern: "app/**/page.tsx",
-			lintIgnore: ["app/api/**"],
+			ignore: ["app/api/**"],
 		})
 	})
 })

@@ -29,11 +29,13 @@ export const buildCommand = define({
 		console.log("Building screen metadata...")
 
 		// Find all screen.meta.ts files
-		const pattern = join(config.screensDir, config.metaPattern)
-		const files = await glob(pattern, { cwd })
+		const files = await glob(config.metaPattern, {
+			cwd,
+			ignore: config.ignore,
+		})
 
 		if (files.length === 0) {
-			console.log(`No screen.meta.ts files found in ${config.screensDir}`)
+			console.log(`No screen.meta.ts files found matching: ${config.metaPattern}`)
 			return
 		}
 

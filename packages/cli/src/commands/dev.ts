@@ -84,14 +84,16 @@ export const devCommand = define({
 })
 
 async function buildScreens(
-	config: { screensDir: string; metaPattern: string; outDir: string },
+	config: { metaPattern: string; outDir: string; ignore: string[] },
 	cwd: string,
 ): Promise<void> {
-	const pattern = join(config.screensDir, config.metaPattern)
-	const files = await glob(pattern, { cwd })
+	const files = await glob(config.metaPattern, {
+		cwd,
+		ignore: config.ignore,
+	})
 
 	if (files.length === 0) {
-		console.log(`No screen.meta.ts files found in ${config.screensDir}`)
+		console.log(`No screen.meta.ts files found matching: ${config.metaPattern}`)
 		return
 	}
 
