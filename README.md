@@ -74,6 +74,75 @@ Prevent documentation drift by failing CI when screens are undocumented:
 npx screenbook lint
 ```
 
+### PR Impact Comments
+
+Automatically analyze API changes in PRs and post impact reports:
+
+```bash
+npx screenbook pr-impact --base main
+```
+
+Output example:
+```markdown
+## Screenbook Impact Analysis
+
+**3 screens affected** by changes to 1 API
+
+### InvoiceAPI
+
+**Direct dependencies** (2):
+| Screen | Route | Owner |
+|--------|-------|-------|
+| billing.invoices | `/billing/invoices` | billing-team |
+| billing.invoice.detail | `/billing/invoices/:id` | billing-team |
+
+**Transitive dependencies** (1):
+- dashboard → billing.invoices
+```
+
+### GitHub Action
+
+Add automatic impact analysis to your PRs:
+
+```yaml
+# .github/workflows/screenbook-impact.yml
+name: Screenbook Impact Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  impact-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - run: pnpm install
+      - run: pnpm screenbook build
+
+      - name: Analyze and comment
+        run: |
+          pnpm screenbook pr-impact --base ${{ github.event.pull_request.base.ref }} > impact.md
+          gh pr comment ${{ github.event.number }} --body-file impact.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+```
+
 ### Progressive Adoption
 
 For large projects, adopt Screenbook gradually:
@@ -102,6 +171,7 @@ export default defineConfig({
 | `screenbook dev` | Start the UI server |
 | `screenbook lint` | Check coverage (CI integration) |
 | `screenbook impact <api>` | Analyze API change impact |
+| `screenbook pr-impact` | Analyze PR changes impact |
 
 ## Configuration
 
