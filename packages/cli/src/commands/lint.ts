@@ -1,4 +1,6 @@
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
+import type { Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import { minimatch } from "minimatch"
 import { glob } from "tinyglobby"
@@ -18,6 +20,7 @@ export const lintCommand = define({
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
 		const adoption = config.adoption ?? { mode: "full" }
+		let hasWarnings = false
 
 		if (!config.routesPattern) {
 			console.log("Error: routesPattern not configured")
@@ -139,5 +142,69 @@ export const lintCommand = define({
 		} else {
 			console.log("✓ All routes have screen.meta.ts files")
 		}
+
+		// Check for orphan screens (unreachable screens)
+		const screensPath = join(cwd, config.outDir, "screens.json")
+		if (existsSync(screensPath)) {
+			try {
+				const content = readFileSync(screensPath, "utf-8")
+				const screens = JSON.parse(content) as Screen[]
+				const orphans = findOrphanScreens(screens)
+
+				if (orphans.length > 0) {
+					hasWarnings = true
+					console.log("")
+					console.log(`⚠ Orphan screens detected (${orphans.length}):`)
+					console.log("")
+					console.log("  These screens have no entryPoints and are not")
+					console.log("  referenced in any other screen's 'next' array.")
+					console.log("")
+					for (const orphan of orphans) {
+						console.log(`  ⚠ ${orphan.id}  ${orphan.route}`)
+					}
+					console.log("")
+					console.log("  Consider adding entryPoints or removing these screens.")
+				}
+			} catch {
+				// Ignore errors reading screens.json
+			}
+		}
+
+		if (hasWarnings) {
+			console.log("")
+			console.log("Lint completed with warnings.")
+		}
 	},
 })
+
+/**
+ * Find screens that are unreachable (orphans).
+ * A screen is an orphan if:
+ * - It has no entryPoints defined
+ * - AND it's not referenced in any other screen's `next` array
+ */
+function findOrphanScreens(screens: Screen[]): Screen[] {
+	// Build a set of all screen IDs that are referenced in `next` arrays
+	const referencedIds = new Set<string>()
+	for (const screen of screens) {
+		if (screen.next) {
+			for (const nextId of screen.next) {
+				referencedIds.add(nextId)
+			}
+		}
+	}
+
+	// Find orphan screens
+	const orphans: Screen[] = []
+	for (const screen of screens) {
+		const hasEntryPoints = screen.entryPoints && screen.entryPoints.length > 0
+		const isReferenced = referencedIds.has(screen.id)
+
+		// A screen is an orphan if it has no entry points AND is not referenced
+		if (!hasEntryPoints && !isReferenced) {
+			orphans.push(screen)
+		}
+	}
+
+	return orphans
+}

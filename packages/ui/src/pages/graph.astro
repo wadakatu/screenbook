@@ -4,8 +4,8 @@ import { loadScreens } from "@/utils/loadScreens"
 
 const screens = loadScreens()
 
-// Generate Mermaid graph
-let mermaidGraph = ""
+// Generate Navigation Mermaid graph
+let navigationGraph = ""
 if (screens.length > 0) {
 	const lines: string[] = ["flowchart TD"]
 
@@ -27,16 +27,88 @@ if (screens.length > 0) {
 		}
 	}
 
-	mermaidGraph = lines.join("\n")
+	navigationGraph = lines.join("\n")
 }
+
+// Generate API Dependency Mermaid graph
+let apiGraph = ""
+if (screens.length > 0) {
+	const lines: string[] = ["flowchart LR"]
+
+	// Collect all unique APIs
+	const apis = new Set<string>()
+	for (const screen of screens) {
+		if (screen.dependsOn) {
+			for (const api of screen.dependsOn) {
+				// Get the base API name (e.g., "InvoiceAPI" from "InvoiceAPI.getDetail")
+				const baseName = api.split(".")[0]
+				apis.add(baseName)
+			}
+		}
+	}
+
+	// Add API nodes with different style
+	lines.push("    %% API nodes")
+	for (const api of apis) {
+		const id = api.replace(/\./g, "_")
+		lines.push(`    ${id}[/"${api}"/]`)
+	}
+
+	lines.push("")
+	lines.push("    %% Screen nodes")
+
+	// Add screen nodes
+	for (const screen of screens) {
+		if (screen.dependsOn && screen.dependsOn.length > 0) {
+			const label = screen.title.replace(/"/g, "'")
+			const id = screen.id.replace(/\./g, "_")
+			lines.push(`    ${id}["${label}"]`)
+		}
+	}
+
+	lines.push("")
+	lines.push("    %% Dependencies")
+
+	// Add edges from APIs to screens
+	for (const screen of screens) {
+		if (screen.dependsOn) {
+			const screenId = screen.id.replace(/\./g, "_")
+			const connectedApis = new Set<string>()
+			for (const api of screen.dependsOn) {
+				const baseName = api.split(".")[0]
+				if (!connectedApis.has(baseName)) {
+					connectedApis.add(baseName)
+					const apiId = baseName.replace(/\./g, "_")
+					lines.push(`    ${apiId} --> ${screenId}`)
+				}
+			}
+		}
+	}
+
+	// Add styling for API nodes
+	lines.push("")
+	lines.push("    %% Styling")
+	lines.push(`    classDef apiNode fill:#0d9488,stroke:#14b8a6,color:#fff`)
+	for (const api of apis) {
+		const id = api.replace(/\./g, "_")
+		lines.push(`    class ${id} apiNode`)
+	}
+
+	apiGraph = lines.join("\n")
+}
+
+// Count APIs for stats
+const apiCount = new Set(
+	screens.flatMap(s => (s.dependsOn || []).map(d => d.split(".")[0]))
+).size
 ---
 
-<Layout title="Navigation Graph" currentPage="graph">
+<Layout title="Graph" currentPage="graph">
 	<div class="container">
 		<div class="page-header">
-			<h1 class="page-title">Navigation Graph</h1>
+			<h1 class="page-title">Dependency Graph</h1>
 			<p class="page-description">
-				Visualize how users navigate between screens in your application.
+				Visualize relationships between screens and APIs.
 			</p>
 		</div>
 
@@ -45,7 +117,7 @@ if (screens.length > 0) {
 				<svg class="empty-state-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
 					<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
 				</svg>
-				<h2 class="empty-state-title">No navigation data</h2>
+				<h2 class="empty-state-title">No graph data</h2>
 				<p class="empty-state-description">
 					Run the build command to generate screen metadata.
 				</p>
@@ -55,18 +127,58 @@ if (screens.length > 0) {
 			</div>
 		) : (
 			<>
-				<div class="graph-container">
-					<pre class="mermaid">{mermaidGraph}</pre>
+				<div class="graph-controls">
+					<div class="view-toggle">
+						<button class="toggle-btn active" data-view="navigation">
+							<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+							</svg>
+							Navigation
+						</button>
+						<button class="toggle-btn" data-view="api">
+							<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+							</svg>
+							API Dependencies
+						</button>
+					</div>
+					<div class="graph-stats">
+						<span class="stat">{screens.length} screens</span>
+						<span class="stat">{apiCount} APIs</span>
+					</div>
 				</div>
 
-				<div class="graph-legend">
+				<div class="graph-container" id="navigation-graph">
+					<pre class="mermaid" data-graph="navigation">{navigationGraph}</pre>
+				</div>
+
+				<div class="graph-container hidden" id="api-graph">
+					<pre class="mermaid" data-graph="api">{apiGraph}</pre>
+				</div>
+
+				<div class="graph-legend" id="navigation-legend">
 					<div class="graph-legend-item">
 						<div class="legend-node"></div>
 						<span>Screen</span>
 					</div>
 					<div class="graph-legend-item">
 						<div class="legend-edge"></div>
-						<span>Navigation</span>
+						<span>Navigation flow</span>
+					</div>
+				</div>
+
+				<div class="graph-legend hidden" id="api-legend">
+					<div class="graph-legend-item">
+						<div class="legend-node legend-api"></div>
+						<span>API</span>
+					</div>
+					<div class="graph-legend-item">
+						<div class="legend-node"></div>
+						<span>Screen</span>
+					</div>
+					<div class="graph-legend-item">
+						<div class="legend-edge"></div>
+						<span>Depends on</span>
 					</div>
 				</div>
 			</>
@@ -76,8 +188,8 @@ if (screens.length > 0) {
 	<script>
 		import mermaid from "mermaid"
 
-		mermaid.initialize({
-			startOnLoad: true,
+		const mermaidConfig = {
+			startOnLoad: false,
 			theme: "dark",
 			themeVariables: {
 				darkMode: true,
@@ -96,6 +208,123 @@ if (screens.length > 0) {
 				nodeSpacing: 50,
 				rankSpacing: 60,
 			},
+		}
+
+		mermaid.initialize(mermaidConfig)
+
+		// Render both graphs on load
+		async function renderGraphs() {
+			const graphs = document.querySelectorAll(".mermaid")
+			for (const graph of graphs) {
+				const graphType = graph.getAttribute("data-graph")
+				const content = graph.textContent || ""
+				try {
+					const { svg } = await mermaid.render(`mermaid-${graphType}`, content)
+					graph.innerHTML = svg
+				} catch (e) {
+					console.error(`Failed to render ${graphType} graph:`, e)
+				}
+			}
+		}
+
+		renderGraphs()
+
+		// View toggle functionality
+		const toggleBtns = document.querySelectorAll(".toggle-btn")
+		const navGraph = document.getElementById("navigation-graph")
+		const apiGraph = document.getElementById("api-graph")
+		const navLegend = document.getElementById("navigation-legend")
+		const apiLegend = document.getElementById("api-legend")
+
+		toggleBtns.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				const view = btn.getAttribute("data-view")
+
+				// Update active button
+				toggleBtns.forEach((b) => b.classList.remove("active"))
+				btn.classList.add("active")
+
+				// Toggle graph visibility
+				if (view === "navigation") {
+					navGraph?.classList.remove("hidden")
+					apiGraph?.classList.add("hidden")
+					navLegend?.classList.remove("hidden")
+					apiLegend?.classList.add("hidden")
+				} else {
+					navGraph?.classList.add("hidden")
+					apiGraph?.classList.remove("hidden")
+					navLegend?.classList.add("hidden")
+					apiLegend?.classList.remove("hidden")
+				}
+			})
 		})
 	</script>
 </Layout>
+
+<style>
+	.graph-controls {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 24px;
+		flex-wrap: wrap;
+		gap: 16px;
+	}
+
+	.view-toggle {
+		display: flex;
+		gap: 8px;
+		background: var(--color-surface);
+		padding: 4px;
+		border-radius: var(--radius-lg);
+		border: 1px solid var(--color-border);
+	}
+
+	.toggle-btn {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 16px;
+		border: none;
+		background: transparent;
+		color: var(--color-text-muted);
+		font-size: var(--text-sm);
+		font-weight: 500;
+		border-radius: var(--radius-md);
+		cursor: pointer;
+		transition: all 0.15s ease;
+	}
+
+	.toggle-btn:hover {
+		color: var(--color-text);
+	}
+
+	.toggle-btn.active {
+		background: var(--color-accent);
+		color: var(--color-bg);
+	}
+
+	.toggle-btn svg {
+		width: 16px;
+		height: 16px;
+	}
+
+	.graph-stats {
+		display: flex;
+		gap: 16px;
+	}
+
+	.stat {
+		font-size: var(--text-sm);
+		color: var(--color-text-muted);
+	}
+
+	.hidden {
+		display: none !important;
+	}
+
+	.legend-api {
+		background: #0d9488 !important;
+		border-color: #14b8a6 !important;
+	}
+</style>
