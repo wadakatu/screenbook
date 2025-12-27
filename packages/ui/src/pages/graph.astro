@@ -88,7 +88,7 @@ if (screens.length > 0) {
 	// Add styling for API nodes
 	lines.push("")
 	lines.push("    %% Styling")
-	lines.push(`    classDef apiNode fill:#0d9488,stroke:#14b8a6,color:#fff`)
+	lines.push(`    classDef apiNode fill:#14b8a6,stroke:#5eead4,stroke-width:2px,color:#042f2e`)
 	for (const api of apis) {
 		const id = api.replace(/\./g, "_")
 		lines.push(`    class ${id} apiNode`)
@@ -324,7 +324,7 @@ const apiCount = new Set(
 	}
 
 	.legend-api {
-		background: #0d9488 !important;
-		border-color: #14b8a6 !important;
+		background: #14b8a6 !important;
+		border-color: #5eead4 !important;
 	}
 </style>
