@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Screenbook Logo - Final</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: #0a0a0a;
+      min-height: 100vh;
+      color: #e0e0e0;
+      padding: 60px 40px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      text-align: center;
+      margin-bottom: 48px;
+      color: #14b8a6;
+    }
+
+    .section {
+      max-width: 900px;
+      margin: 0 auto 60px;
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: #5eead4;
+      margin-bottom: 24px;
+    }
+
+    .logo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .logo-item {
+      padding: 32px;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .dark-bg { background: #0f172a; }
+    .light-bg { background: #ffffff; }
+    .gray-bg { background: #1e293b; }
+
+    .logo-item img, .logo-item svg {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .label {
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .light-bg .label { color: #64748b; }
+
+    .sizes-row {
+      display: flex;
+      gap: 32px;
+      align-items: flex-end;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .size-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .usage-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .usage-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .usage-title {
+      font-size: 1rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .usage-desc {
+      font-size: 0.85rem;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    code {
+      background: rgba(94, 234, 212, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #5eead4;
+    }
+
+    .favicon-demo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #1e293b;
+      padding: 8px 16px;
+      border-radius: 8px;
+      margin-top: 16px;
+    }
+
+    .favicon-demo svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .favicon-demo span {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+  </style>
+</head>
+<body>
+  <h1>Screenbook Logo - Final Assets</h1>
+
+  <!-- Icon variations -->
+  <div class="section">
+    <h2 class="section-title">Icon</h2>
+    <div class="logo-grid">
+      <div class="logo-item dark-bg">
+        <svg width="80" height="80" viewBox="0 0 100 100" fill="none">
+          <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+          <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+          <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+        </svg>
+        <span class="label">icon.svg (dark bg)</span>
+      </div>
+      <div class="logo-item light-bg">
+        <svg width="80" height="80" viewBox="0 0 100 100" fill="none">
+          <rect x="45" y="12" width="40" height="20" rx="3" fill="#0d9488"/>
+          <rect x="15" y="40" width="40" height="20" rx="3" fill="#0d9488"/>
+          <rect x="45" y="68" width="40" height="20" rx="3" fill="#0d9488"/>
+        </svg>
+        <span class="label">icon-dark.svg (light bg)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Logo with text -->
+  <div class="section">
+    <h2 class="section-title">Logo with Text</h2>
+    <div class="logo-grid">
+      <div class="logo-item dark-bg">
+        <svg width="200" height="40" viewBox="0 0 240 48" fill="none">
+          <rect x="17" y="4" width="20" height="10" rx="2" fill="#14b8a6"/>
+          <rect x="2" y="19" width="20" height="10" rx="2" fill="#14b8a6"/>
+          <rect x="17" y="34" width="20" height="10" rx="2" fill="#14b8a6"/>
+          <text x="52" y="33" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Screenbook</text>
+        </svg>
+        <span class="label">logo.svg (dark bg)</span>
+      </div>
+      <div class="logo-item light-bg">
+        <svg width="200" height="40" viewBox="0 0 240 48" fill="none">
+          <rect x="17" y="4" width="20" height="10" rx="2" fill="#0d9488"/>
+          <rect x="2" y="19" width="20" height="10" rx="2" fill="#0d9488"/>
+          <rect x="17" y="34" width="20" height="10" rx="2" fill="#0d9488"/>
+          <text x="52" y="33" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" fill="#0f172a">Screenbook</text>
+        </svg>
+        <span class="label">logo-dark.svg (light bg)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Size variations -->
+  <div class="section">
+    <h2 class="section-title">Size Scalability</h2>
+    <div class="logo-item gray-bg">
+      <div class="sizes-row">
+        <div class="size-item">
+          <svg width="64" height="64" viewBox="0 0 100 100" fill="none">
+            <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+          </svg>
+          <span class="label">64px</span>
+        </div>
+        <div class="size-item">
+          <svg width="48" height="48" viewBox="0 0 100 100" fill="none">
+            <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+          </svg>
+          <span class="label">48px</span>
+        </div>
+        <div class="size-item">
+          <svg width="32" height="32" viewBox="0 0 100 100" fill="none">
+            <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+          </svg>
+          <span class="label">32px</span>
+        </div>
+        <div class="size-item">
+          <svg width="24" height="24" viewBox="0 0 100 100" fill="none">
+            <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+          </svg>
+          <span class="label">24px</span>
+        </div>
+        <div class="size-item">
+          <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+            <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+            <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+          </svg>
+          <span class="label">16px (favicon)</span>
+        </div>
+      </div>
+      <div class="favicon-demo">
+        <svg width="16" height="16" viewBox="0 0 100 100" fill="none">
+          <rect x="45" y="12" width="40" height="20" rx="3" fill="#14b8a6"/>
+          <rect x="15" y="40" width="40" height="20" rx="3" fill="#14b8a6"/>
+          <rect x="45" y="68" width="40" height="20" rx="3" fill="#14b8a6"/>
+        </svg>
+        <span>Screenbook - Screen Catalog</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Usage guide -->
+  <div class="section">
+    <h2 class="section-title">Usage</h2>
+    <div class="usage-grid">
+      <div class="usage-item">
+        <h3 class="usage-title">Favicon</h3>
+        <p class="usage-desc">Use <code>icon.svg</code> for favicon. Works well at 16px and 32px.</p>
+      </div>
+      <div class="usage-item">
+        <h3 class="usage-title">README / Documentation</h3>
+        <p class="usage-desc">Use <code>logo.svg</code> for dark mode docs, <code>logo-dark.svg</code> for light mode.</p>
+      </div>
+      <div class="usage-item">
+        <h3 class="usage-title">npm Package</h3>
+        <p class="usage-desc">Use <code>icon.svg</code> for npm badge or package icon.</p>
+      </div>
+      <div class="usage-item">
+        <h3 class="usage-title">Social / OG Image</h3>
+        <p class="usage-desc">Use icon with text for social sharing images.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
