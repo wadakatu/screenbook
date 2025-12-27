@@ -53,6 +53,36 @@ export type Screen = z.infer<typeof screenSchema>
 export type ScreenInput = z.input<typeof screenSchema>
 
 /**
+ * Schema for progressive adoption configuration
+ */
+export const adoptionSchema = z.object({
+	/**
+	 * Adoption mode
+	 * - "full": All routes must have screen.meta.ts (default)
+	 * - "progressive": Only check coverage within includePatterns
+	 */
+	mode: z.enum(["full", "progressive"]).default("full"),
+
+	/**
+	 * Glob patterns to include for coverage checking (progressive mode only)
+	 * @example ["src/pages/billing/**"] - Only check billing module
+	 * @example ["src/pages/auth/**", "src/pages/settings/**"] - Check multiple modules
+	 */
+	includePatterns: z.array(z.string()).optional(),
+
+	/**
+	 * Minimum coverage percentage required to pass lint
+	 * @example 80 - Fail if coverage is below 80%
+	 */
+	minimumCoverage: z.number().min(0).max(100).optional(),
+})
+
+/**
+ * Type for progressive adoption configuration
+ */
+export type AdoptionConfig = z.infer<typeof adoptionSchema>
+
+/**
  * Schema for Screenbook configuration
  */
 export const configSchema = z.object({
@@ -77,6 +107,9 @@ export const configSchema = z.object({
 
 	/** Patterns to ignore when scanning (glob patterns) */
 	ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
+
+	/** Progressive adoption configuration for gradual rollout */
+	adoption: adoptionSchema.optional(),
 })
 
 /**

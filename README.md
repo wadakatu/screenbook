@@ -1,58 +1,45 @@
 # Screenbook
 
-> Screen catalog and navigation graph generator for frontend applications
+> When you change an API, do you know which screens will break?
 
-Screenbook generates screen catalogs and navigation graphs from code-based screen definitions. Keep your screen documentation always up-to-date by making code the source of truth.
+## The Problem
 
-## Features
+Managing screen documentation in frontend applications is hard:
 
-- **Screen Catalog**: Auto-generate a searchable list of all screens
-- **Navigation Graph**: Visualize screen transitions with Mermaid diagrams
-- **Auto-scaffolding**: Generate `screen.meta.ts` files from your existing routes
-- **CI Integration**: Fail builds when screen metadata is missing
+- **Manual docs get stale** - That Notion page hasn't been updated in months
+- **Spreadsheets don't track changes** - No one knows when the API contract changed
+- **You find out in production** - "Wait, that screen uses this API too?"
 
-## Installation
+## The Solution
 
-```bash
-npm install -D @screenbook/core @screenbook/cli
-# or
-pnpm add -D @screenbook/core @screenbook/cli
-```
+Screenbook creates a **living map** of your screens and their API dependencies. Define screens in code, and get automatic:
+
+1. **Impact Analysis** - "If I change UserAPI, which screens break?"
+2. **CI Lint** - Fail builds when screen documentation is missing
+3. **Navigation Graph** - Visualize how users flow through your app
+4. **Coverage Dashboard** - Track documentation health across teams
 
 ## Quick Start
 
-1. Initialize Screenbook in your project:
-
 ```bash
+# Install
+pnpm add -D @screenbook/core @screenbook/cli
+
+# Initialize
 npx screenbook init
-```
 
-2. Configure your routes pattern in `screenbook.config.ts`:
-
-```ts
-import { defineConfig } from "@screenbook/core"
-
-export default defineConfig({
-  metaPattern: "src/pages/**/screen.meta.ts",
-  routesPattern: "src/pages/**/page.tsx",  // Adjust for your framework
-})
-```
-
-3. Auto-generate screen metadata from your routes:
-
-```bash
+# Generate metadata from existing routes
 npx screenbook generate
+
+# Start the UI
+npx screenbook dev
 ```
 
-This creates `screen.meta.ts` files alongside your route files:
+Open http://localhost:4321 to see your screen catalog.
 
-```
-src/pages/billing/invoices/
-├── page.tsx           # Your existing route file
-└── screen.meta.ts     # Auto-generated, customize as needed
-```
+## Define Screens in Code
 
-4. Customize the generated metadata:
+Create `screen.meta.ts` alongside your route files:
 
 ```ts
 // src/pages/billing/invoices/screen.meta.ts
@@ -60,51 +47,84 @@ import { defineScreen } from "@screenbook/core"
 
 export const screen = defineScreen({
   id: "billing.invoices",
-  title: "Invoices",
+  title: "Invoice List",
   route: "/billing/invoices",
   owner: ["billing-team"],
-  tags: ["billing"],
-  next: ["billing.payments"],
+  tags: ["billing", "invoices"],
+  dependsOn: ["InvoiceAPI.list", "UserAPI.getCurrent"],
+  next: ["billing.invoice.detail", "billing.payments"],
 })
 ```
 
-5. Start the development server:
+## Impact Analysis
+
+The killer feature. When you're changing an API, see every affected screen:
 
 ```bash
-npx screenbook dev
+npx screenbook impact InvoiceAPI.list
 ```
 
-6. Open http://localhost:4321 to view your screen catalog.
+Or use the UI at `/impact` to visualize the impact graph.
+
+## CI Integration
+
+Prevent documentation drift by failing CI when screens are undocumented:
+
+```bash
+npx screenbook lint
+```
+
+### Progressive Adoption
+
+For large projects, adopt Screenbook gradually:
+
+```ts
+// screenbook.config.ts
+export default defineConfig({
+  metaPattern: "src/pages/**/screen.meta.ts",
+  routesPattern: "src/pages/**/page.tsx",
+
+  adoption: {
+    mode: "progressive",
+    includePatterns: ["src/pages/billing/**"], // Start with billing
+    minimumCoverage: 80, // Fail below 80%
+  },
+})
+```
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `screenbook init` | Initialize Screenbook in your project |
+| `screenbook init` | Initialize Screenbook |
 | `screenbook generate` | Auto-generate screen.meta.ts from routes |
-| `screenbook build` | Generate screen metadata JSON |
-| `screenbook dev` | Start the UI development server |
-| `screenbook lint` | Check for missing screen.meta files |
+| `screenbook build` | Build metadata JSON |
+| `screenbook dev` | Start the UI server |
+| `screenbook lint` | Check coverage (CI integration) |
+| `screenbook impact <api>` | Analyze API change impact |
 
 ## Configuration
 
-Create a `screenbook.config.ts` in your project root:
-
 ```ts
+// screenbook.config.ts
 import { defineConfig } from "@screenbook/core"
 
 export default defineConfig({
-  // Pattern to find screen.meta.ts files
+  // Where to find screen.meta.ts files
   metaPattern: "src/**/screen.meta.ts",
 
-  // Pattern to find route files (for generate/lint commands)
-  // Uncomment the pattern that matches your framework:
-  // routesPattern: "src/pages/**/page.tsx",   // Vite/React
-  // routesPattern: "app/**/page.tsx",         // Next.js App Router
-  // routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt
+  // Where to find route files (for generate/lint)
+  routesPattern: "src/pages/**/page.tsx",
 
-  // Output directory for generated files
+  // Output directory
   outDir: ".screenbook",
+
+  // Progressive adoption (optional)
+  adoption: {
+    mode: "progressive",
+    includePatterns: ["src/pages/billing/**"],
+    minimumCoverage: 80,
+  },
 })
 ```
 

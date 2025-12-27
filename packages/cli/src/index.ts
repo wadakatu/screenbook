@@ -4,6 +4,7 @@ import { cli, define } from "gunshi"
 import { buildCommand } from "./commands/build.js"
 import { devCommand } from "./commands/dev.js"
 import { generateCommand } from "./commands/generate.js"
+import { impactCommand } from "./commands/impact.js"
 import { initCommand } from "./commands/init.js"
 import { lintCommand } from "./commands/lint.js"
 
@@ -19,6 +20,7 @@ const mainCommand = define({
 		console.log("  build      Build screen metadata JSON")
 		console.log("  dev        Start the development server")
 		console.log("  lint       Detect routes without screen.meta")
+		console.log("  impact     Analyze API dependency impact")
 		console.log("")
 		console.log("Run 'screenbook <command> --help' for more information")
 	},
@@ -33,5 +35,6 @@ await cli(process.argv.slice(2), mainCommand, {
 		build: buildCommand,
 		dev: devCommand,
 		lint: lintCommand,
+		impact: impactCommand,
 	},
 })

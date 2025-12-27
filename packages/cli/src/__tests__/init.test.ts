@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs"
 import { join } from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 
@@ -29,7 +35,7 @@ describe("init command", () => {
 		const { initCommand } = await import("../commands/init.js")
 
 		await initCommand.run({
-			values: { force: false },
+			values: { force: false, skipDetect: true },
 		} as Parameters<typeof initCommand.run>[0])
 
 		const configPath = join(testDir, "screenbook.config.ts")
@@ -44,7 +50,7 @@ describe("init command", () => {
 		const { initCommand } = await import("../commands/init.js")
 
 		await initCommand.run({
-			values: { force: false },
+			values: { force: false, skipDetect: true },
 		} as Parameters<typeof initCommand.run>[0])
 
 		const gitignorePath = join(testDir, ".gitignore")
@@ -61,7 +67,7 @@ describe("init command", () => {
 		const { initCommand } = await import("../commands/init.js")
 
 		await initCommand.run({
-			values: { force: false },
+			values: { force: false, skipDetect: true },
 		} as Parameters<typeof initCommand.run>[0])
 
 		const content = readFileSync(gitignorePath, "utf-8")
@@ -77,7 +83,7 @@ describe("init command", () => {
 		const { initCommand } = await import("../commands/init.js")
 
 		await initCommand.run({
-			values: { force: false },
+			values: { force: false, skipDetect: true },
 		} as Parameters<typeof initCommand.run>[0])
 
 		const content = readFileSync(gitignorePath, "utf-8")
@@ -92,7 +98,7 @@ describe("init command", () => {
 		const { initCommand } = await import("../commands/init.js")
 
 		await initCommand.run({
-			values: { force: false },
+			values: { force: false, skipDetect: true },
 		} as Parameters<typeof initCommand.run>[0])
 
 		const content = readFileSync(configPath, "utf-8")
@@ -106,7 +112,7 @@ describe("init command", () => {
 		const { initCommand } = await import("../commands/init.js")
 
 		await initCommand.run({
-			values: { force: true },
+			values: { force: true, skipDetect: true },
 		} as Parameters<typeof initCommand.run>[0])
 
 		const content = readFileSync(configPath, "utf-8")

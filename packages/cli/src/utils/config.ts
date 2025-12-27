@@ -33,7 +33,10 @@ export async function loadConfig(configPath?: string): Promise<Config> {
 	return defineConfig()
 }
 
-async function importConfig(absolutePath: string, cwd: string): Promise<Config> {
+async function importConfig(
+	absolutePath: string,
+	cwd: string,
+): Promise<Config> {
 	const jiti = createJiti(cwd)
 	const module = (await jiti.import(absolutePath)) as { default?: Config }
 

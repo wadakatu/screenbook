@@ -1,23 +1,76 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { define } from "gunshi"
+import {
+	detectFramework,
+	type FrameworkInfo,
+	promptFrameworkSelection,
+} from "../utils/detectFramework.js"
 
-const CONFIG_TEMPLATE = `import { defineConfig } from "@screenbook/core"
+function generateConfigTemplate(framework: FrameworkInfo | null): string {
+	if (framework) {
+		return `import { defineConfig } from "@screenbook/core"
 
 export default defineConfig({
-	// Glob pattern for screen metadata files (supports colocation)
-	metaPattern: "src/**/screen.meta.ts",
-
-	// Glob pattern for route files (for generate/lint commands)
-	// Uncomment and adjust for your framework:
-	// routesPattern: "src/pages/**/page.tsx",   // Vite/React
-	// routesPattern: "app/**/page.tsx",         // Next.js App Router
-	// routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt
-
-	// Output directory for generated files
+	// Auto-detected: ${framework.name}
+	metaPattern: "${framework.metaPattern}",
+	routesPattern: "${framework.routesPattern}",
 	outDir: ".screenbook",
 })
 `
+	}
+
+	// Fallback template when no framework detected
+	return `import { defineConfig } from "@screenbook/core"
+
+export default defineConfig({
+	// Glob pattern for screen metadata files
+	metaPattern: "src/**/screen.meta.ts",
+
+	// Glob pattern for route files (uncomment and adjust for your framework):
+	// routesPattern: "src/pages/**/page.tsx",   // Vite/React
+	// routesPattern: "app/**/page.tsx",         // Next.js App Router
+	// routesPattern: "pages/**/*.tsx",          // Next.js Pages Router
+	// routesPattern: "app/routes/**/*.tsx",     // Remix
+	// routesPattern: "pages/**/*.vue",          // Nuxt
+	// routesPattern: "src/pages/**/*.astro",    // Astro
+
+	outDir: ".screenbook",
+})
+`
+}
+
+function printValueProposition(): void {
+	console.log("")
+	console.log("What Screenbook gives you:")
+	console.log("  - Screen catalog with search & filter")
+	console.log("  - Navigation graph visualization")
+	console.log("  - Impact analysis (API -> affected screens)")
+	console.log("  - CI lint for documentation coverage")
+}
+
+function printNextSteps(hasRoutesPattern: boolean): void {
+	console.log("")
+	console.log("Next steps:")
+	if (hasRoutesPattern) {
+		console.log(
+			"  1. Run 'screenbook generate' to auto-create screen.meta.ts files",
+		)
+		console.log("  2. Run 'screenbook dev' to start the UI server")
+	} else {
+		console.log("  1. Configure routesPattern in screenbook.config.ts")
+		console.log(
+			"  2. Run 'screenbook generate' to auto-create screen.meta.ts files",
+		)
+		console.log("  3. Run 'screenbook dev' to start the UI server")
+	}
+	console.log("")
+	console.log("screen.meta.ts files are created alongside your route files:")
+	console.log("")
+	console.log("  src/pages/dashboard/")
+	console.log("    page.tsx          # Your route file")
+	console.log("    screen.meta.ts    # Auto-generated, customize as needed")
+}
 
 export const initCommand = define({
 	name: "init",
@@ -29,25 +82,49 @@ export const initCommand = define({
 			description: "Overwrite existing files",
 			default: false,
 		},
+		skipDetect: {
+			type: "boolean",
+			description: "Skip framework auto-detection",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
 		const cwd = process.cwd()
 		const force = ctx.values.force ?? false
+		const skipDetect = ctx.values.skipDetect ?? false
 
 		console.log("Initializing Screenbook...")
 		console.log("")
+
+		// Framework detection
+		let framework: FrameworkInfo | null = null
+
+		if (!skipDetect) {
+			framework = detectFramework(cwd)
+
+			if (framework) {
+				console.log(`  Detected: ${framework.name}`)
+			} else {
+				console.log("  Could not auto-detect framework")
+				console.log("")
+				framework = await promptFrameworkSelection()
+
+				if (framework) {
+					console.log("")
+					console.log(`  Selected: ${framework.name}`)
+				}
+			}
+		}
 
 		// Create screenbook.config.ts
 		const configPath = join(cwd, "screenbook.config.ts")
 		if (!force && existsSync(configPath)) {
 			console.log("  - screenbook.config.ts already exists (skipped)")
 		} else {
-			writeFileSync(configPath, CONFIG_TEMPLATE)
+			const configContent = generateConfigTemplate(framework)
+			writeFileSync(configPath, configContent)
 			console.log("  + Created screenbook.config.ts")
 		}
-
-		// Note: We don't create example files anymore
-		// Users should run `screenbook generate` to auto-scaffold from their routes
 
 		// Update .gitignore
 		const gitignorePath = join(cwd, ".gitignore")
@@ -69,16 +146,8 @@ export const initCommand = define({
 
 		console.log("")
 		console.log("Screenbook initialized successfully!")
-		console.log("")
-		console.log("Next steps:")
-		console.log("  1. Configure routesPattern in screenbook.config.ts")
-		console.log("  2. Run 'screenbook generate' to auto-create screen.meta.ts files")
-		console.log("  3. Run 'screenbook dev' to start the UI server")
-		console.log("")
-		console.log("screen.meta.ts files are created alongside your route files:")
-		console.log("")
-		console.log("  src/pages/dashboard/")
-		console.log("  ├── page.tsx          # Your route file")
-		console.log("  └── screen.meta.ts    # Auto-generated, customize as needed")
+
+		printValueProposition()
+		printNextSteps(framework !== null)
 	},
 })

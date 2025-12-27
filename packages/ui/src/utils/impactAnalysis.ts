@@ -180,9 +180,7 @@ export function getAllApis(screens: Screen[]): string[] {
 /**
  * Count how many screens depend on each API.
  */
-export function getApiDependencyCount(
-	screens: Screen[],
-): Map<string, number> {
+export function getApiDependencyCount(screens: Screen[]): Map<string, number> {
 	const counts = new Map<string, number>()
 	for (const screen of screens) {
 		if (screen.dependsOn) {
@@ -271,7 +269,9 @@ export function formatImpactMarkdown(result: ImpactResult): string {
 		return lines.join("\n")
 	}
 
-	lines.push(`**${result.totalCount} screen${result.totalCount > 1 ? "s" : ""} affected**`)
+	lines.push(
+		`**${result.totalCount} screen${result.totalCount > 1 ? "s" : ""} affected**`,
+	)
 	lines.push("")
 
 	if (result.direct.length > 0) {

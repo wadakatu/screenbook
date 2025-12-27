@@ -38,7 +38,9 @@ export const generateCommand = define({
 			console.log("Add routesPattern to your screenbook.config.ts:")
 			console.log("")
 			console.log('  routesPattern: "src/pages/**/page.tsx",   // Vite/React')
-			console.log('  routesPattern: "app/**/page.tsx",         // Next.js App Router')
+			console.log(
+				'  routesPattern: "app/**/page.tsx",         // Next.js App Router',
+			)
 			console.log('  routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt')
 			console.log("")
 			process.exit(1)
@@ -102,7 +104,9 @@ export const generateCommand = define({
 			if (created > 0) {
 				console.log("")
 				console.log("Next steps:")
-				console.log("  1. Review and customize the generated screen.meta.ts files")
+				console.log(
+					"  1. Review and customize the generated screen.meta.ts files",
+				)
 				console.log("  2. Run 'screenbook dev' to view your screen catalog")
 			}
 		}
@@ -118,7 +122,10 @@ interface InferredScreenMeta {
 /**
  * Infer screen metadata from the route file path
  */
-function inferScreenMeta(routeDir: string, routesPattern: string): InferredScreenMeta {
+function inferScreenMeta(
+	routeDir: string,
+	routesPattern: string,
+): InferredScreenMeta {
 	// Extract base directory from pattern (e.g., "src/pages" from "src/pages/**/page.tsx")
 	const patternBase = routesPattern.split("*")[0].replace(/\/$/, "")
 
@@ -138,7 +145,9 @@ function inferScreenMeta(routeDir: string, routesPattern: string): InferredScree
 	const segments = relativePath
 		.split("/")
 		.filter((s) => s && !s.startsWith("(") && !s.endsWith(")"))
-		.map((s) => s.replace(/^\[\.\.\..*\]$/, "catchall").replace(/^\[(.+)\]$/, "$1"))
+		.map((s) =>
+			s.replace(/^\[\.\.\..*\]$/, "catchall").replace(/^\[(.+)\]$/, "$1"),
+		)
 
 	// Generate ID from segments (e.g., "billing.invoice.detail")
 	const id = segments.join(".")
@@ -173,17 +182,31 @@ function inferScreenMeta(routeDir: string, routesPattern: string): InferredScree
  * Generate screen.meta.ts file content
  */
 function generateScreenMetaContent(meta: InferredScreenMeta): string {
+	// Infer a tag from the first segment of the ID
+	const inferredTag = meta.id.split(".")[0] || "general"
+
 	return `import { defineScreen } from "@screenbook/core"
 
 export const screen = defineScreen({
 	id: "${meta.id}",
 	title: "${meta.title}",
 	route: "${meta.route}",
-	// owner: [],
-	// tags: [],
-	// description: "",
-	// entryPoints: [],
-	// next: [],
+
+	// Team or individual responsible for this screen
+	owner: [],
+
+	// Tags for filtering in the catalog
+	tags: ["${inferredTag}"],
+
+	// APIs/services this screen depends on (for impact analysis)
+	// Example: ["UserAPI.getProfile", "PaymentService.checkout"]
+	dependsOn: [],
+
+	// Screen IDs that can navigate to this screen
+	entryPoints: [],
+
+	// Screen IDs this screen can navigate to
+	next: [],
 })
 `
 }

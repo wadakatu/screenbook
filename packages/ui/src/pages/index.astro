@@ -22,11 +22,42 @@ const allTags = [...new Set(screens.flatMap((s) => s.tags ?? []))]
 				</svg>
 				<h2 class="empty-state-title">No screens found</h2>
 				<p class="empty-state-description">
-					Run the build command to generate screen metadata.
+					Get started by generating screen metadata from your routes.
 				</p>
-				<code class="empty-state-code">
-					<span class="prompt">$</span> screenbook build
-				</code>
+
+				<div class="empty-state-steps">
+					<div class="empty-state-step">
+						<span class="step-number">1</span>
+						<div class="step-content">
+							<div class="step-title">Generate screen.meta.ts files</div>
+							<code class="step-code">screenbook generate</code>
+						</div>
+					</div>
+					<div class="empty-state-step">
+						<span class="step-number">2</span>
+						<div class="step-content">
+							<div class="step-title">Build the screen catalog</div>
+							<code class="step-code">screenbook build</code>
+						</div>
+					</div>
+					<div class="empty-state-step">
+						<span class="step-number">3</span>
+						<div class="step-content">
+							<div class="step-title">Restart the dev server</div>
+							<code class="step-code">screenbook dev</code>
+						</div>
+					</div>
+				</div>
+
+				<div class="empty-state-features">
+					<p class="features-title">What you'll get:</p>
+					<ul class="features-list">
+						<li>Screen catalog with search & filter</li>
+						<li>Navigation graph visualization</li>
+						<li>Impact analysis for API changes</li>
+						<li>CI lint for documentation coverage</li>
+					</ul>
+				</div>
 			</div>
 		) : (
 			<>

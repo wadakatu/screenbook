@@ -1,5 +1,7 @@
 export { defineConfig, defineScreen } from "./defineScreen.js"
 export {
+	type AdoptionConfig,
+	adoptionSchema,
 	type Config,
 	type ConfigInput,
 	configSchema,

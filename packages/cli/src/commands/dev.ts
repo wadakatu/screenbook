@@ -42,16 +42,21 @@ export const devCommand = define({
 			process.exit(1)
 		}
 
-		// Copy screens.json to UI package
+		// Copy screens.json and coverage.json to UI package
 		const screensJsonPath = join(cwd, config.outDir, "screens.json")
-		const uiScreensPath = join(uiPackagePath, ".screenbook", "screens.json")
+		const coverageJsonPath = join(cwd, config.outDir, "coverage.json")
+		const uiScreensDir = join(uiPackagePath, ".screenbook")
+
+		if (!existsSync(uiScreensDir)) {
+			mkdirSync(uiScreensDir, { recursive: true })
+		}
 
 		if (existsSync(screensJsonPath)) {
-			const uiScreensDir = dirname(uiScreensPath)
-			if (!existsSync(uiScreensDir)) {
-				mkdirSync(uiScreensDir, { recursive: true })
-			}
-			copyFileSync(screensJsonPath, uiScreensPath)
+			copyFileSync(screensJsonPath, join(uiScreensDir, "screens.json"))
+		}
+
+		if (existsSync(coverageJsonPath)) {
+			copyFileSync(coverageJsonPath, join(uiScreensDir, "coverage.json"))
 		}
 
 		// Start Astro dev server

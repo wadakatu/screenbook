@@ -59,7 +59,10 @@ describe("lint command", () => {
 		// Create route file with colocated screen.meta.ts
 		const pagesDir = join(testDir, "src/pages/home")
 		mkdirSync(pagesDir, { recursive: true })
-		writeFileSync(join(pagesDir, "page.tsx"), "export default function Home() {}")
+		writeFileSync(
+			join(pagesDir, "page.tsx"),
+			"export default function Home() {}",
+		)
 		writeFileSync(
 			join(pagesDir, "screen.meta.ts"),
 			`export const screen = { id: "home", title: "Home", route: "/" }`,
@@ -91,7 +94,10 @@ describe("lint command", () => {
 		// Create route file without corresponding screen.meta.ts
 		const pagesDir = join(testDir, "src/pages/about")
 		mkdirSync(pagesDir, { recursive: true })
-		writeFileSync(join(pagesDir, "page.tsx"), "export default function About() {}")
+		writeFileSync(
+			join(pagesDir, "page.tsx"),
+			"export default function About() {}",
+		)
 
 		const { lintCommand } = await import("../commands/lint.js")
 

@@ -1,5 +1,6 @@
 import { dirname, join } from "node:path"
 import { define } from "gunshi"
+import { minimatch } from "minimatch"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
 
@@ -16,6 +17,7 @@ export const lintCommand = define({
 	run: async (ctx) => {
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
+		const adoption = config.adoption ?? { mode: "full" }
 
 		if (!config.routesPattern) {
 			console.log("Error: routesPattern not configured")
@@ -23,23 +25,46 @@ export const lintCommand = define({
 			console.log("Add routesPattern to your screenbook.config.ts:")
 			console.log("")
 			console.log('  routesPattern: "src/pages/**/page.tsx",   // Vite/React')
-			console.log('  routesPattern: "app/**/page.tsx",         // Next.js App Router')
+			console.log(
+				'  routesPattern: "app/**/page.tsx",         // Next.js App Router',
+			)
 			console.log('  routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt')
 			console.log("")
 			process.exit(1)
 		}
 
 		console.log("Linting screen metadata coverage...")
+		if (adoption.mode === "progressive") {
+			console.log(`Mode: Progressive adoption`)
+			if (adoption.includePatterns?.length) {
+				console.log(`Checking: ${adoption.includePatterns.join(", ")}`)
+			}
+			if (adoption.minimumCoverage != null) {
+				console.log(`Minimum coverage: ${adoption.minimumCoverage}%`)
+			}
+		}
 		console.log("")
 
 		// Find all route files
-		const routeFiles = await glob(config.routesPattern, {
+		let routeFiles = await glob(config.routesPattern, {
 			cwd,
 			ignore: config.ignore,
 		})
 
+		// In progressive mode, filter to only included patterns
+		if (adoption.mode === "progressive" && adoption.includePatterns?.length) {
+			routeFiles = routeFiles.filter((file) =>
+				adoption.includePatterns!.some((pattern) => minimatch(file, pattern)),
+			)
+		}
+
 		if (routeFiles.length === 0) {
 			console.log(`No route files found matching: ${config.routesPattern}`)
+			if (adoption.mode === "progressive" && adoption.includePatterns?.length) {
+				console.log(
+					`(filtered by includePatterns: ${adoption.includePatterns.join(", ")})`,
+				)
+			}
 			return
 		}
 
@@ -80,6 +105,10 @@ export const lintCommand = define({
 		console.log(`Coverage: ${coveredCount}/${total} (${coveragePercent}%)`)
 		console.log("")
 
+		// Determine if lint should fail
+		const minimumCoverage = adoption.minimumCoverage ?? 100
+		const passedCoverage = coveragePercent >= minimumCoverage
+
 		if (missingCount > 0) {
 			console.log(`Missing screen.meta.ts (${missingCount} files):`)
 			console.log("")
@@ -91,10 +120,22 @@ export const lintCommand = define({
 			}
 
 			console.log("")
-			console.log("Run 'screenbook generate' to auto-create missing files")
-			console.log("")
-			console.log("Lint failed: Some routes are missing screen.meta.ts")
+		}
+
+		if (!passedCoverage) {
+			console.log(
+				`Lint failed: Coverage ${coveragePercent}% is below minimum ${minimumCoverage}%`,
+			)
 			process.exit(1)
+		} else if (missingCount > 0) {
+			console.log(
+				`✓ Coverage ${coveragePercent}% meets minimum ${minimumCoverage}%`,
+			)
+			if (adoption.mode === "progressive") {
+				console.log(
+					`  Tip: Increase minimumCoverage in config to gradually improve coverage`,
+				)
+			}
 		} else {
 			console.log("✓ All routes have screen.meta.ts files")
 		}
