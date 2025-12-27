@@ -1,6 +1,16 @@
-# Screenbook
+<p align="center">
+  <img src="assets/logo/icon.svg" alt="Screenbook" width="80" height="80">
+</p>
 
-> When you change an API, do you know which screens will break?
+<h1 align="center">Screenbook</h1>
+
+<p align="center">
+  <strong>When you change an API, do you know which screens will break?</strong>
+</p>
+
+<p align="center">
+  <img src="assets/demo.gif" alt="Screenbook Demo" width="700">
+</p>
 
 ## The Problem
 
