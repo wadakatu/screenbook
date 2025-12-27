@@ -1,0 +1,170 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { loadScreens } from "@/utils/loadScreens"
+
+const screens = loadScreens()
+
+export function getStaticPaths() {
+	const screens = loadScreens()
+	return screens.map((screen) => ({
+		params: { id: screen.id },
+	}))
+}
+
+const { id } = Astro.params
+const screen = screens.find((s) => s.id === id)
+
+if (!screen) {
+	return Astro.redirect("/")
+}
+
+// Find related screens
+const entryScreens = screens.filter((s) => screen.entryPoints?.includes(s.id))
+const nextScreens = screens.filter((s) => screen.next?.includes(s.id))
+---
+
+<Layout title={screen.title}>
+	<div class="container">
+		<a href="/" class="back-link">
+			<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+			</svg>
+			Back to screens
+		</a>
+
+		<div class="detail-header">
+			<h1 class="detail-title">{screen.title}</h1>
+			<div class="detail-route">
+				<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+				</svg>
+				{screen.route}
+			</div>
+		</div>
+
+		<div class="detail-content">
+			<div>
+				<!-- Information -->
+				<div class="section">
+					<h2 class="section-title">Information</h2>
+					<div class="info-list">
+						<div class="info-item">
+							<span class="info-label">ID</span>
+							<span class="info-value"><code>{screen.id}</code></span>
+						</div>
+						{screen.owner && screen.owner.length > 0 && (
+							<div class="info-item">
+								<span class="info-label">Owner</span>
+								<span class="info-value">{screen.owner.join(", ")}</span>
+							</div>
+						)}
+						{screen.tags && screen.tags.length > 0 && (
+							<div class="info-item">
+								<span class="info-label">Tags</span>
+								<span class="info-value">
+									<div class="card-tags">
+										{screen.tags.map((tag) => (
+											<span class="card-tag">{tag}</span>
+										))}
+									</div>
+								</span>
+							</div>
+						)}
+						{screen.description && (
+							<div class="info-item">
+								<span class="info-label">Description</span>
+								<span class="info-value">{screen.description}</span>
+							</div>
+						)}
+					</div>
+				</div>
+
+				<!-- Dependencies -->
+				{screen.dependsOn && screen.dependsOn.length > 0 && (
+					<div class="section">
+						<h2 class="section-title">Dependencies</h2>
+						<div class="dep-list">
+							{screen.dependsOn.map((dep) => (
+								<div class="dep-item">
+									<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+									</svg>
+									{dep}
+								</div>
+							))}
+						</div>
+					</div>
+				)}
+
+				<!-- External Links -->
+				{screen.links && screen.links.length > 0 && (
+					<div class="section">
+						<h2 class="section-title">Links</h2>
+						<div class="dep-list">
+							{screen.links.map((link) => (
+								<a href={link.url} target="_blank" rel="noopener noreferrer" class="dep-item">
+									<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+									</svg>
+									{link.label}
+								</a>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
+
+			<div>
+				<!-- Entry Points -->
+				{entryScreens.length > 0 && (
+					<div class="sidebar-card">
+						<h3 class="sidebar-card-title">
+							<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+							</svg>
+							Entry Points
+						</h3>
+						<div class="screen-link-list">
+							{entryScreens.map((s) => (
+								<a href={`/screen/${s.id}`} class="screen-link">
+									<div class="screen-link-info">
+										<span class="screen-link-title">{s.title}</span>
+										<span class="screen-link-id">{s.id}</span>
+									</div>
+									<svg class="screen-link-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+									</svg>
+								</a>
+							))}
+						</div>
+					</div>
+				)}
+
+				<!-- Next Screens -->
+				{nextScreens.length > 0 && (
+					<div class="sidebar-card">
+						<h3 class="sidebar-card-title">
+							<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+							</svg>
+							Next Screens
+						</h3>
+						<div class="screen-link-list">
+							{nextScreens.map((s) => (
+								<a href={`/screen/${s.id}`} class="screen-link">
+									<div class="screen-link-info">
+										<span class="screen-link-title">{s.title}</span>
+										<span class="screen-link-id">{s.id}</span>
+									</div>
+									<svg class="screen-link-arrow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+										<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+									</svg>
+								</a>
+							))}
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+	</div>
+</Layout>

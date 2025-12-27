@@ -1,0 +1,41 @@
+{
+	"name": "@screenbook/cli",
+	"version": "0.0.1",
+	"description": "CLI for Screenbook - screen catalog and navigation graph generator",
+	"type": "module",
+	"bin": {
+		"screenbook": "./dist/index.mjs"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"types": "./dist/index.d.mts"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"@screenbook/core": "workspace:*",
+		"gunshi": "^0.27.0",
+		"jiti": "^2.6.1",
+		"tinyglobby": "^0.2.0"
+	},
+	"devDependencies": {
+		"tsdown": "^0.18.0"
+	},
+	"keywords": [
+		"screenbook",
+		"cli",
+		"screen",
+		"catalog",
+		"navigation"
+	],
+	"license": "MIT"
+}

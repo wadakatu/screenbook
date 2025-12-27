@@ -1,0 +1,25 @@
+{
+	"name": "screenbook",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Screen catalog and navigation graph generator for frontend applications",
+	"type": "module",
+	"scripts": {
+		"build": "pnpm -r run build",
+		"dev": "pnpm -r run dev",
+		"test": "pnpm -r run test",
+		"test:watch": "vitest",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "pnpm --filter @screenbook/ui run format"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.0",
+		"typescript": "^5.7.2",
+		"vitest": "^2.1.8"
+	},
+	"packageManager": "pnpm@9.15.1",
+	"engines": {
+		"node": ">=20"
+	}
+}

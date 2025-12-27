@@ -1,0 +1,16 @@
+{
+	"name": "screenbook-demo",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"screenbook": "screenbook",
+		"screenbook:build": "screenbook build",
+		"screenbook:dev": "screenbook dev"
+	},
+	"dependencies": {
+		"@screenbook/core": "workspace:*",
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/ui": "workspace:*"
+	}
+}

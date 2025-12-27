@@ -1,0 +1,39 @@
+{
+	"name": "@screenbook/core",
+	"version": "0.0.1",
+	"description": "Core library for Screenbook - screen metadata definitions and validation",
+	"type": "module",
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"types": "./dist/index.d.mts"
+		}
+	},
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch",
+		"test": "vitest run",
+		"test:watch": "vitest"
+	},
+	"dependencies": {
+		"zod": "^4.0.0"
+	},
+	"devDependencies": {
+		"tsdown": "^0.18.0"
+	},
+	"keywords": [
+		"screenbook",
+		"screen",
+		"catalog",
+		"navigation",
+		"graph"
+	],
+	"license": "MIT"
+}
