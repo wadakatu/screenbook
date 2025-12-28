@@ -17,7 +17,7 @@
 <p align="center">
   <a href="https://github.com/wadakatu/screenbook/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/TypeScript-5.0+-blue.svg" alt="TypeScript"></a>
-  <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/Node.js-18+-green.svg" alt="Node.js"></a>
+  <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/Node.js-22+-green.svg" alt="Node.js"></a>
 </p>
 
 <p align="center">
