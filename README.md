@@ -29,46 +29,6 @@
 
 ---
 
-## The Problem
-
-Every team has a screen map somewhere — FigJam, Figma, Notion, or buried in a wiki.
-
-**When was yours last updated?**
-
-Sound familiar?
-
-- "Where's the screen map?" → "Check Notion... or maybe the old Figma file?"
-- "How do users get to the payment screen?" → *crickets*
-- "Which screens use the BillingAPI?" → "Let me grep... actually, I'm not sure"
-- New team members can't trust documentation for onboarding
-
-**Screen maps go stale because they live outside of code.**
-
----
-
-## The Solution
-
-**Screenbook keeps your screen documentation in sync with your code — automatically.**
-
-```ts
-// src/pages/billing/invoices/screen.meta.ts
-import { defineScreen } from "@screenbook/core"
-
-export const screen = defineScreen({
-  id: "billing.invoices",
-  title: "Invoice List",
-  route: "/billing/invoices",
-  owner: ["billing-team"],
-  tags: ["billing", "invoices"],
-  next: ["billing.invoice.detail", "billing.payments"],
-  dependsOn: ["BillingAPI.listInvoices"],
-})
-```
-
-Define screens next to your routes. Run one command. Get a beautiful, searchable catalog.
-
----
-
 ## Features
 
 ### Screen Catalog
@@ -155,6 +115,16 @@ export const screen = defineScreen({
 ---
 
 ## Why Screenbook?
+
+Every team has a screen map somewhere — Figma, Notion, or buried in a wiki. **When was yours last updated?**
+
+Sound familiar?
+
+- "Where's the screen map?" → "Check Notion... or maybe the old Figma file?"
+- "How do users get to the payment screen?" → *crickets*
+- "Which screens use the BillingAPI?" → "Let me grep... actually, I'm not sure"
+
+**Screen maps go stale because they live outside of code.** Screenbook keeps your screen documentation in sync — automatically.
 
 | Traditional Approach | Screenbook |
 |---------------------|------------|
