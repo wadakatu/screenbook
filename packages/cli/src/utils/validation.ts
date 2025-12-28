@@ -83,31 +83,34 @@ function findSimilar(
  * Calculate Levenshtein distance between two strings
  */
 function levenshteinDistance(a: string, b: string): number {
-	const matrix: number[][] = []
+	// Pre-initialize matrix with proper dimensions
+	const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
+		Array.from({ length: b.length + 1 }, () => 0),
+	)
 
 	// Initialize first column
 	for (let i = 0; i <= a.length; i++) {
-		matrix[i] = [i]
+		matrix[i]![0] = i
 	}
 
 	// Initialize first row
 	for (let j = 0; j <= b.length; j++) {
-		matrix[0][j] = j
+		matrix[0]![j] = j
 	}
 
 	// Fill the matrix
 	for (let i = 1; i <= a.length; i++) {
 		for (let j = 1; j <= b.length; j++) {
 			const cost = a[i - 1] === b[j - 1] ? 0 : 1
-			matrix[i][j] = Math.min(
-				matrix[i - 1][j] + 1, // deletion
-				matrix[i][j - 1] + 1, // insertion
-				matrix[i - 1][j - 1] + cost, // substitution
+			matrix[i]![j] = Math.min(
+				matrix[i - 1]![j]! + 1, // deletion
+				matrix[i]![j - 1]! + 1, // insertion
+				matrix[i - 1]![j - 1]! + cost, // substitution
 			)
 		}
 	}
 
-	return matrix[a.length][b.length]
+	return matrix[a.length]![b.length]!
 }
 
 /**

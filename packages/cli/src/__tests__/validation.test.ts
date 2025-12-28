@@ -87,7 +87,7 @@ describe("validateScreenReferences", () => {
 		const result = validateScreenReferences(screens)
 		expect(result.valid).toBe(false)
 		expect(result.errors).toHaveLength(1)
-		expect(result.errors[0].suggestion).toBe("billing.invoice.edit")
+		expect(result.errors[0]?.suggestion).toBe("billing.invoice.edit")
 	})
 
 	it("should detect multiple errors across screens", () => {

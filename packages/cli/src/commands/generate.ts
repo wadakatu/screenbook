@@ -127,7 +127,7 @@ function inferScreenMeta(
 	routesPattern: string,
 ): InferredScreenMeta {
 	// Extract base directory from pattern (e.g., "src/pages" from "src/pages/**/page.tsx")
-	const patternBase = routesPattern.split("*")[0].replace(/\/$/, "")
+	const patternBase = routesPattern.split("*")[0]?.replace(/\/$/, "") ?? ""
 
 	// Get relative path from pattern base
 	const relativePath = relative(patternBase, routeDir)
