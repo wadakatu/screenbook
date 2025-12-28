@@ -47,8 +47,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build CLI package
-        run: pnpm --filter @screenbook/cli run build
+      - name: Build packages
+        run: pnpm --filter @screenbook/core --filter @screenbook/cli run build
 
       - name: Generate CLI docs
         run: pnpm --filter screenbook-docs run generate:cli
