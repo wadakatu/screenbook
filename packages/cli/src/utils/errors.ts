@@ -1,4 +1,4 @@
-import type { ErrorOptions } from "./logger"
+import type { ErrorOptions } from "./logger.js"
 
 /**
  * Centralized error definitions for consistent error messages across CLI commands
