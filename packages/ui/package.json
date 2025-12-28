@@ -26,6 +26,15 @@
 		"navigation"
 	],
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/wadakatu/screenbook.git",
+		"directory": "packages/ui"
+	},
+	"homepage": "https://github.com/wadakatu/screenbook#readme",
+	"bugs": {
+		"url": "https://github.com/wadakatu/screenbook/issues"
+	},
 	"devDependencies": {
 		"prettier": "^3.7.4",
 		"prettier-plugin-astro": "^0.14.1"

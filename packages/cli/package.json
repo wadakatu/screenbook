@@ -40,5 +40,14 @@
 		"catalog",
 		"navigation"
 	],
-	"license": "MIT"
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/wadakatu/screenbook.git",
+		"directory": "packages/cli"
+	},
+	"homepage": "https://github.com/wadakatu/screenbook#readme",
+	"bugs": {
+		"url": "https://github.com/wadakatu/screenbook/issues"
+	}
 }
