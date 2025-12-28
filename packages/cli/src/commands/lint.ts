@@ -5,6 +5,8 @@ import { define } from "gunshi"
 import { minimatch } from "minimatch"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import { ERRORS } from "../utils/errors.js"
+import { logger } from "../utils/logger.js"
 
 export const lintCommand = define({
 	name: "lint",
@@ -23,30 +25,21 @@ export const lintCommand = define({
 		let hasWarnings = false
 
 		if (!config.routesPattern) {
-			console.log("Error: routesPattern not configured")
-			console.log("")
-			console.log("Add routesPattern to your screenbook.config.ts:")
-			console.log("")
-			console.log('  routesPattern: "src/pages/**/page.tsx",   // Vite/React')
-			console.log(
-				'  routesPattern: "app/**/page.tsx",         // Next.js App Router',
-			)
-			console.log('  routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt')
-			console.log("")
+			logger.errorWithHelp(ERRORS.ROUTES_PATTERN_MISSING)
 			process.exit(1)
 		}
 
-		console.log("Linting screen metadata coverage...")
+		logger.info("Linting screen metadata coverage...")
 		if (adoption.mode === "progressive") {
-			console.log(`Mode: Progressive adoption`)
+			logger.log(`Mode: Progressive adoption`)
 			if (adoption.includePatterns?.length) {
-				console.log(`Checking: ${adoption.includePatterns.join(", ")}`)
+				logger.log(`Checking: ${adoption.includePatterns.join(", ")}`)
 			}
 			if (adoption.minimumCoverage != null) {
-				console.log(`Minimum coverage: ${adoption.minimumCoverage}%`)
+				logger.log(`Minimum coverage: ${adoption.minimumCoverage}%`)
 			}
 		}
-		console.log("")
+		logger.blank()
 
 		// Find all route files
 		let routeFiles = await glob(config.routesPattern, {
@@ -62,10 +55,10 @@ export const lintCommand = define({
 		}
 
 		if (routeFiles.length === 0) {
-			console.log(`No route files found matching: ${config.routesPattern}`)
+			logger.warn(`No route files found matching: ${config.routesPattern}`)
 			if (adoption.mode === "progressive" && adoption.includePatterns?.length) {
-				console.log(
-					`(filtered by includePatterns: ${adoption.includePatterns.join(", ")})`,
+				logger.log(
+					`  ${logger.dim(`(filtered by includePatterns: ${adoption.includePatterns.join(", ")})`)}`,
 				)
 			}
 			return
@@ -104,43 +97,43 @@ export const lintCommand = define({
 		const missingCount = missingMeta.length
 		const coveragePercent = Math.round((coveredCount / total) * 100)
 
-		console.log(`Found ${total} route files`)
-		console.log(`Coverage: ${coveredCount}/${total} (${coveragePercent}%)`)
-		console.log("")
+		logger.log(`Found ${total} route files`)
+		logger.log(`Coverage: ${coveredCount}/${total} (${coveragePercent}%)`)
+		logger.blank()
 
 		// Determine if lint should fail
 		const minimumCoverage = adoption.minimumCoverage ?? 100
 		const passedCoverage = coveragePercent >= minimumCoverage
 
 		if (missingCount > 0) {
-			console.log(`Missing screen.meta.ts (${missingCount} files):`)
-			console.log("")
+			logger.log(`Missing screen.meta.ts (${missingCount} files):`)
+			logger.blank()
 
 			for (const file of missingMeta) {
 				const suggestedMetaPath = join(dirname(file), "screen.meta.ts")
-				console.log(`  ✗ ${file}`)
-				console.log(`    → ${suggestedMetaPath}`)
+				logger.itemError(file)
+				logger.log(`    ${logger.dim("→")} ${logger.path(suggestedMetaPath)}`)
 			}
 
-			console.log("")
+			logger.blank()
 		}
 
 		if (!passedCoverage) {
-			console.log(
+			logger.error(
 				`Lint failed: Coverage ${coveragePercent}% is below minimum ${minimumCoverage}%`,
 			)
 			process.exit(1)
 		} else if (missingCount > 0) {
-			console.log(
-				`✓ Coverage ${coveragePercent}% meets minimum ${minimumCoverage}%`,
+			logger.success(
+				`Coverage ${coveragePercent}% meets minimum ${minimumCoverage}%`,
 			)
 			if (adoption.mode === "progressive") {
-				console.log(
-					`  Tip: Increase minimumCoverage in config to gradually improve coverage`,
+				logger.log(
+					`  ${logger.dim("Tip:")} Increase minimumCoverage in config to gradually improve coverage`,
 				)
 			}
 		} else {
-			console.log("✓ All routes have screen.meta.ts files")
+			logger.done("All routes have screen.meta.ts files")
 		}
 
 		// Check for orphan screens (unreachable screens)
@@ -153,18 +146,18 @@ export const lintCommand = define({
 
 				if (orphans.length > 0) {
 					hasWarnings = true
-					console.log("")
-					console.log(`⚠ Orphan screens detected (${orphans.length}):`)
-					console.log("")
-					console.log("  These screens have no entryPoints and are not")
-					console.log("  referenced in any other screen's 'next' array.")
-					console.log("")
+					logger.blank()
+					logger.warn(`Orphan screens detected (${orphans.length}):`)
+					logger.blank()
+					logger.log("  These screens have no entryPoints and are not")
+					logger.log("  referenced in any other screen's 'next' array.")
+					logger.blank()
 					for (const orphan of orphans) {
-						console.log(`  ⚠ ${orphan.id}  ${orphan.route}`)
+						logger.itemWarn(`${orphan.id}  ${logger.dim(orphan.route)}`)
 					}
-					console.log("")
-					console.log(
-						"  Consider adding entryPoints or removing these screens.",
+					logger.blank()
+					logger.log(
+						`  ${logger.dim("Consider adding entryPoints or removing these screens.")}`,
 					)
 				}
 			} catch {
@@ -173,8 +166,8 @@ export const lintCommand = define({
 		}
 
 		if (hasWarnings) {
-			console.log("")
-			console.log("Lint completed with warnings.")
+			logger.blank()
+			logger.warn("Lint completed with warnings.")
 		}
 	},
 })

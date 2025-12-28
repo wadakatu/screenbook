@@ -3,6 +3,8 @@ import { dirname, join, relative } from "node:path"
 import { define } from "gunshi"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import { ERRORS } from "../utils/errors.js"
+import { logger } from "../utils/logger.js"
 
 export const generateCommand = define({
 	name: "generate",
@@ -33,21 +35,12 @@ export const generateCommand = define({
 		const force = ctx.values.force ?? false
 
 		if (!config.routesPattern) {
-			console.log("Error: routesPattern not configured")
-			console.log("")
-			console.log("Add routesPattern to your screenbook.config.ts:")
-			console.log("")
-			console.log('  routesPattern: "src/pages/**/page.tsx",   // Vite/React')
-			console.log(
-				'  routesPattern: "app/**/page.tsx",         // Next.js App Router',
-			)
-			console.log('  routesPattern: "src/pages/**/*.vue",      // Vue/Nuxt')
-			console.log("")
+			logger.errorWithHelp(ERRORS.ROUTES_PATTERN_MISSING)
 			process.exit(1)
 		}
 
-		console.log("Scanning for route files...")
-		console.log("")
+		logger.info("Scanning for route files...")
+		logger.blank()
 
 		// Find all route files
 		const routeFiles = await glob(config.routesPattern, {
@@ -56,12 +49,12 @@ export const generateCommand = define({
 		})
 
 		if (routeFiles.length === 0) {
-			console.log(`No route files found matching: ${config.routesPattern}`)
+			logger.warn(`No route files found matching: ${config.routesPattern}`)
 			return
 		}
 
-		console.log(`Found ${routeFiles.length} route files`)
-		console.log("")
+		logger.log(`Found ${routeFiles.length} route files`)
+		logger.blank()
 
 		let created = 0
 		let skipped = 0
@@ -81,33 +74,35 @@ export const generateCommand = define({
 			const content = generateScreenMetaContent(screenMeta)
 
 			if (dryRun) {
-				console.log(`Would create: ${metaPath}`)
-				console.log(`  id: "${screenMeta.id}"`)
-				console.log(`  title: "${screenMeta.title}"`)
-				console.log(`  route: "${screenMeta.route}"`)
-				console.log("")
+				logger.step(`Would create: ${logger.path(metaPath)}`)
+				logger.log(`    ${logger.dim(`id: "${screenMeta.id}"`)}`)
+				logger.log(`    ${logger.dim(`title: "${screenMeta.title}"`)}`)
+				logger.log(`    ${logger.dim(`route: "${screenMeta.route}"`)}`)
+				logger.blank()
 			} else {
 				writeFileSync(absoluteMetaPath, content)
-				console.log(`✓ Created: ${metaPath}`)
+				logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
 			}
 
 			created++
 		}
 
-		console.log("")
+		logger.blank()
 		if (dryRun) {
-			console.log(`Would create ${created} files (${skipped} already exist)`)
-			console.log("")
-			console.log("Run without --dry-run to create files")
+			logger.info(`Would create ${created} files (${skipped} already exist)`)
+			logger.blank()
+			logger.log(`Run without ${logger.code("--dry-run")} to create files`)
 		} else {
-			console.log(`Created ${created} files (${skipped} skipped)`)
+			logger.done(`Created ${created} files (${skipped} skipped)`)
 			if (created > 0) {
-				console.log("")
-				console.log("Next steps:")
-				console.log(
+				logger.blank()
+				logger.log(logger.bold("Next steps:"))
+				logger.log(
 					"  1. Review and customize the generated screen.meta.ts files",
 				)
-				console.log("  2. Run 'screenbook dev' to view your screen catalog")
+				logger.log(
+					`  2. Run ${logger.code("screenbook dev")} to view your screen catalog`,
+				)
 			}
 		}
 	},

@@ -6,6 +6,7 @@ import {
 	type FrameworkInfo,
 	promptFrameworkSelection,
 } from "../utils/detectFramework.js"
+import { logger } from "../utils/logger.js"
 
 function generateConfigTemplate(framework: FrameworkInfo | null): string {
 	if (framework) {
@@ -41,35 +42,41 @@ export default defineConfig({
 }
 
 function printValueProposition(): void {
-	console.log("")
-	console.log("What Screenbook gives you:")
-	console.log("  - Screen catalog with search & filter")
-	console.log("  - Navigation graph visualization")
-	console.log("  - Impact analysis (API -> affected screens)")
-	console.log("  - CI lint for documentation coverage")
+	logger.blank()
+	logger.log(logger.bold("What Screenbook gives you:"))
+	logger.log("  - Screen catalog with search & filter")
+	logger.log("  - Navigation graph visualization")
+	logger.log("  - Impact analysis (API -> affected screens)")
+	logger.log("  - CI lint for documentation coverage")
 }
 
 function printNextSteps(hasRoutesPattern: boolean): void {
-	console.log("")
-	console.log("Next steps:")
+	logger.blank()
+	logger.log(logger.bold("Next steps:"))
 	if (hasRoutesPattern) {
-		console.log(
-			"  1. Run 'screenbook generate' to auto-create screen.meta.ts files",
+		logger.log(
+			`  1. Run ${logger.code("screenbook generate")} to auto-create screen.meta.ts files`,
 		)
-		console.log("  2. Run 'screenbook dev' to start the UI server")
+		logger.log(
+			`  2. Run ${logger.code("screenbook dev")} to start the UI server`,
+		)
 	} else {
-		console.log("  1. Configure routesPattern in screenbook.config.ts")
-		console.log(
-			"  2. Run 'screenbook generate' to auto-create screen.meta.ts files",
+		logger.log("  1. Configure routesPattern in screenbook.config.ts")
+		logger.log(
+			`  2. Run ${logger.code("screenbook generate")} to auto-create screen.meta.ts files`,
 		)
-		console.log("  3. Run 'screenbook dev' to start the UI server")
+		logger.log(
+			`  3. Run ${logger.code("screenbook dev")} to start the UI server`,
+		)
 	}
-	console.log("")
-	console.log("screen.meta.ts files are created alongside your route files:")
-	console.log("")
-	console.log("  src/pages/dashboard/")
-	console.log("    page.tsx          # Your route file")
-	console.log("    screen.meta.ts    # Auto-generated, customize as needed")
+	logger.blank()
+	logger.log("screen.meta.ts files are created alongside your route files:")
+	logger.blank()
+	logger.log(logger.dim("  src/pages/dashboard/"))
+	logger.log(logger.dim("    page.tsx          # Your route file"))
+	logger.log(
+		logger.dim("    screen.meta.ts    # Auto-generated, customize as needed"),
+	)
 }
 
 export const initCommand = define({
@@ -93,8 +100,8 @@ export const initCommand = define({
 		const force = ctx.values.force ?? false
 		const skipDetect = ctx.values.skipDetect ?? false
 
-		console.log("Initializing Screenbook...")
-		console.log("")
+		logger.info("Initializing Screenbook...")
+		logger.blank()
 
 		// Framework detection
 		let framework: FrameworkInfo | null = null
@@ -103,15 +110,15 @@ export const initCommand = define({
 			framework = detectFramework(cwd)
 
 			if (framework) {
-				console.log(`  Detected: ${framework.name}`)
+				logger.itemSuccess(`Detected: ${framework.name}`)
 			} else {
-				console.log("  Could not auto-detect framework")
-				console.log("")
+				logger.log("  Could not auto-detect framework")
+				logger.blank()
 				framework = await promptFrameworkSelection()
 
 				if (framework) {
-					console.log("")
-					console.log(`  Selected: ${framework.name}`)
+					logger.blank()
+					logger.itemSuccess(`Selected: ${framework.name}`)
 				}
 			}
 		}
@@ -119,11 +126,13 @@ export const initCommand = define({
 		// Create screenbook.config.ts
 		const configPath = join(cwd, "screenbook.config.ts")
 		if (!force && existsSync(configPath)) {
-			console.log("  - screenbook.config.ts already exists (skipped)")
+			logger.log(
+				`  ${logger.dim("-")} screenbook.config.ts already exists ${logger.dim("(skipped)")}`,
+			)
 		} else {
 			const configContent = generateConfigTemplate(framework)
 			writeFileSync(configPath, configContent)
-			console.log("  + Created screenbook.config.ts")
+			logger.itemSuccess("Created screenbook.config.ts")
 		}
 
 		// Update .gitignore
@@ -135,17 +144,19 @@ export const initCommand = define({
 			if (!gitignoreContent.includes(screenbookIgnore)) {
 				const newContent = `${gitignoreContent.trimEnd()}\n\n# Screenbook\n${screenbookIgnore}\n`
 				writeFileSync(gitignorePath, newContent)
-				console.log("  + Added .screenbook to .gitignore")
+				logger.itemSuccess("Added .screenbook to .gitignore")
 			} else {
-				console.log("  - .screenbook already in .gitignore (skipped)")
+				logger.log(
+					`  ${logger.dim("-")} .screenbook already in .gitignore ${logger.dim("(skipped)")}`,
+				)
 			}
 		} else {
 			writeFileSync(gitignorePath, `# Screenbook\n${screenbookIgnore}\n`)
-			console.log("  + Created .gitignore with .screenbook")
+			logger.itemSuccess("Created .gitignore with .screenbook")
 		}
 
-		console.log("")
-		console.log("Screenbook initialized successfully!")
+		logger.blank()
+		logger.done("Screenbook initialized successfully!")
 
 		printValueProposition()
 		printNextSteps(framework !== null)
