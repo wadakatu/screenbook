@@ -1,11 +1,11 @@
-<p align="center">
-  <img src="assets/screenshots/hero.png" alt="Screenbook - Define screens in code, get an always-up-to-date catalog" width="800">
-</p>
-
 <h1 align="center">Screenbook</h1>
 
 <p align="center">
   <strong>Your screen map is out of date. Again.</strong>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/hero.png" alt="Screenbook - Define screens in code, get an always-up-to-date catalog" width="800">
 </p>
 
 ## The Problem
