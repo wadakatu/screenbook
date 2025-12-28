@@ -823,30 +823,30 @@ code {
 
 /* Mermaid */
 .mermaid {
-	background: transparent !important;
+	background: transparent;
 }
 
 .mermaid .node rect {
-	fill: var(--color-bg-muted) !important;
-	stroke: var(--color-border-hover) !important;
-	stroke-width: 1px !important;
-	rx: 6px !important;
+	fill: var(--color-bg-muted);
+	stroke: var(--color-border-hover);
+	stroke-width: 1px;
+	rx: 6px;
 }
 
 .mermaid .nodeLabel {
-	color: var(--color-text) !important;
-	font-family: system-ui, sans-serif !important;
-	font-size: 13px !important;
+	color: var(--color-text);
+	font-family: system-ui, sans-serif;
+	font-size: 13px;
 }
 
 .mermaid .edgePath .path {
-	stroke: var(--color-accent) !important;
-	stroke-width: 1.5px !important;
+	stroke: var(--color-accent);
+	stroke-width: 1.5px;
 }
 
 .mermaid .edgeLabel {
-	background: var(--color-bg) !important;
-	color: var(--color-text-muted) !important;
+	background: var(--color-bg);
+	color: var(--color-text-muted);
 }
 
 /* Utility */

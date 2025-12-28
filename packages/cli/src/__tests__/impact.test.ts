@@ -33,7 +33,7 @@ describe("analyzeImpact", () => {
 			const result = analyzeImpact(screens, "InvoiceAPI.getDetail")
 
 			expect(result.direct).toHaveLength(1)
-			expect(result.direct[0].id).toBe("billing.invoice.detail")
+			expect(result.direct[0]?.id).toBe("billing.invoice.detail")
 		})
 
 		it("should find direct dependents with partial match (API prefix)", () => {
@@ -145,7 +145,7 @@ describe("analyzeImpact", () => {
 
 			const resultDepth1 = analyzeImpact(screens, "TargetAPI", 1)
 			expect(resultDepth1.transitive).toHaveLength(1)
-			expect(resultDepth1.transitive[0].screen.id).toBe("level1")
+			expect(resultDepth1.transitive[0]?.screen.id).toBe("level1")
 
 			const resultDepth3 = analyzeImpact(screens, "TargetAPI", 3)
 			expect(resultDepth3.transitive).toHaveLength(3)
@@ -172,7 +172,7 @@ describe("analyzeImpact", () => {
 			const result = analyzeImpact(screens, "TestAPI")
 
 			expect(result.direct).toHaveLength(1)
-			expect(result.direct[0].id).toBe("screenA")
+			expect(result.direct[0]?.id).toBe("screenA")
 		})
 	})
 

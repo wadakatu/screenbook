@@ -50,7 +50,7 @@ function buildNavigationGraph(screens: Screen[]): Map<string, Set<string>> {
 			graph.set(screen.id, new Set())
 		}
 		for (const nextId of screen.next) {
-			graph.get(screen.id)!.add(nextId)
+			graph.get(screen.id)?.add(nextId)
 		}
 	}
 
@@ -72,7 +72,8 @@ function findPathToDirectDependent(
 	const localVisited = new Set<string>([startId])
 
 	while (queue.length > 0) {
-		const current = queue.shift()!
+		const current = queue.shift()
+		if (!current) break
 
 		if (current.path.length > maxDepth + 1) {
 			continue
@@ -205,9 +206,15 @@ export function generateImpactMermaid(
 	const lines: string[] = ["flowchart TD"]
 
 	// Define styles - high contrast colors with readable text
-	lines.push("    classDef direct fill:#dc2626,stroke:#fef2f2,color:#ffffff,stroke-width:3px,font-weight:bold")
-	lines.push("    classDef transitive fill:#ea580c,stroke:#fff7ed,color:#ffffff,stroke-width:3px,font-weight:bold")
-	lines.push("    classDef normal fill:#1e293b,stroke:#64748b,color:#e2e8f0,stroke-width:1px")
+	lines.push(
+		"    classDef direct fill:#dc2626,stroke:#fef2f2,color:#ffffff,stroke-width:3px,font-weight:bold",
+	)
+	lines.push(
+		"    classDef transitive fill:#ea580c,stroke:#fff7ed,color:#ffffff,stroke-width:3px,font-weight:bold",
+	)
+	lines.push(
+		"    classDef normal fill:#1e293b,stroke:#64748b,color:#e2e8f0,stroke-width:1px",
+	)
 
 	// Add nodes
 	for (const screen of screens) {

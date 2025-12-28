@@ -188,14 +188,14 @@ function extractApiNames(files: string[]): string[] {
 			file.includes("/services/") &&
 			(fileName === "index" || fileName === dirName)
 		) {
-			const serviceName = capitalize(dirName) + "Service"
+			const serviceName = `${capitalize(dirName)}Service`
 			apis.add(serviceName)
 		}
 
 		// Pattern: src/api/invoice.ts -> InvoiceAPI
 		if (file.includes("/api/") || file.includes("/apis/")) {
 			if (!fileName.endsWith("API") && !fileName.endsWith("Api")) {
-				const apiName = capitalize(fileName) + "API"
+				const apiName = `${capitalize(fileName)}API`
 				apis.add(apiName)
 			}
 		}
@@ -276,7 +276,7 @@ function formatMarkdown(
 		if (result.transitive.length > 0) {
 			lines.push(`**Transitive dependencies** (${result.transitive.length}):`)
 			lines.push("")
-			for (const { screen, path } of result.transitive) {
+			for (const { path } of result.transitive) {
 				lines.push(`- ${path.join(" → ")}`)
 			}
 			lines.push("")

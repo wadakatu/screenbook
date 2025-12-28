@@ -57,7 +57,7 @@ export const lintCommand = define({
 		// In progressive mode, filter to only included patterns
 		if (adoption.mode === "progressive" && adoption.includePatterns?.length) {
 			routeFiles = routeFiles.filter((file) =>
-				adoption.includePatterns!.some((pattern) => minimatch(file, pattern)),
+				adoption.includePatterns?.some((pattern) => minimatch(file, pattern)),
 			)
 		}
 
@@ -163,7 +163,9 @@ export const lintCommand = define({
 						console.log(`  ⚠ ${orphan.id}  ${orphan.route}`)
 					}
 					console.log("")
-					console.log("  Consider adding entryPoints or removing these screens.")
+					console.log(
+						"  Consider adding entryPoints or removing these screens.",
+					)
 				}
 			} catch {
 				// Ignore errors reading screens.json

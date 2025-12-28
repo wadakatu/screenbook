@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync } from "node:fs"
-import { basename, dirname, join, relative } from "node:path"
+import { dirname, join, relative } from "node:path"
 import { define } from "gunshi"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
@@ -127,7 +127,7 @@ function inferScreenMeta(
 	routesPattern: string,
 ): InferredScreenMeta {
 	// Extract base directory from pattern (e.g., "src/pages" from "src/pages/**/page.tsx")
-	const patternBase = routesPattern.split("*")[0].replace(/\/$/, "")
+	const patternBase = routesPattern.split("*")[0]?.replace(/\/$/, "") ?? ""
 
 	// Get relative path from pattern base
 	const relativePath = relative(patternBase, routeDir)
@@ -173,7 +173,7 @@ function inferScreenMeta(
 			}
 			return s
 		})
-	const route = "/" + routeSegments.join("/")
+	const route = `/${routeSegments.join("/")}`
 
 	return { id, title, route }
 }
