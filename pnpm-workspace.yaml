@@ -1,6 +1,7 @@
 packages:
   - "packages/*"
   - "examples/*"
+  - "docs"
 
 catalog:
   tsdown: ^0.18.0

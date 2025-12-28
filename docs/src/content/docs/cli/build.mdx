@@ -1,0 +1,32 @@
+---
+title: screenbook build
+description: Build screen metadata JSON from screen.meta.ts files
+---
+
+Build screen metadata JSON from screen.meta.ts files
+
+## Usage
+
+```
+Screen catalog and navigation graph generator (screenbook v0.1.0)
+Build screen metadata JSON from screen.meta.ts files
+
+USAGE:
+  screenbook <OPTIONS>
+
+OPTIONS:
+  -h, --help                     Display this help message
+  -v, --version                  Display this version
+  -c, --config <config>          Path to config file
+  -o, --outDir <outDir>          Output directory
+  -s, --strict                   Fail on invalid screen references (default: false)
+
+```
+
+## Examples
+
+```bash
+screenbook build
+screenbook build --strict
+screenbook build --out-dir .screenbook
+```

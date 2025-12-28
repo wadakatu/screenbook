@@ -1,0 +1,35 @@
+---
+title: screenbook impact
+description: Analyze which screens depend on a specific API/service
+---
+
+Analyze which screens depend on a specific API/service
+
+## Usage
+
+```
+Screen catalog and navigation graph generator (screenbook v0.1.0)
+Analyze which screens depend on a specific API/service
+
+USAGE:
+  screenbook <OPTIONS> <api>
+
+ARGUMENTS:
+  api           API or service name to analyze (e.g., InvoiceAPI.getDetail)
+
+OPTIONS:
+  -h, --help                     Display this help message
+  -v, --version                  Display this version
+  -c, --config <config>          Path to config file
+  -f, --format [format]          Output format: text (default) or json (default: text)
+  -d, --depth [depth]            Maximum depth for transitive dependencies (default: 3)
+
+```
+
+## Examples
+
+```bash
+screenbook impact InvoiceAPI.getDetail
+screenbook impact PaymentService --format json
+screenbook impact UserAPI --depth 5
+```

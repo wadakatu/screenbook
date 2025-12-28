@@ -1,0 +1,107 @@
+---
+title: Quick Start
+description: Create your first screen definition in 5 minutes
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+This guide will walk you through creating your first screen definition and viewing it in the Screenbook UI.
+
+<Steps>
+
+1. **Create a screen.meta.ts file**
+
+   Create a `screen.meta.ts` file alongside your route/page file:
+
+   ```ts
+   // src/pages/dashboard/screen.meta.ts
+   import { defineScreen } from "@screenbook/core"
+
+   export const screen = defineScreen({
+     id: "dashboard",
+     title: "Dashboard",
+     route: "/dashboard",
+     owner: ["platform-team"],
+     tags: ["core"],
+   })
+   ```
+
+2. **Build the screen catalog**
+
+   Run the build command to generate the screen metadata:
+
+   ```bash
+   npx screenbook build
+   ```
+
+   This creates:
+   - `.screenbook/screens.json` - All screen metadata
+   - `.screenbook/graph.mmd` - Navigation graph in Mermaid format
+   - `.screenbook/coverage.json` - Coverage statistics
+
+3. **Start the development server**
+
+   View your screens in the Screenbook UI:
+
+   ```bash
+   npx screenbook dev
+   ```
+
+   Open [http://localhost:4321](http://localhost:4321) to see your screen catalog.
+
+4. **Add navigation relationships**
+
+   Define how screens connect to each other:
+
+   ```ts
+   // src/pages/dashboard/screen.meta.ts
+   export const screen = defineScreen({
+     id: "dashboard",
+     title: "Dashboard",
+     route: "/dashboard",
+     owner: ["platform-team"],
+     tags: ["core"],
+     next: ["settings", "profile"],  // Screens this page links to
+   })
+   ```
+
+   ```ts
+   // src/pages/settings/screen.meta.ts
+   export const screen = defineScreen({
+     id: "settings",
+     title: "Settings",
+     route: "/settings",
+     owner: ["platform-team"],
+     tags: ["core"],
+     entryPoints: ["dashboard"],  // Screens that link here
+   })
+   ```
+
+5. **View the navigation graph**
+
+   Rebuild and refresh the UI to see the navigation graph:
+
+   ```bash
+   npx screenbook build
+   npx screenbook dev
+   ```
+
+   Navigate to the Graph view to see how your screens connect.
+
+</Steps>
+
+## Auto-generate screen.meta.ts files
+
+If you have many routes, you can auto-generate screen.meta.ts files:
+
+```bash
+npx screenbook generate
+```
+
+This scans your route files and creates skeleton screen.meta.ts files that you can customize.
+
+## Next Steps
+
+- [Configuration](/screenbook/getting-started/configuration/) - Customize patterns and output
+- [Define Screens](/screenbook/guides/define-screen/) - Learn all screen metadata fields
+- [Navigation Graph](/screenbook/guides/navigation-graph/) - Understand screen relationships

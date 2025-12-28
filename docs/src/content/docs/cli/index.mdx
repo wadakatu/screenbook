@@ -1,0 +1,52 @@
+---
+title: CLI Commands
+description: Complete reference for all Screenbook CLI commands
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Screenbook provides a powerful CLI to manage your screen catalog.
+
+## Installation
+
+```bash
+npm install -g @screenbook/cli
+# or
+pnpm add -g @screenbook/cli
+```
+
+## Commands
+
+<CardGrid>
+  <Card title="init" icon="terminal">
+    Initialize Screenbook in a project
+  </Card>
+  <Card title="generate" icon="terminal">
+    Auto-generate screen.meta.ts files from route files
+  </Card>
+  <Card title="build" icon="terminal">
+    Build screen metadata JSON from screen.meta.ts files
+  </Card>
+  <Card title="dev" icon="terminal">
+    Start the Screenbook development server
+  </Card>
+  <Card title="lint" icon="terminal">
+    Detect routes without screen.meta.ts files
+  </Card>
+  <Card title="impact" icon="terminal">
+    Analyze which screens depend on a specific API/service
+  </Card>
+  <Card title="pr-impact" icon="terminal">
+    Analyze impact of changed files in a PR
+  </Card>
+</CardGrid>
+
+## Global Options
+
+All commands support the following global options:
+
+| Option | Description |
+|--------|-------------|
+| `--help, -h` | Show help information |
+| `--version, -v` | Show version number |
+| `--config, -c` | Path to config file |
