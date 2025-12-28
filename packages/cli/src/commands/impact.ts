@@ -3,11 +3,13 @@ import { join } from "node:path"
 import type { Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import { loadConfig } from "../utils/config.js"
+import { ERRORS } from "../utils/errors.js"
 import {
 	analyzeImpact,
 	formatImpactJson,
 	formatImpactText,
 } from "../utils/impactAnalysis.js"
+import { logger } from "../utils/logger.js"
 
 export const impactCommand = define({
 	name: "impact",
@@ -43,13 +45,7 @@ export const impactCommand = define({
 
 		const apiName = ctx.values.api
 		if (!apiName) {
-			console.error("Error: API name is required")
-			console.error("")
-			console.error("Usage: screenbook impact <api-name>")
-			console.error("")
-			console.error("Examples:")
-			console.error("  screenbook impact InvoiceAPI.getDetail")
-			console.error("  screenbook impact PaymentService")
+			logger.errorWithHelp(ERRORS.API_NAME_REQUIRED)
 			process.exit(1)
 		}
 
@@ -60,11 +56,7 @@ export const impactCommand = define({
 		const screensPath = join(cwd, config.outDir, "screens.json")
 
 		if (!existsSync(screensPath)) {
-			console.error("Error: screens.json not found")
-			console.error("")
-			console.error(
-				"Run 'screenbook build' first to generate the screen catalog.",
-			)
+			logger.errorWithHelp(ERRORS.SCREENS_NOT_FOUND)
 			process.exit(1)
 		}
 
@@ -73,16 +65,18 @@ export const impactCommand = define({
 			const content = readFileSync(screensPath, "utf-8")
 			screens = JSON.parse(content) as Screen[]
 		} catch (error) {
-			console.error("Error: Failed to read screens.json")
-			console.error(error instanceof Error ? error.message : String(error))
+			logger.errorWithHelp({
+				...ERRORS.SCREENS_PARSE_ERROR,
+				message: error instanceof Error ? error.message : String(error),
+			})
 			process.exit(1)
 		}
 
 		if (screens.length === 0) {
-			console.log("No screens found in the catalog.")
-			console.log("")
-			console.log("Run 'screenbook generate' to create screen.meta.ts files,")
-			console.log("then 'screenbook build' to generate the catalog.")
+			logger.warn("No screens found in the catalog.")
+			logger.blank()
+			logger.log("Run 'screenbook generate' to create screen.meta.ts files,")
+			logger.log("then 'screenbook build' to generate the catalog.")
 			return
 		}
 
@@ -91,9 +85,9 @@ export const impactCommand = define({
 
 		// Output result
 		if (format === "json") {
-			console.log(formatImpactJson(result))
+			logger.log(formatImpactJson(result))
 		} else {
-			console.log(formatImpactText(result))
+			logger.log(formatImpactText(result))
 		}
 	},
 })

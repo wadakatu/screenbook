@@ -4,7 +4,9 @@ import { join } from "node:path"
 import type { Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import { loadConfig } from "../utils/config.js"
+import { ERRORS } from "../utils/errors.js"
 import { analyzeImpact, type ImpactResult } from "../utils/impactAnalysis.js"
+import { logger } from "../utils/logger.js"
 import { extractApiNames, formatMarkdown } from "../utils/prImpact.js"
 
 export const prImpactCommand = define({
@@ -55,17 +57,12 @@ export const prImpactCommand = define({
 				.map((f) => f.trim())
 				.filter((f) => f.length > 0)
 		} catch {
-			console.error("Error: Failed to get changed files from git")
-			console.error("")
-			console.error(
-				"Make sure you are in a git repository and the base branch exists.",
-			)
-			console.error(`Base branch: ${baseBranch}`)
+			logger.errorWithHelp(ERRORS.GIT_CHANGED_FILES_ERROR(baseBranch))
 			process.exit(1)
 		}
 
 		if (changedFiles.length === 0) {
-			console.log("No changed files found.")
+			logger.info("No changed files found.")
 			return
 		}
 
@@ -74,13 +71,13 @@ export const prImpactCommand = define({
 
 		if (apiNames.length === 0) {
 			if (format === "markdown") {
-				console.log("## Screenbook Impact Analysis")
-				console.log("")
-				console.log("No API-related changes detected in this PR.")
-				console.log("")
-				console.log(`Changed files: ${changedFiles.length}`)
+				logger.log("## Screenbook Impact Analysis")
+				logger.blank()
+				logger.log("No API-related changes detected in this PR.")
+				logger.blank()
+				logger.log(`Changed files: ${changedFiles.length}`)
 			} else {
-				console.log(
+				logger.log(
 					JSON.stringify({ apis: [], results: [], changedFiles }, null, 2),
 				)
 			}
@@ -91,11 +88,7 @@ export const prImpactCommand = define({
 		const screensPath = join(cwd, config.outDir, "screens.json")
 
 		if (!existsSync(screensPath)) {
-			console.error("Error: screens.json not found")
-			console.error("")
-			console.error(
-				"Run 'screenbook build' first to generate the screen catalog.",
-			)
+			logger.errorWithHelp(ERRORS.SCREENS_NOT_FOUND)
 			process.exit(1)
 		}
 
@@ -104,8 +97,10 @@ export const prImpactCommand = define({
 			const content = readFileSync(screensPath, "utf-8")
 			screens = JSON.parse(content) as Screen[]
 		} catch (error) {
-			console.error("Error: Failed to read screens.json")
-			console.error(error instanceof Error ? error.message : String(error))
+			logger.errorWithHelp({
+				...ERRORS.SCREENS_PARSE_ERROR,
+				message: error instanceof Error ? error.message : String(error),
+			})
 			process.exit(1)
 		}
 
@@ -120,7 +115,7 @@ export const prImpactCommand = define({
 
 		// Output results
 		if (format === "json") {
-			console.log(
+			logger.log(
 				JSON.stringify(
 					{
 						changedFiles,
@@ -149,7 +144,7 @@ export const prImpactCommand = define({
 				),
 			)
 		} else {
-			console.log(formatMarkdown(changedFiles, apiNames, results))
+			logger.log(formatMarkdown(changedFiles, apiNames, results))
 		}
 	},
 })

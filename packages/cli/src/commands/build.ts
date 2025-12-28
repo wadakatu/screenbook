@@ -5,6 +5,8 @@ import { define } from "gunshi"
 import { createJiti } from "jiti"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import { ERRORS } from "../utils/errors.js"
+import { logger } from "../utils/logger.js"
 import {
 	formatValidationErrors,
 	validateScreenReferences,
@@ -49,7 +51,7 @@ export const buildCommand = define({
 		const outDir = ctx.values.outDir ?? config.outDir
 		const cwd = process.cwd()
 
-		console.log("Building screen metadata...")
+		logger.info("Building screen metadata...")
 
 		// Find all screen.meta.ts files
 		const files = await glob(config.metaPattern, {
@@ -58,13 +60,13 @@ export const buildCommand = define({
 		})
 
 		if (files.length === 0) {
-			console.log(
+			logger.warn(
 				`No screen.meta.ts files found matching: ${config.metaPattern}`,
 			)
 			return
 		}
 
-		console.log(`Found ${files.length} screen files`)
+		logger.info(`Found ${files.length} screen files`)
 
 		// Create jiti instance for loading TypeScript files
 		const jiti = createJiti(cwd)
@@ -79,24 +81,25 @@ export const buildCommand = define({
 				const module = (await jiti.import(absolutePath)) as { screen?: Screen }
 				if (module.screen) {
 					screens.push(module.screen)
-					console.log(`  ✓ ${module.screen.id}`)
+					logger.itemSuccess(module.screen.id)
 				}
 			} catch (error) {
-				console.error(`  ✗ Failed to load ${file}:`, error)
+				logger.itemError(`Failed to load ${file}`)
+				if (error instanceof Error) {
+					logger.log(`    ${logger.dim(error.message)}`)
+				}
 			}
 		}
 
 		// Validate screen references
 		const validation = validateScreenReferences(screens)
 		if (!validation.valid) {
-			console.log("\n⚠ Invalid screen references found:")
-			console.log(formatValidationErrors(validation.errors))
+			logger.blank()
+			logger.warn("Invalid screen references found:")
+			logger.log(formatValidationErrors(validation.errors))
 
 			if (ctx.values.strict) {
-				console.error(
-					`Build failed: ${validation.errors.length} invalid reference(s) found.`,
-				)
-				console.error("Use --no-strict to continue with warnings.")
+				logger.errorWithHelp(ERRORS.VALIDATION_FAILED(validation.errors.length))
 				process.exit(1)
 			}
 		}
@@ -110,21 +113,23 @@ export const buildCommand = define({
 		}
 
 		writeFileSync(outputPath, JSON.stringify(screens, null, 2))
-		console.log(`\nGenerated ${outputPath}`)
+		logger.blank()
+		logger.success(`Generated ${logger.path(outputPath)}`)
 
 		// Generate Mermaid graph
 		const mermaidPath = join(cwd, outDir, "graph.mmd")
 		const mermaidContent = generateMermaidGraph(screens)
 		writeFileSync(mermaidPath, mermaidContent)
-		console.log(`Generated ${mermaidPath}`)
+		logger.success(`Generated ${logger.path(mermaidPath)}`)
 
 		// Generate coverage.json
 		const coverage = await generateCoverageData(config, cwd, screens)
 		const coveragePath = join(cwd, outDir, "coverage.json")
 		writeFileSync(coveragePath, JSON.stringify(coverage, null, 2))
-		console.log(`Generated ${coveragePath}`)
-		console.log(
-			`\nCoverage: ${coverage.covered}/${coverage.total} (${coverage.percentage}%)`,
+		logger.success(`Generated ${logger.path(coveragePath)}`)
+		logger.blank()
+		logger.done(
+			`Coverage: ${coverage.covered}/${coverage.total} (${coverage.percentage}%)`,
 		)
 	},
 })

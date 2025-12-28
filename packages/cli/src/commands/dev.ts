@@ -7,6 +7,8 @@ import { define } from "gunshi"
 import { createJiti } from "jiti"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import { ERRORS } from "../utils/errors.js"
+import { logger } from "../utils/logger.js"
 
 export const devCommand = define({
 	name: "dev",
@@ -29,7 +31,7 @@ export const devCommand = define({
 		const port = ctx.values.port ?? "4321"
 		const cwd = process.cwd()
 
-		console.log("Starting Screenbook development server...")
+		logger.info("Starting Screenbook development server...")
 
 		// First, build the screen metadata
 		await buildScreens(config, cwd)
@@ -38,7 +40,11 @@ export const devCommand = define({
 		const uiPackagePath = resolveUiPackage()
 
 		if (!uiPackagePath) {
-			console.error("Could not find @screenbook/ui package")
+			logger.errorWithHelp({
+				title: "Could not find @screenbook/ui package",
+				suggestion:
+					"Make sure @screenbook/ui is installed. Run 'npm install @screenbook/ui' or 'pnpm add @screenbook/ui'.",
+			})
 			process.exit(1)
 		}
 
@@ -60,7 +66,10 @@ export const devCommand = define({
 		}
 
 		// Start Astro dev server
-		console.log(`\nStarting UI server on http://localhost:${port}`)
+		logger.blank()
+		logger.info(
+			`Starting UI server on ${logger.highlight(`http://localhost:${port}`)}`,
+		)
 
 		const astroProcess = spawn("npx", ["astro", "dev", "--port", port], {
 			cwd: uiPackagePath,
@@ -69,7 +78,7 @@ export const devCommand = define({
 		})
 
 		astroProcess.on("error", (error) => {
-			console.error("Failed to start Astro server:", error)
+			logger.errorWithHelp(ERRORS.SERVER_START_FAILED(error.message))
 			process.exit(1)
 		})
 
@@ -98,11 +107,11 @@ async function buildScreens(
 	})
 
 	if (files.length === 0) {
-		console.log(`No screen.meta.ts files found matching: ${config.metaPattern}`)
+		logger.warn(`No screen.meta.ts files found matching: ${config.metaPattern}`)
 		return
 	}
 
-	console.log(`Found ${files.length} screen files`)
+	logger.info(`Found ${files.length} screen files`)
 
 	const jiti = createJiti(cwd)
 	const screens: Screen[] = []
@@ -114,10 +123,13 @@ async function buildScreens(
 			const module = (await jiti.import(absolutePath)) as { screen?: Screen }
 			if (module.screen) {
 				screens.push(module.screen)
-				console.log(`  ✓ ${module.screen.id}`)
+				logger.itemSuccess(module.screen.id)
 			}
 		} catch (error) {
-			console.error(`  ✗ Failed to load ${file}:`, error)
+			logger.itemError(`Failed to load ${file}`)
+			if (error instanceof Error) {
+				logger.log(`    ${logger.dim(error.message)}`)
+			}
 		}
 	}
 
@@ -129,7 +141,8 @@ async function buildScreens(
 	}
 
 	writeFileSync(outputPath, JSON.stringify(screens, null, 2))
-	console.log(`\nGenerated ${outputPath}`)
+	logger.blank()
+	logger.success(`Generated ${logger.path(outputPath)}`)
 }
 
 function resolveUiPackage(): string | null {
