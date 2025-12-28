@@ -1,9 +1,17 @@
-<h1 align="center">
-  <img src="assets/screenshots/hero.png" alt="Screenbook" width="800">
-</h1>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo/logo-dark.svg">
+    <img alt="Screenbook" src="assets/logo/logo-dark.svg" height="48">
+  </picture>
+</p>
 
 <p align="center">
   <strong>Define screens in code. Get an always-up-to-date catalog.</strong>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/hero.png" alt="Screenbook Hero" width="800">
 </p>
 
 <p align="center">
