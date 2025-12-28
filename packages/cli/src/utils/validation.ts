@@ -88,29 +88,40 @@ function levenshteinDistance(a: string, b: string): number {
 		Array.from({ length: b.length + 1 }, () => 0),
 	)
 
+	// Helper to safely get/set matrix values (matrix is pre-initialized, so these are always valid)
+	const get = (i: number, j: number): number => matrix[i]?.[j] ?? 0
+	const set = (i: number, j: number, value: number): void => {
+		const row = matrix[i]
+		if (row) row[j] = value
+	}
+
 	// Initialize first column
 	for (let i = 0; i <= a.length; i++) {
-		matrix[i]![0] = i
+		set(i, 0, i)
 	}
 
 	// Initialize first row
 	for (let j = 0; j <= b.length; j++) {
-		matrix[0]![j] = j
+		set(0, j, j)
 	}
 
 	// Fill the matrix
 	for (let i = 1; i <= a.length; i++) {
 		for (let j = 1; j <= b.length; j++) {
 			const cost = a[i - 1] === b[j - 1] ? 0 : 1
-			matrix[i]![j] = Math.min(
-				matrix[i - 1]![j]! + 1, // deletion
-				matrix[i]![j - 1]! + 1, // insertion
-				matrix[i - 1]![j - 1]! + cost, // substitution
+			set(
+				i,
+				j,
+				Math.min(
+					get(i - 1, j) + 1, // deletion
+					get(i, j - 1) + 1, // insertion
+					get(i - 1, j - 1) + cost, // substitution
+				),
 			)
 		}
 	}
 
-	return matrix[a.length]![b.length]!
+	return get(a.length, b.length)
 }
 
 /**

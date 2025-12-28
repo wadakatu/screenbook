@@ -69,7 +69,10 @@ const commands: CommandInfo[] = [
 		name: "lint",
 		command: lintCommand,
 		description: "Detect routes without screen.meta.ts files",
-		examples: ["screenbook lint", "screenbook lint --config screenbook.config.ts"],
+		examples: [
+			"screenbook lint",
+			"screenbook lint --config screenbook.config.ts",
+		],
 	},
 	{
 		name: "impact",
