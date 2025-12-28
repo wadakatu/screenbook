@@ -1,6 +1,6 @@
 {
 	"name": "@screenbook/core",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"description": "Core library for Screenbook - screen metadata definitions and validation",
 	"type": "module",
 	"exports": {
