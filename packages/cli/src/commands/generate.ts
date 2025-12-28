@@ -1,5 +1,5 @@
 import { existsSync, writeFileSync } from "node:fs"
-import { basename, dirname, join, relative } from "node:path"
+import { dirname, join, relative } from "node:path"
 import { define } from "gunshi"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
@@ -173,7 +173,7 @@ function inferScreenMeta(
 			}
 			return s
 		})
-	const route = "/" + routeSegments.join("/")
+	const route = `/${routeSegments.join("/")}`
 
 	return { id, title, route }
 }

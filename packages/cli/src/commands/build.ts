@@ -144,7 +144,7 @@ async function generateCoverageData(
 	}
 
 	// Get directories that have screen.meta.ts
-	const metaDirs = new Set(
+	const _metaDirs = new Set(
 		screens.map((s) => {
 			// Extract directory from route or id
 			const parts = s.id.split(".")

@@ -46,7 +46,7 @@ function findDirectDependents(screens: Screen[], apiName: string): Screen[] {
  * Build a reverse navigation graph: screenId -> screens that can navigate to it.
  * This is built from the `entryPoints` field.
  */
-function buildReverseNavigationGraph(
+function _buildReverseNavigationGraph(
 	screens: Screen[],
 ): Map<string, Set<string>> {
 	const graph = new Map<string, Set<string>>()
@@ -68,7 +68,7 @@ function buildReverseNavigationGraph(
 			if (!graph.has(screen.id)) {
 				graph.set(screen.id, new Set())
 			}
-			graph.get(screen.id)!.add(entryPoint)
+			graph.get(screen.id)?.add(entryPoint)
 		}
 	}
 
@@ -88,7 +88,7 @@ function buildNavigationGraph(screens: Screen[]): Map<string, Set<string>> {
 			graph.set(screen.id, new Set())
 		}
 		for (const nextId of screen.next) {
-			graph.get(screen.id)!.add(nextId)
+			graph.get(screen.id)?.add(nextId)
 		}
 	}
 
@@ -104,7 +104,7 @@ function findTransitiveDependents(
 	directDependentIds: Set<string>,
 	maxDepth: number,
 ): TransitiveDependency[] {
-	const screenMap = new Map(screens.map((s) => [s.id, s]))
+	const _screenMap = new Map(screens.map((s) => [s.id, s]))
 	const navigationGraph = buildNavigationGraph(screens)
 	const transitive: TransitiveDependency[] = []
 	const visited = new Set<string>()
@@ -155,7 +155,8 @@ function findPathToDirectDependent(
 	const localVisited = new Set<string>([startId])
 
 	while (queue.length > 0) {
-		const current = queue.shift()!
+		const current = queue.shift()
+		if (!current) break
 
 		if (current.path.length > maxDepth + 1) {
 			continue
@@ -237,7 +238,7 @@ export function formatImpactText(result: ImpactResult): string {
 		lines.push(
 			`Transitive (${result.transitive.length} screen${result.transitive.length > 1 ? "s" : ""}):`,
 		)
-		for (const { screen, path } of result.transitive) {
+		for (const { path } of result.transitive) {
 			lines.push(`  - ${path.join(" -> ")}`)
 		}
 		lines.push("")
