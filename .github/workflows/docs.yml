@@ -1,0 +1,110 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "packages/core/src/**"
+      - "packages/cli/src/commands/**"
+      - ".github/workflows/docs.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - "packages/core/src/**"
+      - "packages/cli/src/commands/**"
+      - ".github/workflows/docs.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  check-sync:
+    name: Check CLI Docs Sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI package
+        run: pnpm --filter @screenbook/cli run build
+
+      - name: Generate CLI docs
+        run: pnpm --filter screenbook-docs run generate:cli
+
+      - name: Check for uncommitted changes
+        run: |
+          if [[ -n $(git status --porcelain docs/src/content/docs/cli/) ]]; then
+            echo "::error::CLI documentation is out of sync. Run 'pnpm --filter screenbook-docs run generate:cli' and commit the changes."
+            git diff docs/src/content/docs/cli/
+            exit 1
+          fi
+          echo "CLI documentation is in sync."
+
+  build:
+    name: Build Documentation
+    runs-on: ubuntu-latest
+    needs: check-sync
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm build
+
+      - name: Build documentation
+        run: pnpm --filter screenbook-docs run build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,53 @@
+---
+title: Screenbook
+description: Screen catalog and navigation graph generator for frontend applications
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+# Screenbook
+
+Declare screens in code, auto-generate screen catalog, navigation graph, and impact analysis.
+
+[Get Started](/screenbook/getting-started/installation/) | [View on GitHub](https://github.com/wadakatu/screenbook)
+
+## Features
+
+<CardGrid stagger>
+  <Card title="Code-First Definition" icon="document">
+    Define screen metadata in TypeScript alongside your routes. Type-safe, version-controlled, and always in sync with your code.
+  </Card>
+  <Card title="Navigation Graph" icon="random">
+    Visualize how users flow through your application with auto-generated Mermaid diagrams.
+  </Card>
+  <Card title="Impact Analysis" icon="warning">
+    Know which screens are affected when APIs change. Analyze PR impact before merging.
+  </Card>
+  <Card title="CI Integration" icon="rocket">
+    Prevent documentation drift with lint checks. Fail CI when screens are missing metadata.
+  </Card>
+</CardGrid>
+
+## Quick Example
+
+```ts
+// src/pages/billing/invoices/screen.meta.ts
+import { defineScreen } from "@screenbook/core"
+
+export const screen = defineScreen({
+  id: "billing.invoice.list",
+  title: "Invoice List",
+  route: "/billing/invoices",
+  owner: ["billing-team"],
+  tags: ["billing", "invoice"],
+  dependsOn: ["InvoiceAPI.list"],
+  next: ["billing.invoice.detail", "billing.invoice.create"],
+})
+```
+
+## Why Screenbook?
+
+- **5-minute setup**: Install, init, and see your first screen catalog
+- **Framework agnostic**: Works with Next.js, Vite, Remix, Nuxt, Astro, and more
+- **Progressive adoption**: Start with one screen, expand gradually
+- **Zero runtime overhead**: All metadata is build-time only

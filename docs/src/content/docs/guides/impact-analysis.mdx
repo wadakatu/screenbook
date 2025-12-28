@@ -1,0 +1,202 @@
+---
+title: Impact Analysis
+description: Know which screens are affected when APIs change
+---
+
+Screenbook tracks dependencies between screens and APIs, enabling you to understand the impact of changes before deploying.
+
+## Tracking Dependencies
+
+Define what each screen depends on using the `dependsOn` field:
+
+```ts
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+  dependsOn: [
+    "InvoiceAPI.getDetail",
+    "PaymentAPI.getStatus",
+    "CustomerAPI.get",
+  ],
+})
+```
+
+## Analyzing Impact
+
+### Single API Impact
+
+Check which screens are affected by a specific API:
+
+```bash
+npx screenbook impact InvoiceAPI.getDetail
+```
+
+Output:
+
+```
+API: InvoiceAPI.getDetail
+
+Direct screens (2):
+  - billing.invoice.detail
+  - billing.invoice.list
+
+Transitive screens (1):
+  - billing.payment.start (via billing.invoice.detail)
+
+Total: 3 screens affected
+```
+
+### JSON Output
+
+Get structured output for automation:
+
+```bash
+npx screenbook impact InvoiceAPI.getDetail --format json
+```
+
+```json
+{
+  "api": "InvoiceAPI.getDetail",
+  "direct": [
+    { "id": "billing.invoice.detail", "title": "Invoice Detail" }
+  ],
+  "transitive": [
+    { "id": "billing.payment.start", "via": "billing.invoice.detail" }
+  ],
+  "directCount": 2,
+  "transitiveCount": 1,
+  "totalCount": 3
+}
+```
+
+## PR Impact Analysis
+
+Analyze the impact of files changed in a pull request:
+
+```bash
+npx screenbook pr-impact
+```
+
+This command:
+1. Gets changed files from git diff
+2. Extracts potential API names from file paths
+3. Analyzes impact for each detected API
+
+### Example Output
+
+```markdown
+## Screenbook Impact Analysis
+
+### Changed Files (5)
+- src/api/invoice.ts
+- src/api/payment.ts
+- src/components/InvoiceCard.tsx
+
+### Detected APIs
+- InvoiceAPI
+- PaymentAPI
+
+### Impact: InvoiceAPI
+**Direct screens (2):**
+- billing.invoice.detail
+- billing.invoice.list
+
+**Transitive screens (1):**
+- billing.payment.start (via billing.invoice.detail)
+```
+
+### GitHub Actions Integration
+
+Add impact analysis to your PR workflow:
+
+```yaml
+# .github/workflows/pr-impact.yml
+name: PR Impact Analysis
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  impact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install
+      - run: pnpm screenbook build
+
+      - name: Analyze Impact
+        run: |
+          pnpm screenbook pr-impact --format markdown > impact.md
+          cat impact.md >> $GITHUB_STEP_SUMMARY
+```
+
+## Transitive Dependencies
+
+Screenbook traces transitive dependencies through navigation:
+
+```
+InvoiceAPI.getDetail
+    └── billing.invoice.detail (direct)
+            └── billing.payment.start (transitive via next)
+```
+
+Control the depth with `--depth`:
+
+```bash
+# Check up to 5 levels deep
+npx screenbook impact InvoiceAPI --depth 5
+```
+
+## Best Practices
+
+### 1. Be Specific
+
+Use specific API endpoint names:
+
+```ts
+// Good: Specific endpoints
+dependsOn: ["InvoiceAPI.getDetail", "InvoiceAPI.update"]
+
+// Avoid: Too broad
+dependsOn: ["InvoiceAPI"]
+```
+
+### 2. Include All Dependencies
+
+Track both backend APIs and frontend stores:
+
+```ts
+dependsOn: [
+  "InvoiceAPI.getDetail",    // Backend API
+  "UserStore.currentUser",    // Frontend state
+  "FeatureFlags.billing",     // Feature flags
+]
+```
+
+### 3. Update on Changes
+
+Keep dependencies in sync when refactoring:
+
+```ts
+// After renaming API
+dependsOn: ["BillingAPI.getInvoice"]  // Updated from InvoiceAPI
+```
+
+### 4. Review Impact Before Merging
+
+Make PR impact analysis part of your review process:
+
+- Check if expected screens are affected
+- Verify transitive impacts make sense
+- Consider adding tests for affected screens

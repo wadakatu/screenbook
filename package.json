@@ -13,6 +13,10 @@
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "pnpm --filter @screenbook/ui run format",
+		"docs:dev": "pnpm --filter screenbook-docs run dev",
+		"docs:build": "pnpm --filter screenbook-docs run build",
+		"docs:preview": "pnpm --filter screenbook-docs run preview",
+		"docs:generate": "pnpm --filter screenbook-docs run generate:cli",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "pnpm build && pnpm publish -r --access public"
@@ -27,5 +31,8 @@
 	"packageManager": "pnpm@10.26.2",
 	"engines": {
 		"node": ">=22"
+	},
+	"pnpm": {
+		"onlyBuiltDependencies": ["esbuild", "sharp"]
 	}
 }

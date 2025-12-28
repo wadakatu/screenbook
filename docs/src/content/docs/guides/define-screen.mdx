@@ -1,0 +1,173 @@
+---
+title: Define Screens
+description: Learn all screen metadata fields and best practices
+---
+
+The `defineScreen` function creates a screen definition with metadata about your page/route.
+
+## Basic Usage
+
+```ts
+import { defineScreen } from "@screenbook/core"
+
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+})
+```
+
+## All Fields
+
+### Required Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | `string` | Unique identifier for the screen |
+| `title` | `string` | Human-readable title |
+| `route` | `string` | Route path pattern |
+
+### Optional Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `owner` | `string[]` | Team(s) that own this screen |
+| `tags` | `string[]` | Tags for categorization |
+| `dependsOn` | `string[]` | APIs/services this screen depends on |
+| `entryPoints` | `string[]` | Screen IDs that can navigate here |
+| `next` | `string[]` | Screen IDs this screen can navigate to |
+| `description` | `string` | Optional description |
+| `links` | `Link[]` | External resource links |
+
+## Complete Example
+
+```ts
+import { defineScreen } from "@screenbook/core"
+
+export const screen = defineScreen({
+  // Required fields
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+
+  // Ownership
+  owner: ["billing-team", "payments-team"],
+
+  // Categorization
+  tags: ["billing", "invoice", "detail"],
+  description: "Displays detailed information about a specific invoice",
+
+  // Dependencies
+  dependsOn: [
+    "InvoiceAPI.getDetail",
+    "PaymentAPI.getStatus",
+    "CustomerAPI.get",
+  ],
+
+  // Navigation
+  entryPoints: ["billing.invoice.list", "dashboard"],
+  next: ["billing.invoice.edit", "billing.payment.start"],
+
+  // External links
+  links: [
+    { label: "Figma Design", url: "https://figma.com/..." },
+    { label: "Storybook", url: "https://storybook.example.com/..." },
+  ],
+})
+```
+
+## ID Naming Conventions
+
+Use dot-separated hierarchical IDs:
+
+```
+domain.feature.action
+```
+
+**Examples:**
+- `billing.invoice.list`
+- `billing.invoice.detail`
+- `billing.invoice.create`
+- `settings.profile`
+- `auth.login`
+
+This convention helps with:
+- Alphabetical sorting groups related screens
+- Easy filtering by domain
+- Clear ownership boundaries
+
+## Route Patterns
+
+Routes can include dynamic segments:
+
+```ts
+// Static route
+route: "/dashboard"
+
+// Single dynamic segment
+route: "/users/:id"
+
+// Multiple dynamic segments
+route: "/projects/:projectId/tasks/:taskId"
+
+// Optional segments (depends on your router)
+route: "/products/:category?/:subcategory?"
+```
+
+## Dependencies
+
+The `dependsOn` field tracks which APIs or services this screen relies on:
+
+```ts
+dependsOn: [
+  "InvoiceAPI.getDetail",    // Specific endpoint
+  "PaymentService",          // Entire service
+  "UserStore.currentUser",   // State dependency
+]
+```
+
+This enables [Impact Analysis](/screenbook/guides/impact-analysis/) to identify affected screens when APIs change.
+
+## Navigation Relationships
+
+### `entryPoints`
+
+Screens that link TO this screen:
+
+```ts
+// On invoice detail page
+entryPoints: ["billing.invoice.list"]  // User comes from list page
+```
+
+### `next`
+
+Screens this page links TO:
+
+```ts
+// On invoice detail page
+next: ["billing.invoice.edit", "billing.payment.start"]
+```
+
+These relationships create the [Navigation Graph](/screenbook/guides/navigation-graph/).
+
+## Validation
+
+Screen references in `entryPoints` and `next` are validated during build:
+
+```bash
+# Shows warnings for invalid references
+npx screenbook build
+
+# Fails on invalid references
+npx screenbook build --strict
+```
+
+## Best Practices
+
+1. **Keep metadata close to routes** - Place `screen.meta.ts` in the same directory as your page component
+
+2. **Use consistent ID patterns** - Establish a naming convention for your team
+
+3. **Track real dependencies** - Only list APIs actually called by the screen
+
+4. **Update on changes** - Keep navigation relationships in sync with actual links

@@ -1,0 +1,203 @@
+---
+title: CI Integration
+description: Prevent documentation drift with CI checks
+---
+
+Screenbook is designed to be CI-first. By running lint checks in your CI pipeline, you can prevent documentation drift and ensure all screens have metadata.
+
+## Quick Setup
+
+Add the lint command to your CI workflow:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Lint Screenbook
+  run: npx screenbook lint
+```
+
+## What `lint` Checks
+
+The lint command verifies:
+
+1. **Coverage**: All routes have corresponding screen.meta.ts files
+2. **Orphans**: Screens without entry points (warnings)
+3. **Minimum Coverage**: Meets the threshold in progressive mode
+
+## GitHub Actions Example
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Lint Screenbook
+        run: pnpm screenbook lint
+```
+
+## Exit Codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | All checks passed |
+| 1 | Coverage below threshold or missing metadata |
+
+## Full CI Workflow
+
+A complete Screenbook CI workflow might include:
+
+```yaml
+name: Screenbook CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # For PR impact analysis
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install
+
+      # Build screen metadata
+      - name: Build Screenbook
+        run: pnpm screenbook build --strict
+
+      # Check coverage
+      - name: Lint Screenbook
+        run: pnpm screenbook lint
+
+      # PR impact analysis
+      - name: PR Impact
+        if: github.event_name == 'pull_request'
+        run: |
+          pnpm screenbook pr-impact --format markdown >> $GITHUB_STEP_SUMMARY
+```
+
+## Pre-commit Hook
+
+Catch issues before pushing with a pre-commit hook:
+
+```bash
+# .husky/pre-commit
+#!/bin/sh
+npx screenbook lint
+```
+
+Or with lint-staged:
+
+```json
+{
+  "lint-staged": {
+    "src/**/screen.meta.ts": ["screenbook build --strict"]
+  }
+}
+```
+
+## Coverage Badge
+
+Add a coverage badge to your README:
+
+```yaml
+# In your CI workflow
+- name: Update Coverage Badge
+  run: |
+    COVERAGE=$(cat .screenbook/coverage.json | jq '.percentage')
+    # Update badge using shields.io or similar
+```
+
+## Strict Mode
+
+Use `--strict` to fail on invalid screen references:
+
+```yaml
+- name: Build with Strict Mode
+  run: pnpm screenbook build --strict
+```
+
+This catches:
+
+- Invalid screen IDs in `next` or `entryPoints`
+- Typos in screen references
+- References to deleted screens
+
+## Progressive Mode CI
+
+With progressive adoption, lint checks your included patterns:
+
+```ts
+// screenbook.config.ts
+adoption: {
+  mode: "progressive",
+  includePatterns: ["src/pages/billing/**"],
+  minimumCoverage: 80,
+}
+```
+
+CI will pass if:
+- 80% of routes in `src/pages/billing/**` have screen.meta.ts
+
+## Troubleshooting
+
+### "No routesPattern configured"
+
+The lint command requires `routesPattern` to find route files:
+
+```ts
+export default defineConfig({
+  routesPattern: "src/pages/**/page.tsx",  // Add this
+})
+```
+
+### "Coverage below threshold"
+
+Options:
+1. Add missing screen.meta.ts files
+2. Use `screenbook generate` to create skeletons
+3. Lower the `minimumCoverage` threshold temporarily
+4. Adjust `includePatterns` to exclude incomplete areas
+
+### Orphan Warnings
+
+Orphan warnings don't fail the build but indicate unreachable screens:
+
+```
+⚠ Orphan screens detected:
+  - admin.debug (not reachable from any screen)
+```
+
+Fix by:
+- Adding the screen to another screen's `next`
+- Adding `entryPoints` to the orphan screen
+- Removing the orphan if it's truly unused

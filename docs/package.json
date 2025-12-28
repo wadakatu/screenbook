@@ -1,0 +1,24 @@
+{
+	"name": "screenbook-docs",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "pnpm run generate:cli && astro build",
+		"preview": "astro preview",
+		"generate:cli": "tsx scripts/generate-cli-docs.ts"
+	},
+	"dependencies": {
+		"@astrojs/starlight": "^0.37.1",
+		"astro": "^5.16.0",
+		"sharp": "^0.33.0",
+		"starlight-typedoc": "^0.21.5",
+		"typedoc": "^0.28.15",
+		"typedoc-plugin-markdown": "^4.9.0"
+	},
+	"devDependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*",
+		"tsx": "^4.19.0"
+	}
+}

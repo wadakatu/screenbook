@@ -1,0 +1,33 @@
+---
+title: screenbook pr-impact
+description: Analyze impact of changed files in a PR
+---
+
+Analyze impact of changed files in a PR
+
+## Usage
+
+```
+Screen catalog and navigation graph generator (screenbook v0.1.0)
+Analyze impact of changed files in a PR
+
+USAGE:
+  screenbook <OPTIONS>
+
+OPTIONS:
+  -h, --help                     Display this help message
+  -v, --version                  Display this version
+  -b, --base [base]              Base branch to compare against (default: main) (default: main)
+  -c, --config <config>          Path to config file
+  -f, --format [format]          Output format: markdown (default) or json (default: markdown)
+  -d, --depth [depth]            Maximum depth for transitive dependencies (default: 3)
+
+```
+
+## Examples
+
+```bash
+screenbook pr-impact
+screenbook pr-impact --base develop
+screenbook pr-impact --format json
+```

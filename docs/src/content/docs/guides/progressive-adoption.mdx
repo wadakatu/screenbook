@@ -1,0 +1,228 @@
+---
+title: Progressive Adoption
+description: Gradually adopt Screenbook in large codebases
+---
+
+Screenbook supports progressive adoption, allowing you to introduce screen metadata gradually without requiring 100% coverage from day one.
+
+## The Challenge
+
+Large codebases may have hundreds of routes. Requiring screen.meta.ts for every route immediately is impractical. Progressive adoption lets you:
+
+- Start with one team or feature area
+- Expand coverage incrementally
+- Set and track coverage goals
+
+## Configuration
+
+Enable progressive mode in `screenbook.config.ts`:
+
+```ts
+import { defineConfig } from "@screenbook/core"
+
+export default defineConfig({
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/page.tsx",
+
+  adoption: {
+    // Enable progressive mode
+    mode: "progressive",
+
+    // Only check these areas for coverage
+    includePatterns: [
+      "src/pages/billing/**",
+      "src/pages/payments/**",
+    ],
+
+    // Minimum coverage required to pass lint
+    minimumCoverage: 80,
+  },
+})
+```
+
+## How It Works
+
+### Full Mode (Default)
+
+```ts
+adoption: {
+  mode: "full"
+}
+```
+
+- All routes matching `routesPattern` must have screen.meta.ts
+- `lint` fails if any route is missing metadata
+- Suitable for new projects or full adoption
+
+### Progressive Mode
+
+```ts
+adoption: {
+  mode: "progressive",
+  includePatterns: ["src/pages/billing/**"],
+  minimumCoverage: 80,
+}
+```
+
+- Only routes matching `includePatterns` are checked
+- Coverage is calculated within the included patterns
+- `lint` passes if coverage meets `minimumCoverage`
+
+## Adoption Strategy
+
+### Phase 1: Pilot Team
+
+Start with one team or feature area:
+
+```ts
+adoption: {
+  mode: "progressive",
+  includePatterns: ["src/pages/billing/**"],
+  minimumCoverage: 50,
+}
+```
+
+### Phase 2: Expand Coverage
+
+Add more areas and increase the threshold:
+
+```ts
+adoption: {
+  mode: "progressive",
+  includePatterns: [
+    "src/pages/billing/**",
+    "src/pages/payments/**",
+    "src/pages/settings/**",
+  ],
+  minimumCoverage: 70,
+}
+```
+
+### Phase 3: Full Adoption
+
+When ready, switch to full mode:
+
+```ts
+adoption: {
+  mode: "full",
+}
+```
+
+## Monitoring Progress
+
+### Coverage Report
+
+Run `screenbook build` to see coverage:
+
+```bash
+npx screenbook build
+```
+
+Output:
+
+```
+Coverage: 12/15 (80%)
+
+Missing screen.meta.ts:
+  - src/pages/billing/archive/page.tsx
+  - src/pages/billing/export/page.tsx
+  - src/pages/billing/settings/page.tsx
+```
+
+### coverage.json
+
+The build also generates `.screenbook/coverage.json`:
+
+```json
+{
+  "total": 15,
+  "covered": 12,
+  "percentage": 80,
+  "missing": [
+    {
+      "route": "src/pages/billing/archive/page.tsx",
+      "suggestedPath": "src/pages/billing/archive/screen.meta.ts"
+    }
+  ],
+  "byOwner": {
+    "billing-team": { "count": 10, "screens": ["..."] }
+  },
+  "byTag": {
+    "billing": 10,
+    "settings": 2
+  }
+}
+```
+
+### CI Integration
+
+Use coverage data in CI:
+
+```yaml
+- name: Check Coverage
+  run: |
+    npx screenbook lint
+    # Exits with code 1 if below minimumCoverage
+```
+
+## Auto-generating Metadata
+
+Speed up adoption with auto-generation:
+
+```bash
+# Preview what would be generated
+npx screenbook generate --dry-run
+
+# Generate missing screen.meta.ts files
+npx screenbook generate
+```
+
+This creates skeleton files that you can customize:
+
+```ts
+// Auto-generated
+export const screen = defineScreen({
+  id: "billing.archive",
+  title: "Archive",
+  route: "/billing/archive",
+})
+```
+
+## Team Workflow
+
+### 1. Set Adoption Goals
+
+Define coverage milestones:
+
+| Phase | Coverage | Timeline |
+|-------|----------|----------|
+| Pilot | 50% | Sprint 1 |
+| Expand | 70% | Sprint 2-3 |
+| Full | 100% | Sprint 4+ |
+
+### 2. Track Progress
+
+Add coverage to team dashboards:
+
+```bash
+# Extract coverage percentage
+cat .screenbook/coverage.json | jq '.percentage'
+```
+
+### 3. Celebrate Milestones
+
+When reaching 100% coverage:
+
+```ts
+adoption: {
+  mode: "full",  // No more partial coverage!
+}
+```
+
+## Tips
+
+1. **Start small** - Pick the area you know best
+2. **Use generate** - Auto-generate skeletons, then customize
+3. **Set realistic goals** - 80% is a good intermediate target
+4. **Make it visible** - Share coverage metrics with the team
+5. **Iterate** - Adjust patterns and thresholds as you learn
