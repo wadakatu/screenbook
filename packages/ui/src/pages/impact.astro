@@ -213,11 +213,18 @@ if (apiQuery && screens.length > 0) {
 
 		mermaid.initialize({
 			startOnLoad: true,
-			theme: "dark",
+			theme: "base",
 			themeVariables: {
 				darkMode: true,
 				background: "transparent",
 				fontFamily: "system-ui, sans-serif",
+				primaryColor: "#1e293b",
+				primaryTextColor: "#e2e8f0",
+				primaryBorderColor: "#64748b",
+				lineColor: "#64748b",
+				secondaryColor: "#1e293b",
+				tertiaryColor: "#1e293b",
+				nodeTextColor: "#ffffff",
 			},
 			flowchart: {
 				useMaxWidth: true,
@@ -372,6 +379,33 @@ if (apiQuery && screens.length > 0) {
 
 	.impact-graph {
 		margin-bottom: 32px;
+	}
+
+	/* Override Mermaid text colors for better contrast */
+	.impact-graph :global(.mermaid .node.direct .nodeLabel),
+	.impact-graph :global(.mermaid .node.direct .nodeLabel p),
+	.impact-graph :global(.mermaid .node.direct .nodeLabel span),
+	.impact-graph :global(.mermaid .node.transitive .nodeLabel),
+	.impact-graph :global(.mermaid .node.transitive .nodeLabel p),
+	.impact-graph :global(.mermaid .node.transitive .nodeLabel span) {
+		fill: #ffffff !important;
+		color: #ffffff !important;
+		font-weight: 600 !important;
+	}
+
+	.impact-graph :global(.mermaid .node.normal .nodeLabel),
+	.impact-graph :global(.mermaid .node.normal .nodeLabel p),
+	.impact-graph :global(.mermaid .node.normal .nodeLabel span) {
+		fill: #e2e8f0 !important;
+		color: #e2e8f0 !important;
+	}
+
+	.impact-graph :global(.mermaid .nodeLabel) {
+		font-weight: 500;
+	}
+
+	.impact-graph :global(.mermaid .nodeLabel p) {
+		margin: 0;
 	}
 
 	.legend-direct {
