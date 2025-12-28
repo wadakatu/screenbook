@@ -1,0 +1,131 @@
+import type { Screen } from "@screenbook/core"
+
+export interface ValidationError {
+	screenId: string
+	field: "next" | "entryPoints"
+	invalidRef: string
+	suggestion?: string
+}
+
+export interface ValidationResult {
+	valid: boolean
+	errors: ValidationError[]
+}
+
+/**
+ * Validate screen references (next and entryPoints)
+ */
+export function validateScreenReferences(screens: Screen[]): ValidationResult {
+	const screenIds = new Set(screens.map((s) => s.id))
+	const errors: ValidationError[] = []
+
+	for (const screen of screens) {
+		// Validate next references
+		if (screen.next) {
+			for (const nextId of screen.next) {
+				if (!screenIds.has(nextId)) {
+					errors.push({
+						screenId: screen.id,
+						field: "next",
+						invalidRef: nextId,
+						suggestion: findSimilar(nextId, screenIds),
+					})
+				}
+			}
+		}
+
+		// Validate entryPoints references
+		if (screen.entryPoints) {
+			for (const entryId of screen.entryPoints) {
+				if (!screenIds.has(entryId)) {
+					errors.push({
+						screenId: screen.id,
+						field: "entryPoints",
+						invalidRef: entryId,
+						suggestion: findSimilar(entryId, screenIds),
+					})
+				}
+			}
+		}
+	}
+
+	return {
+		valid: errors.length === 0,
+		errors,
+	}
+}
+
+/**
+ * Find similar screen ID using Levenshtein distance
+ */
+function findSimilar(
+	target: string,
+	candidates: Set<string>,
+): string | undefined {
+	let bestMatch: string | undefined
+	let bestDistance = Number.POSITIVE_INFINITY
+
+	// Only suggest if distance is reasonable (less than 40% of target length)
+	const maxDistance = Math.ceil(target.length * 0.4)
+
+	for (const candidate of candidates) {
+		const distance = levenshteinDistance(target, candidate)
+		if (distance < bestDistance && distance <= maxDistance) {
+			bestDistance = distance
+			bestMatch = candidate
+		}
+	}
+
+	return bestMatch
+}
+
+/**
+ * Calculate Levenshtein distance between two strings
+ */
+function levenshteinDistance(a: string, b: string): number {
+	const matrix: number[][] = []
+
+	// Initialize first column
+	for (let i = 0; i <= a.length; i++) {
+		matrix[i] = [i]
+	}
+
+	// Initialize first row
+	for (let j = 0; j <= b.length; j++) {
+		matrix[0][j] = j
+	}
+
+	// Fill the matrix
+	for (let i = 1; i <= a.length; i++) {
+		for (let j = 1; j <= b.length; j++) {
+			const cost = a[i - 1] === b[j - 1] ? 0 : 1
+			matrix[i][j] = Math.min(
+				matrix[i - 1][j] + 1, // deletion
+				matrix[i][j - 1] + 1, // insertion
+				matrix[i - 1][j - 1] + cost, // substitution
+			)
+		}
+	}
+
+	return matrix[a.length][b.length]
+}
+
+/**
+ * Format validation errors for console output
+ */
+export function formatValidationErrors(errors: ValidationError[]): string {
+	const lines: string[] = []
+
+	for (const error of errors) {
+		lines.push(`  Screen "${error.screenId}"`)
+		lines.push(
+			`    → ${error.field} references non-existent screen "${error.invalidRef}"`,
+		)
+		if (error.suggestion) {
+			lines.push(`    Did you mean "${error.suggestion}"?`)
+		}
+		lines.push("")
+	}
+
+	return lines.join("\n")
+}

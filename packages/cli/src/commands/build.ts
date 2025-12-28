@@ -5,6 +5,10 @@ import { define } from "gunshi"
 import { createJiti } from "jiti"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import {
+	formatValidationErrors,
+	validateScreenReferences,
+} from "../utils/validation.js"
 
 export interface CoverageData {
 	total: number
@@ -32,6 +36,12 @@ export const buildCommand = define({
 			type: "string",
 			short: "o",
 			description: "Output directory",
+		},
+		strict: {
+			type: "boolean",
+			short: "s",
+			description: "Fail on invalid screen references",
+			default: false,
 		},
 	},
 	run: async (ctx) => {
@@ -73,6 +83,21 @@ export const buildCommand = define({
 				}
 			} catch (error) {
 				console.error(`  ✗ Failed to load ${file}:`, error)
+			}
+		}
+
+		// Validate screen references
+		const validation = validateScreenReferences(screens)
+		if (!validation.valid) {
+			console.log("\n⚠ Invalid screen references found:")
+			console.log(formatValidationErrors(validation.errors))
+
+			if (ctx.values.strict) {
+				console.error(
+					`Build failed: ${validation.errors.length} invalid reference(s) found.`,
+				)
+				console.error("Use --no-strict to continue with warnings.")
+				process.exit(1)
 			}
 		}
 
