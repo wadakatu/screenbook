@@ -5,8 +5,9 @@ prev: false
 title: "ScreenInput"
 ---
 
-> **ScreenInput** = `z.input`\<*typeof* [`screenSchema`](/screenbook/api/variables/screenschema/)\>
+> **ScreenInput** = [`Screen`](/screenbook/api/interfaces/screen/)
 
-Defined in: [packages/core/src/types.ts:53](https://github.com/wadakatu/screenbook/blob/7ee23424a5c0768602877d6e3e06c2e39abbaf4f/packages/core/src/types.ts#L53)
+Defined in: [packages/core/src/types.ts:114](https://github.com/wadakatu/screenbook/blob/3aa533645cd6d8fdb5f73efa62fdf2e698b71072/packages/core/src/types.ts#L114)
 
-Input type for defineScreen function (allows partial optional fields)
+Input type for defineScreen function.
+Same as Screen but used for input validation.

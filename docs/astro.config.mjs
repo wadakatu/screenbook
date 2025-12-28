@@ -17,6 +17,22 @@ export default defineConfig({
 			title: "Screenbook",
 			description:
 				"Screen catalog and navigation graph generator for frontend applications",
+			logo: {
+				light: "./src/assets/logo-dark.svg",
+				dark: "./src/assets/logo.svg",
+				replacesTitle: true,
+			},
+			customCss: ["./src/styles/custom.css"],
+			head: [
+				{
+					tag: "link",
+					attrs: {
+						rel: "icon",
+						href: "/screenbook/favicon.svg",
+						type: "image/svg+xml",
+					},
+				},
+			],
 			social: [
 				{
 					icon: "github",

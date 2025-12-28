@@ -5,19 +5,16 @@ prev: false
 title: "@screenbook/core"
 ---
 
+## Interfaces
+
+- [AdoptionConfig](/screenbook/api/interfaces/adoptionconfig/)
+- [Config](/screenbook/api/interfaces/config/)
+- [ConfigInput](/screenbook/api/interfaces/configinput/)
+- [Screen](/screenbook/api/interfaces/screen/)
+
 ## Type Aliases
 
-- [AdoptionConfig](/screenbook/api/type-aliases/adoptionconfig/)
-- [Config](/screenbook/api/type-aliases/config/)
-- [ConfigInput](/screenbook/api/type-aliases/configinput/)
-- [Screen](/screenbook/api/type-aliases/screen/)
 - [ScreenInput](/screenbook/api/type-aliases/screeninput/)
-
-## Variables
-
-- [adoptionSchema](/screenbook/api/variables/adoptionschema/)
-- [configSchema](/screenbook/api/variables/configschema/)
-- [screenSchema](/screenbook/api/variables/screenschema/)
 
 ## Functions
 
