@@ -204,10 +204,10 @@ export function generateImpactMermaid(
 
 	const lines: string[] = ["flowchart TD"]
 
-	// Define styles - high contrast colors
-	lines.push("    classDef direct fill:#ef4444,stroke:#fca5a5,color:#fff,stroke-width:2px")
-	lines.push("    classDef transitive fill:#f97316,stroke:#fdba74,color:#fff,stroke-width:2px")
-	lines.push("    classDef normal fill:#374151,stroke:#6b7280,color:#f3f4f6,stroke-width:1px")
+	// Define styles - high contrast colors with readable text
+	lines.push("    classDef direct fill:#dc2626,stroke:#fef2f2,color:#ffffff,stroke-width:3px,font-weight:bold")
+	lines.push("    classDef transitive fill:#ea580c,stroke:#fff7ed,color:#ffffff,stroke-width:3px,font-weight:bold")
+	lines.push("    classDef normal fill:#1e293b,stroke:#64748b,color:#e2e8f0,stroke-width:1px")
 
 	// Add nodes
 	for (const screen of screens) {
