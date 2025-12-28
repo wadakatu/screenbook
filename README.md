@@ -5,23 +5,22 @@
 <h1 align="center">Screenbook</h1>
 
 <p align="center">
-  <strong>Your team's screen map is out of date. Again.</strong>
+  <strong>Your screen map is out of date. Again.</strong>
 </p>
 
 <p align="center">
-  <img src="assets/demo.gif" alt="Screenbook Demo" width="700">
+  <img src="assets/screenshots/screens.png" alt="Screenbook - Screen Catalog" width="700">
 </p>
 
 ## The Problem
 
-Every team has a screen map somewhere. FigJam, Figma, Notion, a random spreadsheet...
+Every team has a screen map somewhere. FigJam, Figma, Notion...
 
-**But when was it last updated?**
+**When was it last updated?**
 
 - New members can't trust it for onboarding
-- Complex navigation flows have missing screens
-- "Which screens are affected if I change this?" - nobody knows
-- Manual updates are tedious, so nobody does them
+- "How do users get to this screen?" — no one knows
+- Changing an API? Good luck figuring out what breaks
 
 ## The Solution
 
@@ -29,6 +28,8 @@ Every team has a screen map somewhere. FigJam, Figma, Notion, a random spreadshe
 
 ```ts
 // src/pages/billing/invoices/screen.meta.ts
+import { defineScreen } from "@screenbook/core"
+
 export const screen = defineScreen({
   id: "billing.invoices",
   title: "Invoice List",
@@ -39,40 +40,35 @@ export const screen = defineScreen({
 })
 ```
 
-Screenbook automatically generates:
+---
 
-| Feature | What it solves |
-|---------|----------------|
-| **Screen List** | "What screens do we have?" |
-| **Navigation Graph** | "How do users flow through the app?" |
-| **Impact Analysis** | "If I change this, what breaks?" |
-| **Coverage Report** | "Which screens are undocumented?" |
+## Features
 
-## Use Cases
+### Screen Catalog
 
-### Onboarding New Members
+<img src="assets/screenshots/screens.png" alt="Screen Catalog" width="700">
 
-> "Where can I see all the screens in our app?"
+Browse all screens in your application. Search by name and filter by tags.
 
-Point them to Screenbook. The catalog is always current because it's generated from code.
+### Navigation Graph
 
-### Understanding Complex Flows
+<img src="assets/screenshots/graph.png" alt="Navigation Graph" width="700">
 
-> "What happens after the user clicks 'Pay'?"
+Visualize how users flow through your app. See the big picture at a glance.
 
-The navigation graph shows all possible paths. No more hunting through FigJam layers.
+### Impact Analysis
 
-### Planning Changes
+<img src="assets/screenshots/impact.png" alt="Impact Analysis" width="700">
 
-> "I need to update the Invoice API. What screens will be affected?"
+Changing an API? Know exactly which screens break — before you ship.
 
-Impact Analysis tells you instantly. Direct dependencies and transitive ones too.
+### Coverage Report
 
-### Keeping Documentation in Sync
+<img src="assets/screenshots/coverage.png" alt="Coverage Report" width="700">
 
-> "Our screen map is 6 months old..."
+Track documentation completeness. Find gaps. Enforce coverage in CI.
 
-When screens are defined in code, they can't drift. CI can enforce coverage.
+---
 
 ## Quick Start
 
@@ -103,10 +99,10 @@ export const screen = defineScreen({
   owner: ["billing-team"],
   tags: ["billing", "invoices"],
 
-  // Navigation: where can users go from here?
+  // Where can users go from here?
   next: ["billing.invoice.detail", "billing.payments"],
 
-  // Dependencies: what APIs does this screen use?
+  // What APIs does this screen depend on?
   dependsOn: ["BillingAPI.listInvoices", "UserAPI.getCurrent"],
 })
 ```
@@ -119,7 +115,6 @@ export const screen = defineScreen({
 | `screenbook build` | Generate metadata JSON |
 | `screenbook dev` | Start the UI server |
 | `screenbook lint` | Check for missing screen definitions |
-| `screenbook impact <api>` | Analyze impact of API changes |
 
 ## CI Integration
 
