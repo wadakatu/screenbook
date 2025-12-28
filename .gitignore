@@ -32,5 +32,6 @@ coverage/
 .screenbook/
 screens.json
 
-# Screenshots
+# Screenshots (except assets for README)
 *.png
+!assets/screenshots/*.png
