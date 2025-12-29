@@ -481,10 +481,7 @@ export function MockFormEditor({
 			</a>
 
 			{/* Left Sidebar - Section Navigation */}
-			<nav
-				className="mock-editor__sidebar"
-				aria-label="Section navigation"
-			>
+			<nav className="mock-editor__sidebar" aria-label="Section navigation">
 				<div className="mock-editor__sidebar-header">
 					<span className="mock-editor__title">Mock Editor</span>
 					{screenId && (
@@ -496,7 +493,10 @@ export function MockFormEditor({
 				</div>
 
 				<div className="mock-editor__sidebar-content">
-					<h2 id={`${uniqueId}-sections-label`} className="mock-editor__sections-label">
+					<h2
+						id={`${uniqueId}-sections-label`}
+						className="mock-editor__sections-label"
+					>
 						SECTIONS
 					</h2>
 					<div
@@ -527,11 +527,15 @@ export function MockFormEditor({
 										{section.title || "Untitled"}
 									</span>
 									<span className="mock-editor__tab-count">
-										{section.elements.length} element{section.elements.length !== 1 ? "s" : ""}
+										{section.elements.length} element
+										{section.elements.length !== 1 ? "s" : ""}
 									</span>
 								</span>
 								{activeSection === index && (
-									<span className="mock-editor__tab-indicator" aria-hidden="true" />
+									<span
+										className="mock-editor__tab-indicator"
+										aria-hidden="true"
+									/>
 								)}
 							</button>
 						))}
@@ -548,23 +552,34 @@ export function MockFormEditor({
 			</nav>
 
 			{/* Center Panel - Editor */}
-			<section id="main-editor" className="mock-editor__main" aria-label="Section editor">
+			<section
+				id="main-editor"
+				className="mock-editor__main"
+				aria-label="Section editor"
+			>
 				{/* Editor Header */}
 				<header className="mock-editor__header">
 					<div className="mock-editor__header-left">
 						<label className="mock-editor__field-label">
-							<span className="mock-editor__field-label-text">Section title</span>
+							<span className="mock-editor__field-label-text">
+								Section title
+							</span>
 							<input
 								type="text"
 								value={currentSection?.title || ""}
 								onChange={(e) =>
-									updateSectionByPath([activeSection], { title: e.target.value })
+									updateSectionByPath([activeSection], {
+										title: e.target.value,
+									})
 								}
 								placeholder="Section title"
 								className="mock-editor__section-input"
 								aria-describedby={`${uniqueId}-title-hint`}
 							/>
-							<span id={`${uniqueId}-title-hint`} className="mock-editor__sr-only">
+							<span
+								id={`${uniqueId}-title-hint`}
+								className="mock-editor__sr-only"
+							>
 								Edit the section title
 							</span>
 						</label>
@@ -598,7 +613,10 @@ export function MockFormEditor({
 					</div>
 
 					<div className="mock-editor__header-right">
-						<label className="mock-editor__sr-only" htmlFor={`${uniqueId}-template`}>
+						<label
+							className="mock-editor__sr-only"
+							htmlFor={`${uniqueId}-template`}
+						>
 							Select template
 						</label>
 						<select
@@ -623,14 +641,17 @@ export function MockFormEditor({
 						</select>
 
 						{saveStatus === "error" && (
-							<span className="mock-editor__status mock-editor__status--error" role="alert">
+							<span
+								className="mock-editor__status mock-editor__status--error"
+								role="alert"
+							>
 								{saveError}
 							</span>
 						)}
 						{saveStatus === "saved" && (
-							<span className="mock-editor__status mock-editor__status--success" role="status">
+							<output className="mock-editor__status mock-editor__status--success">
 								Saved!
-							</span>
+							</output>
 						)}
 
 						<button
@@ -657,7 +678,6 @@ export function MockFormEditor({
 					id={`${uniqueId}-panel-${activeSection}`}
 					role="tabpanel"
 					aria-labelledby={`${uniqueId}-tab-${activeSection}`}
-					tabIndex={0}
 					className="mock-editor__editor-content"
 				>
 					{currentSection && (
@@ -673,7 +693,11 @@ export function MockFormEditor({
 										key={elementIndex}
 										element={element}
 										onChange={(updates) =>
-											updateElementByPath([activeSection], elementIndex, updates)
+											updateElementByPath(
+												[activeSection],
+												elementIndex,
+												updates,
+											)
 										}
 										onRemove={() =>
 											removeElementByPath([activeSection], elementIndex)
@@ -689,40 +713,45 @@ export function MockFormEditor({
 							</div>
 
 							{/* Add Element Buttons */}
-							<div className="mock-editor__element-buttons" role="group" aria-label="Add element">
+							<fieldset className="mock-editor__element-buttons">
+								<legend className="mock-editor__sr-only">Add element</legend>
 								{ELEMENT_TYPES.map((type) => (
 									<button
 										key={type.value}
 										type="button"
-										onClick={() => addElementByPath([activeSection], type.value)}
+										onClick={() =>
+											addElementByPath([activeSection], type.value)
+										}
 										className={`mock-editor__add-element-btn mock-editor__add-element-btn--${type.value}`}
-										aria-label={`Add ${type.label} element`}
 									>
 										+ {type.label}
 									</button>
 								))}
-							</div>
+							</fieldset>
 
 							{/* Child Sections */}
-							{currentSection.children && currentSection.children.length > 0 && (
-								<div className="mock-editor__children">
-									<h3 className="mock-editor__children-title">Child Sections</h3>
-									{currentSection.children.map((childSection, childIndex) => (
-										<SectionEditor
-											key={childIndex}
-											section={childSection}
-											path={[activeSection, childIndex]}
-											depth={1}
-											onUpdate={updateSectionByPath}
-											onRemove={removeSectionByPath}
-											onAddChild={addChildSection}
-											onAddElement={addElementByPath}
-											onRemoveElement={removeElementByPath}
-											onUpdateElement={updateElementByPath}
-										/>
-									))}
-								</div>
-							)}
+							{currentSection.children &&
+								currentSection.children.length > 0 && (
+									<div className="mock-editor__children">
+										<h3 className="mock-editor__children-title">
+											Child Sections
+										</h3>
+										{currentSection.children.map((childSection, childIndex) => (
+											<SectionEditor
+												key={childIndex}
+												section={childSection}
+												path={[activeSection, childIndex]}
+												depth={1}
+												onUpdate={updateSectionByPath}
+												onRemove={removeSectionByPath}
+												onAddChild={addChildSection}
+												onAddElement={addElementByPath}
+												onRemoveElement={removeElementByPath}
+												onUpdateElement={updateElementByPath}
+											/>
+										))}
+									</div>
+								)}
 
 							<button
 								type="button"
