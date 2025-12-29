@@ -54,6 +54,17 @@
 					"tailwindDirectives": true
 				}
 			}
+		},
+		{
+			"includes": ["**/packages/ui/src/components/**/*.tsx"],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off",
+						"noArrayIndexKey": "off"
+					}
+				}
+			}
 		}
 	]
 }

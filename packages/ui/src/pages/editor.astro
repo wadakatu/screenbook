@@ -1,0 +1,33 @@
+---
+import Layout from "@/layouts/Layout.astro"
+import { MockFormEditor } from "@/components/MockFormEditor"
+import { loadScreens } from "@/utils/loadScreens"
+
+const screens = loadScreens()
+const url = Astro.url
+const screenId = url.searchParams.get("screen")
+
+const screen = screenId ? screens.find((s) => s.id === screenId) : null
+---
+
+<Layout title="Mock Editor">
+	<div class="editor-container">
+		<MockFormEditor
+			client:only="react"
+			screenId={screen?.id}
+			screenTitle={screen?.title || "New Screen"}
+			initialMock={screen?.mock}
+		/>
+	</div>
+</Layout>
+
+<style>
+	.editor-container {
+		position: fixed;
+		top: 60px;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: #141822;
+	}
+</style>

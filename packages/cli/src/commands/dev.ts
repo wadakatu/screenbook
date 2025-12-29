@@ -113,8 +113,11 @@ async function buildScreens(
 
 	logger.info(`Found ${files.length} screen files`)
 
+	// Extended screen type with file path (for internal use)
+	type ScreenWithFilePath = Screen & { filePath: string }
+
 	const jiti = createJiti(cwd)
-	const screens: Screen[] = []
+	const screens: ScreenWithFilePath[] = []
 
 	for (const file of files) {
 		const absolutePath = resolve(cwd, file)
@@ -122,7 +125,7 @@ async function buildScreens(
 		try {
 			const module = (await jiti.import(absolutePath)) as { screen?: Screen }
 			if (module.screen) {
-				screens.push(module.screen)
+				screens.push({ ...module.screen, filePath: absolutePath })
 				logger.itemSuccess(module.screen.id)
 			}
 		} catch (error) {

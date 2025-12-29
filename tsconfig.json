@@ -18,5 +18,12 @@
 		"isolatedModules": true,
 		"verbatimModuleSyntax": true
 	},
-	"exclude": ["node_modules", "dist", "examples", "docs", "**/fixtures/**"]
+	"exclude": [
+		"node_modules",
+		"dist",
+		"examples",
+		"docs",
+		"**/fixtures/**",
+		"packages/ui"
+	]
 }
