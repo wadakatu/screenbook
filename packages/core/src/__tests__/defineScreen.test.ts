@@ -96,4 +96,211 @@ describe("defineScreen", () => {
 		expect(screen.owner).toEqual([])
 		expect(screen.tags).toEqual([])
 	})
+
+	describe("mock feature", () => {
+		it("should accept a screen with mock definition", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.detail",
+				title: "Invoice Detail",
+				route: "/billing/invoices/:id",
+				mock: {
+					sections: [
+						{
+							title: "Header",
+							elements: [{ type: "text", label: "Invoice Details" }],
+						},
+					],
+				},
+			})
+
+			expect(screen.mock).toBeDefined()
+			expect(screen.mock?.sections).toHaveLength(1)
+		})
+
+		it("should auto-generate next from mock navigateTo", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.detail",
+				title: "Invoice Detail",
+				route: "/billing/invoices/:id",
+				mock: {
+					sections: [
+						{
+							elements: [
+								{
+									type: "button",
+									label: "Edit",
+									navigateTo: "billing.invoice.edit",
+								},
+								{
+									type: "link",
+									label: "Back",
+									navigateTo: "billing.invoice.list",
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toContain("billing.invoice.edit")
+			expect(screen.next).toContain("billing.invoice.list")
+		})
+
+		it("should merge mock targets with existing next", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.detail",
+				title: "Invoice Detail",
+				route: "/billing/invoices/:id",
+				next: ["billing.payment.start"],
+				mock: {
+					sections: [
+						{
+							elements: [
+								{
+									type: "button",
+									label: "Edit",
+									navigateTo: "billing.invoice.edit",
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toContain("billing.payment.start")
+			expect(screen.next).toContain("billing.invoice.edit")
+			expect(screen.next).toHaveLength(2)
+		})
+
+		it("should deduplicate when mock target overlaps with next", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.detail",
+				title: "Invoice Detail",
+				route: "/billing/invoices/:id",
+				next: ["billing.invoice.edit"],
+				mock: {
+					sections: [
+						{
+							elements: [
+								{
+									type: "button",
+									label: "Edit",
+									navigateTo: "billing.invoice.edit",
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toEqual(["billing.invoice.edit"])
+		})
+
+		it("should extract itemNavigateTo from list elements", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.list",
+				title: "Invoice List",
+				route: "/billing/invoices",
+				mock: {
+					sections: [
+						{
+							elements: [
+								{
+									type: "list",
+									label: "Invoices",
+									itemNavigateTo: "billing.invoice.detail",
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toContain("billing.invoice.detail")
+		})
+
+		it("should extract rowNavigateTo from table elements", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.list",
+				title: "Invoice List",
+				route: "/billing/invoices",
+				mock: {
+					sections: [
+						{
+							elements: [
+								{
+									type: "table",
+									label: "Invoices Table",
+									columns: ["ID", "Amount", "Status"],
+									rowNavigateTo: "billing.invoice.detail",
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toContain("billing.invoice.detail")
+		})
+
+		it("should not modify next when mock has no navigation targets", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.detail",
+				title: "Invoice Detail",
+				route: "/billing/invoices/:id",
+				mock: {
+					sections: [
+						{
+							elements: [
+								{ type: "text", label: "Hello" },
+								{ type: "input", label: "Email" },
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toBeUndefined()
+		})
+
+		it("should throw error for invalid mock element type", () => {
+			expect(() =>
+				defineScreen({
+					id: "home",
+					title: "Home",
+					route: "/",
+					mock: {
+						sections: [
+							{
+								elements: [
+									// @ts-expect-error - Testing invalid type
+									{ type: "invalid", label: "Test" },
+								],
+							},
+						],
+					},
+				}),
+			).toThrow()
+		})
+
+		it("should throw error for mock element without label", () => {
+			expect(() =>
+				defineScreen({
+					id: "home",
+					title: "Home",
+					route: "/",
+					mock: {
+						sections: [
+							{
+								elements: [
+									// @ts-expect-error - Testing missing label
+									{ type: "button" },
+								],
+							},
+						],
+					},
+				}),
+			).toThrow()
+		})
+	})
 })

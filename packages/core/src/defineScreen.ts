@@ -1,3 +1,4 @@
+import { extractNavigationTargets } from "./extractNavigationTargets.js"
 import {
 	type Config,
 	type ConfigInput,
@@ -10,6 +11,9 @@ import {
 /**
  * Define a screen with metadata for the screen catalog.
  *
+ * When a `mock` is defined, navigation targets (navigateTo, itemNavigateTo,
+ * rowNavigateTo) are automatically extracted and merged into the `next` array.
+ *
  * @example
  * ```ts
  * export const screen = defineScreen({
@@ -21,11 +25,32 @@ import {
  *   dependsOn: ["InvoiceAPI.getDetail"],
  *   entryPoints: ["billing.invoice.list"],
  *   next: ["billing.invoice.edit"],
+ *   mock: {
+ *     sections: [{
+ *       elements: [
+ *         { type: "button", label: "Pay", navigateTo: "billing.payment.start" },
+ *       ],
+ *     }],
+ *   },
  * })
+ * // next will be ["billing.invoice.edit", "billing.payment.start"]
  * ```
  */
 export function defineScreen(input: ScreenInput): Screen {
-	return screenSchema.parse(input)
+	const validated = screenSchema.parse(input)
+
+	// Auto-derive next from mock if mock exists
+	if (validated.mock) {
+		const mockTargets = extractNavigationTargets(validated.mock)
+		if (mockTargets.length > 0) {
+			// Merge with existing next, avoiding duplicates
+			const existingNext = validated.next ?? []
+			const mergedNext = [...new Set([...existingNext, ...mockTargets])]
+			validated.next = mergedNext
+		}
+	}
+
+	return validated
 }
 
 /**
