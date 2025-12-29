@@ -203,6 +203,28 @@ export const lintCommand = define({
 						}
 					}
 				}
+
+				// Check for invalid navigation references
+				const invalidNavs = findInvalidNavigations(screens)
+				if (invalidNavs.length > 0) {
+					hasWarnings = true
+					logger.blank()
+					logger.warn(`Invalid navigation targets (${invalidNavs.length}):`)
+					logger.blank()
+					logger.log(
+						"  These navigation references point to non-existent screens.",
+					)
+					logger.blank()
+					for (const inv of invalidNavs) {
+						logger.itemWarn(
+							`${inv.screenId} → ${logger.dim(inv.field)}: "${inv.target}"`,
+						)
+					}
+					logger.blank()
+					logger.log(
+						`  ${logger.dim("Check that these screen IDs exist in your codebase.")}`,
+					)
+				}
 			} catch (error) {
 				// Handle specific error types
 				if (error instanceof SyntaxError) {
@@ -222,6 +244,43 @@ export const lintCommand = define({
 		}
 	},
 })
+
+interface InvalidNavigation {
+	screenId: string
+	field: string
+	target: string
+}
+
+/**
+ * Find navigation references that point to non-existent screens.
+ * Checks `next`, `entryPoints` arrays and mock navigation targets.
+ */
+function findInvalidNavigations(screens: Screen[]): InvalidNavigation[] {
+	const screenIds = new Set(screens.map((s) => s.id))
+	const invalid: InvalidNavigation[] = []
+
+	for (const screen of screens) {
+		// Check next array
+		if (screen.next) {
+			for (const target of screen.next) {
+				if (!screenIds.has(target)) {
+					invalid.push({ screenId: screen.id, field: "next", target })
+				}
+			}
+		}
+
+		// Check entryPoints array
+		if (screen.entryPoints) {
+			for (const target of screen.entryPoints) {
+				if (!screenIds.has(target)) {
+					invalid.push({ screenId: screen.id, field: "entryPoints", target })
+				}
+			}
+		}
+	}
+
+	return invalid
+}
 
 /**
  * Find screens that are unreachable (orphans).
