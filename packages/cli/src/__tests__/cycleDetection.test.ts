@@ -148,6 +148,59 @@ describe("detectCycles", () => {
 		expect(disallowedCycles.length).toBeGreaterThanOrEqual(1)
 		expect(result.disallowedCycles).toEqual(disallowedCycles)
 	})
+
+	it("should detect duplicate screen IDs", () => {
+		const screens: Screen[] = [
+			{ id: "A", title: "A1", route: "/a1" },
+			{ id: "A", title: "A2", route: "/a2" }, // Duplicate
+			{ id: "B", title: "B", route: "/b" },
+		]
+
+		const result = detectCycles(screens)
+		expect(result.duplicateIds).toContain("A")
+		expect(result.duplicateIds).toHaveLength(1)
+	})
+
+	it("should return empty duplicateIds when no duplicates", () => {
+		const screens: Screen[] = [
+			{ id: "A", title: "A", route: "/a" },
+			{ id: "B", title: "B", route: "/b" },
+		]
+
+		const result = detectCycles(screens)
+		expect(result.duplicateIds).toHaveLength(0)
+	})
+
+	it("should detect overlapping cycles sharing a node", () => {
+		const screens: Screen[] = [
+			// A participates in two different cycles
+			{ id: "A", title: "A", route: "/a", next: ["B", "D"] },
+			{ id: "B", title: "B", route: "/b", next: ["C"] },
+			{ id: "C", title: "C", route: "/c", next: ["A"] }, // Cycle 1: A → B → C → A
+			{ id: "D", title: "D", route: "/d", next: ["A"] }, // Cycle 2: A → D → A
+		]
+
+		const result = detectCycles(screens)
+		expect(result.hasCycles).toBe(true)
+		// Should detect at least one cycle (may detect both depending on traversal order)
+		expect(result.cycles.length).toBeGreaterThanOrEqual(1)
+	})
+
+	it("should handle disconnected subgraph with only cycle in disconnected part", () => {
+		const screens: Screen[] = [
+			// Connected component (no cycle)
+			{ id: "A", title: "A", route: "/a", next: ["B"] },
+			{ id: "B", title: "B", route: "/b" },
+			// Disconnected component (has cycle)
+			{ id: "X", title: "X", route: "/x", next: ["Y"] },
+			{ id: "Y", title: "Y", route: "/y", next: ["X"] },
+		]
+
+		const result = detectCycles(screens)
+		expect(result.hasCycles).toBe(true)
+		expect(result.cycles).toHaveLength(1)
+		expect(result.cycles[0]?.cycle).toEqual(["X", "Y", "X"])
+	})
 })
 
 describe("formatCycleWarnings", () => {
@@ -189,6 +242,7 @@ describe("getCycleSummary", () => {
 			hasCycles: false,
 			cycles: [],
 			disallowedCycles: [],
+			duplicateIds: [],
 		}
 
 		expect(getCycleSummary(result)).toBe("No circular navigation detected")
@@ -199,6 +253,7 @@ describe("getCycleSummary", () => {
 			hasCycles: true,
 			cycles: [{ cycle: ["A", "B", "A"], allowed: true }],
 			disallowedCycles: [],
+			duplicateIds: [],
 		}
 
 		expect(getCycleSummary(result)).toBe(
@@ -211,6 +266,7 @@ describe("getCycleSummary", () => {
 			hasCycles: true,
 			cycles: [{ cycle: ["A", "B", "A"], allowed: false }],
 			disallowedCycles: [{ cycle: ["A", "B", "A"], allowed: false }],
+			duplicateIds: [],
 		}
 
 		expect(getCycleSummary(result)).toBe("1 circular navigation detected")
@@ -224,6 +280,7 @@ describe("getCycleSummary", () => {
 				{ cycle: ["C", "D", "C"], allowed: false },
 			],
 			disallowedCycles: [{ cycle: ["C", "D", "C"], allowed: false }],
+			duplicateIds: [],
 		}
 
 		expect(getCycleSummary(result)).toBe(
@@ -242,6 +299,7 @@ describe("getCycleSummary", () => {
 				{ cycle: ["A", "B", "A"], allowed: false },
 				{ cycle: ["C", "D", "C"], allowed: false },
 			],
+			duplicateIds: [],
 		}
 
 		expect(getCycleSummary(result)).toBe("2 circular navigations detected")
