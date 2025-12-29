@@ -289,7 +289,7 @@ export async function checkVersionCompatibility(
 		// Extract major version (handle ^, ~, etc.)
 		const extractMajor = (version: string): string => {
 			const cleaned = version.replace(/^[\^~>=<]+/, "")
-			return cleaned.split(".")[0]
+			return cleaned.split(".")[0] ?? "0"
 		}
 
 		const coreMajor = extractMajor(coreVersion)
