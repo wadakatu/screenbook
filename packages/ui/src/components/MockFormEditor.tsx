@@ -604,20 +604,40 @@ function ElementEditor({
 				)}
 
 				{element.type === "input" && (
-					<input
-						type="text"
-						value={(element as any).placeholder || ""}
-						onChange={(e) => onChange({ placeholder: e.target.value })}
-						placeholder="Placeholder text"
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#e2e8f0",
-							fontSize: "12px",
-						}}
-					/>
+					<>
+						<select
+							value={(element as any).inputType || "text"}
+							onChange={(e) => onChange({ inputType: e.target.value as any })}
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#94a3b8",
+								fontSize: "12px",
+							}}
+						>
+							<option value="text">Text</option>
+							<option value="email">Email</option>
+							<option value="password">Password</option>
+							<option value="textarea">Textarea</option>
+							<option value="search">Search</option>
+						</select>
+						<input
+							type="text"
+							value={(element as any).placeholder || ""}
+							onChange={(e) => onChange({ placeholder: e.target.value })}
+							placeholder="Placeholder text"
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#e2e8f0",
+								fontSize: "12px",
+							}}
+						/>
+					</>
 				)}
 
 				{element.type === "text" && (
@@ -680,25 +700,105 @@ function ElementEditor({
 				)}
 
 				{element.type === "list" && (
-					<input
-						type="number"
-						value={(element as any).itemCount || 3}
-						onChange={(e) =>
-							onChange({ itemCount: parseInt(e.target.value, 10) || 3 })
-						}
-						placeholder="Item count"
-						min={1}
-						max={10}
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#e2e8f0",
-							fontSize: "12px",
-							width: "80px",
-						}}
-					/>
+					<>
+						<input
+							type="number"
+							value={(element as any).itemCount || 3}
+							onChange={(e) =>
+								onChange({ itemCount: parseInt(e.target.value, 10) || 3 })
+							}
+							placeholder="Item count"
+							min={1}
+							max={10}
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#e2e8f0",
+								fontSize: "12px",
+								width: "80px",
+							}}
+						/>
+						<input
+							type="text"
+							value={(element as any).itemNavigateTo || ""}
+							onChange={(e) =>
+								onChange({ itemNavigateTo: e.target.value || undefined })
+							}
+							placeholder="Navigate to screen..."
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#e2e8f0",
+								fontSize: "12px",
+								flex: 1,
+							}}
+						/>
+					</>
+				)}
+
+				{element.type === "table" && (
+					<>
+						<input
+							type="text"
+							value={(element as any).columns?.join(", ") || ""}
+							onChange={(e) =>
+								onChange({
+									columns: e.target.value
+										.split(",")
+										.map((s: string) => s.trim())
+										.filter(Boolean),
+								})
+							}
+							placeholder="Columns (comma separated)"
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#e2e8f0",
+								fontSize: "12px",
+							}}
+						/>
+						<input
+							type="number"
+							value={(element as any).rowCount || 3}
+							onChange={(e) =>
+								onChange({ rowCount: parseInt(e.target.value, 10) || 3 })
+							}
+							placeholder="Row count"
+							min={1}
+							max={10}
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#e2e8f0",
+								fontSize: "12px",
+								width: "80px",
+							}}
+						/>
+						<input
+							type="text"
+							value={(element as any).rowNavigateTo || ""}
+							onChange={(e) =>
+								onChange({ rowNavigateTo: e.target.value || undefined })
+							}
+							placeholder="Navigate to screen..."
+							style={{
+								background: "#1e2433",
+								border: "1px solid #2d3548",
+								borderRadius: "4px",
+								padding: "6px 8px",
+								color: "#e2e8f0",
+								fontSize: "12px",
+							}}
+						/>
+					</>
 				)}
 			</div>
 		</div>
@@ -980,6 +1080,86 @@ function PreviewElement({
 						/>
 					</div>
 				))}
+			</div>
+		)
+	}
+
+	if (element.type === "table") {
+		const columns = (element as any).columns || ["Col 1", "Col 2", "Col 3"]
+		const rowCount = (element as any).rowCount || 3
+		return (
+			<div
+				style={{
+					...style,
+					background: "#0f1219",
+					borderRadius: "8px",
+					overflow: "hidden",
+				}}
+			>
+				<div
+					style={{
+						padding: "8px 12px",
+						background: "#1a1f2e",
+						fontSize: "11px",
+						color: "#64748b",
+						borderBottom: "1px solid #2d3548",
+					}}
+				>
+					{element.label}
+				</div>
+				<table
+					style={{
+						width: "100%",
+						borderCollapse: "collapse",
+						fontSize: "11px",
+					}}
+				>
+					<thead>
+						<tr>
+							{columns.map((col: string, i: number) => (
+								<th
+									key={i}
+									style={{
+										padding: "6px 8px",
+										textAlign: "left",
+										color: "#64748b",
+										fontWeight: 600,
+										borderBottom: "1px solid #2d3548",
+									}}
+								>
+									{col}
+								</th>
+							))}
+						</tr>
+					</thead>
+					<tbody>
+						{Array.from({ length: rowCount }).map((_, rowIndex) => (
+							<tr key={rowIndex}>
+								{columns.map((_: string, colIndex: number) => (
+									<td
+										key={colIndex}
+										style={{
+											padding: "6px 8px",
+											borderBottom:
+												rowIndex < rowCount - 1
+													? "1px solid #1e2433"
+													: undefined,
+										}}
+									>
+										<div
+											style={{
+												height: "4px",
+												background: "#2d3548",
+												borderRadius: "2px",
+												width: "60%",
+											}}
+										/>
+									</td>
+								))}
+							</tr>
+						))}
+					</tbody>
+				</table>
 			</div>
 		)
 	}
