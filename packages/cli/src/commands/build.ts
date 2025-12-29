@@ -81,8 +81,11 @@ export const buildCommand = define({
 		// Create jiti instance for loading TypeScript files
 		const jiti = createJiti(cwd)
 
+		// Extended screen type with file path (for internal use)
+		type ScreenWithFilePath = Screen & { filePath: string }
+
 		// Load and collect screen metadata
-		const screens: Screen[] = []
+		const screens: ScreenWithFilePath[] = []
 
 		for (const file of files) {
 			const absolutePath = resolve(cwd, file)
@@ -90,7 +93,7 @@ export const buildCommand = define({
 			try {
 				const module = (await jiti.import(absolutePath)) as { screen?: Screen }
 				if (module.screen) {
-					screens.push(module.screen)
+					screens.push({ ...module.screen, filePath: absolutePath })
 					logger.itemSuccess(module.screen.id)
 				}
 			} catch (error) {

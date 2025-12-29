@@ -12,11 +12,15 @@
 	},
 	"dependencies": {
 		"@astrojs/node": "^9.5.1",
+		"@astrojs/react": "^4.4.2",
 		"@screenbook/core": "workspace:*",
 		"@tailwindcss/vite": "^4.0.0",
 		"astro": "^5.16.0",
 		"mermaid": "^11.4.0",
-		"tailwindcss": "^4.0.0"
+		"react": "^19.2.3",
+		"react-dom": "^19.2.3",
+		"tailwindcss": "^4.0.0",
+		"tldraw": "^4.2.1"
 	},
 	"keywords": [
 		"screenbook",
@@ -36,7 +40,10 @@
 		"url": "https://github.com/wadakatu/screenbook/issues"
 	},
 	"devDependencies": {
+		"@types/react": "^19.2.7",
+		"@types/react-dom": "^19.2.3",
 		"prettier": "^3.7.4",
-		"prettier-plugin-astro": "^0.14.1"
+		"prettier-plugin-astro": "^0.14.1",
+		"ts-morph": "^27.0.2"
 	}
 }
