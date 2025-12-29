@@ -5,6 +5,7 @@ import type {
 	ScreenMock,
 } from "@screenbook/core"
 import { useCallback, useState } from "react"
+import "../styles/mock-editor.css"
 
 interface MockFormEditorProps {
 	screenId?: string
@@ -408,45 +409,20 @@ export function MockFormEditor({
 	}, [screenId, sections])
 
 	return (
-		<div style={{ display: "flex", height: "100%", background: "#141822" }}>
+		<div className="mock-editor">
 			{/* Left Panel - Form Editor */}
-			<div
-				style={{
-					width: "50%",
-					borderRight: "1px solid #2d3548",
-					overflow: "auto",
-				}}
-			>
-				<div style={{ padding: "16px", borderBottom: "1px solid #2d3548" }}>
-					<div
-						style={{
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "space-between",
-						}}
-					>
-						<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-							<span
-								style={{ color: "#e2e8f0", fontSize: "16px", fontWeight: 600 }}
-							>
-								Mock Editor
-							</span>
+			<div className="mock-editor__form-panel">
+				<div className="mock-editor__header">
+					<div className="mock-editor__header-content">
+						<div className="mock-editor__title-area">
+							<span className="mock-editor__title">Mock Editor</span>
 							{screenId && (
-								<span
-									style={{
-										background: "#14b8a6",
-										color: "white",
-										padding: "2px 8px",
-										borderRadius: "4px",
-										fontSize: "12px",
-									}}
-								>
-									{screenId}
-								</span>
+								<span className="mock-editor__screen-badge">{screenId}</span>
 							)}
 						</div>
-						<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+						<div className="mock-editor__actions">
 							<select
+								className="mock-editor__template-select"
 								onChange={(e) => {
 									if (e.target.value) {
 										applyTemplate(e.target.value)
@@ -454,15 +430,6 @@ export function MockFormEditor({
 									}
 								}}
 								defaultValue=""
-								style={{
-									background: "#2d3548",
-									border: "1px solid #3d4660",
-									borderRadius: "6px",
-									padding: "8px 12px",
-									color: "#94a3b8",
-									fontSize: "13px",
-									cursor: "pointer",
-								}}
 							>
 								<option value="" disabled>
 									Templates
@@ -474,28 +441,19 @@ export function MockFormEditor({
 								))}
 							</select>
 							{saveStatus === "error" && (
-								<span style={{ color: "#ef4444", fontSize: "12px" }}>
+								<span className="mock-editor__status mock-editor__status--error">
 									{saveError}
 								</span>
 							)}
 							{saveStatus === "saved" && (
-								<span style={{ color: "#22c55e", fontSize: "12px" }}>
+								<span className="mock-editor__status mock-editor__status--success">
 									Saved!
 								</span>
 							)}
 							<button
 								type="button"
 								onClick={exportMock}
-								style={{
-									background: "#2d3548",
-									color: "#94a3b8",
-									border: "1px solid #3d4660",
-									padding: "8px 16px",
-									borderRadius: "6px",
-									fontSize: "13px",
-									fontWeight: 500,
-									cursor: "pointer",
-								}}
+								className="mock-editor__btn mock-editor__btn--secondary"
 							>
 								Copy Code
 							</button>
@@ -503,23 +461,7 @@ export function MockFormEditor({
 								type="button"
 								onClick={saveMock}
 								disabled={saveStatus === "saving" || !screenId}
-								style={{
-									background:
-										saveStatus === "saving"
-											? "#2d3548"
-											: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
-									color: saveStatus === "saving" ? "#64748b" : "white",
-									border: "none",
-									padding: "8px 16px",
-									borderRadius: "6px",
-									fontSize: "13px",
-									fontWeight: 500,
-									cursor:
-										saveStatus === "saving" || !screenId
-											? "not-allowed"
-											: "pointer",
-									opacity: !screenId ? 0.5 : 1,
-								}}
+								className="mock-editor__btn mock-editor__btn--primary"
 								title={!screenId ? "Save requires a screen ID" : undefined}
 							>
 								{saveStatus === "saving" ? "Saving..." : "Save to File"}
@@ -528,7 +470,7 @@ export function MockFormEditor({
 					</div>
 				</div>
 
-				<div style={{ padding: "16px" }}>
+				<div className="mock-editor__form-content">
 					{sections.map((section, sectionIndex) => (
 						<SectionEditor
 							key={sectionIndex}
@@ -547,16 +489,7 @@ export function MockFormEditor({
 					<button
 						type="button"
 						onClick={addSection}
-						style={{
-							width: "100%",
-							background: "#2d3548",
-							border: "1px dashed #3d4660",
-							borderRadius: "8px",
-							padding: "12px",
-							color: "#94a3b8",
-							fontSize: "13px",
-							cursor: "pointer",
-						}}
+						className="mock-editor__add-section-btn"
 					>
 						+ Add Section
 					</button>
@@ -564,18 +497,8 @@ export function MockFormEditor({
 			</div>
 
 			{/* Right Panel - Preview */}
-			<div style={{ width: "50%", overflow: "auto", padding: "24px" }}>
-				<div
-					style={{
-						color: "#64748b",
-						fontSize: "12px",
-						marginBottom: "12px",
-						textTransform: "uppercase",
-						letterSpacing: "0.05em",
-					}}
-				>
-					Live Preview
-				</div>
+			<div className="mock-editor__preview-panel">
+				<div className="mock-editor__preview-label">Live Preview</div>
 				<MockPreview sections={sections} title={screenTitle} />
 			</div>
 		</div>
@@ -608,182 +531,86 @@ function SectionEditor({
 		updates: Partial<MockElement>,
 	) => void
 }) {
-	const indentPx = depth * 16
+	const sectionClass = `mock-editor__section${depth > 0 ? " mock-editor__section--child" : ""}`
 
 	return (
-		<div
-			style={{
-				marginBottom: "12px",
-				marginLeft: `${indentPx}px`,
-				borderLeft: depth > 0 ? "2px solid #3d4660" : undefined,
-				paddingLeft: depth > 0 ? "12px" : undefined,
-			}}
-		>
-			<div
-				style={{
-					background: "#1e2433",
-					borderRadius: "8px",
-					overflow: "hidden",
-				}}
-			>
-				{/* Section Header */}
-				<div
-					style={{
-						display: "flex",
-						alignItems: "center",
-						gap: "8px",
-						padding: "10px 12px",
-						background: "#252d40",
-						borderBottom: "1px solid #2d3548",
-					}}
+		<div className={sectionClass}>
+			{/* Section Header */}
+			<div className="mock-editor__section-header">
+				<input
+					type="text"
+					value={section.title || ""}
+					onChange={(e) => onUpdate(path, { title: e.target.value })}
+					placeholder="Section title"
+					className="mock-editor__section-input"
+				/>
+				<select
+					value={section.layout || "vertical"}
+					onChange={(e) =>
+						onUpdate(path, { layout: e.target.value as MockLayout })
+					}
+					className="mock-editor__layout-select"
 				>
-					<input
-						type="text"
-						value={section.title || ""}
-						onChange={(e) => onUpdate(path, { title: e.target.value })}
-						placeholder="Section title"
-						style={{
-							flex: 1,
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#e2e8f0",
-							fontSize: "13px",
-						}}
+					<option value="vertical">Vertical</option>
+					<option value="horizontal">Horizontal</option>
+					<option value="grid">Grid</option>
+				</select>
+				{depth > 0 && (
+					<span className="mock-editor__depth-badge">L{depth}</span>
+				)}
+				<button
+					type="button"
+					onClick={() => onRemove(path)}
+					className="mock-editor__remove-btn"
+				>
+					×
+				</button>
+			</div>
+
+			{/* Elements */}
+			<div className="mock-editor__section-body">
+				{section.elements.map((element, elementIndex) => (
+					<ElementEditor
+						key={elementIndex}
+						element={element}
+						onChange={(updates) => onUpdateElement(path, elementIndex, updates)}
+						onRemove={() => onRemoveElement(path, elementIndex)}
 					/>
-					<select
-						value={section.layout || "vertical"}
-						onChange={(e) =>
-							onUpdate(path, { layout: e.target.value as MockLayout })
-						}
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#94a3b8",
-							fontSize: "12px",
-						}}
-					>
-						<option value="vertical">Vertical</option>
-						<option value="horizontal">Horizontal</option>
-						<option value="grid">Grid</option>
-					</select>
-					{depth > 0 && (
-						<span
-							style={{
-								fontSize: "10px",
-								color: "#64748b",
-								padding: "2px 6px",
-								background: "#1e2433",
-								borderRadius: "4px",
-							}}
-						>
-							L{depth}
-						</span>
-					)}
-					<button
-						type="button"
-						onClick={() => onRemove(path)}
-						style={{
-							background: "transparent",
-							border: "none",
-							color: "#ef4444",
-							cursor: "pointer",
-							fontSize: "16px",
-							padding: "0 4px",
-						}}
-					>
-						×
-					</button>
-				</div>
+				))}
 
-				{/* Elements */}
-				<div style={{ padding: "12px" }}>
-					{section.elements.map((element, elementIndex) => (
-						<ElementEditor
-							key={elementIndex}
-							element={element}
-							onChange={(updates) =>
-								onUpdateElement(path, elementIndex, updates)
-							}
-							onRemove={() => onRemoveElement(path, elementIndex)}
-						/>
+				{section.elements.length === 0 && (
+					<div className="mock-editor__empty-elements">No elements yet</div>
+				)}
+
+				{/* Add Element Buttons */}
+				<div className="mock-editor__element-buttons">
+					{ELEMENT_TYPES.map((type) => (
+						<button
+							key={type.value}
+							type="button"
+							onClick={() => onAddElement(path, type.value)}
+							className={`mock-editor__add-element-btn mock-editor__add-element-btn--${type.value}`}
+						>
+							+ {type.label}
+						</button>
 					))}
-
-					{section.elements.length === 0 && (
-						<div
-							style={{
-								color: "#475569",
-								fontSize: "12px",
-								fontStyle: "italic",
-								padding: "8px 0",
-							}}
-						>
-							No elements yet
-						</div>
-					)}
-
-					{/* Add Element Buttons */}
-					<div
-						style={{
-							display: "flex",
-							flexWrap: "wrap",
-							gap: "4px",
-							marginTop: "8px",
-						}}
-					>
-						{ELEMENT_TYPES.map((type) => (
-							<button
-								key={type.value}
-								type="button"
-								onClick={() => onAddElement(path, type.value)}
-								style={{
-									background: "#2d3548",
-									border: "1px solid #3d4660",
-									borderRadius: "4px",
-									padding: "4px 8px",
-									color: "#94a3b8",
-									fontSize: "11px",
-									cursor: "pointer",
-								}}
-							>
-								+ {type.label}
-							</button>
-						))}
-					</div>
 				</div>
+			</div>
 
-				{/* Add Child Section Button */}
-				<div
-					style={{
-						padding: "8px 12px",
-						borderTop: "1px solid #2d3548",
-					}}
+			{/* Add Child Section Button */}
+			<div className="mock-editor__section-footer">
+				<button
+					type="button"
+					onClick={() => onAddChild(path)}
+					className="mock-editor__add-child-btn"
 				>
-					<button
-						type="button"
-						onClick={() => onAddChild(path)}
-						style={{
-							background: "transparent",
-							border: "1px dashed #3d4660",
-							borderRadius: "4px",
-							padding: "6px 12px",
-							color: "#64748b",
-							fontSize: "11px",
-							cursor: "pointer",
-							width: "100%",
-						}}
-					>
-						+ Add Child Section
-					</button>
-				</div>
+					+ Add Child Section
+				</button>
 			</div>
 
 			{/* Render Child Sections Recursively */}
 			{section.children && section.children.length > 0 && (
-				<div style={{ marginTop: "8px" }}>
+				<div className="mock-editor__children">
 					{section.children.map((childSection, childIndex) => (
 						<SectionEditor
 							key={childIndex}
@@ -814,112 +641,52 @@ function ElementEditor({
 	onChange: (updates: Partial<MockElement>) => void
 	onRemove: () => void
 }) {
-	const typeColors: Record<string, string> = {
-		button: "#14b8a6",
-		input: "#6366f1",
-		link: "#8b5cf6",
-		text: "#64748b",
-		image: "#f59e0b",
-		list: "#ec4899",
-		table: "#06b6d4",
-	}
+	const elementClass = `mock-editor__element mock-editor__element--${element.type}`
+	const typeClass = `mock-editor__element-type mock-editor__element-type--${element.type}`
 
 	return (
-		<div
-			style={{
-				background: "#141822",
-				borderRadius: "6px",
-				padding: "10px",
-				marginBottom: "8px",
-				borderLeft: `3px solid ${typeColors[element.type] || "#64748b"}`,
-			}}
-		>
-			<div
-				style={{
-					display: "flex",
-					alignItems: "center",
-					gap: "8px",
-					marginBottom: "8px",
-				}}
-			>
-				<span
-					style={{
-						fontSize: "10px",
-						fontWeight: 600,
-						color: typeColors[element.type],
-						textTransform: "uppercase",
-					}}
-				>
-					{element.type}
-				</span>
-				<div style={{ flex: 1 }} />
+		<div className={elementClass}>
+			<div className="mock-editor__element-header">
+				<span className={typeClass}>{element.type}</span>
 				<button
 					type="button"
 					onClick={onRemove}
-					style={{
-						background: "transparent",
-						border: "none",
-						color: "#ef4444",
-						cursor: "pointer",
-						fontSize: "14px",
-					}}
+					className="mock-editor__remove-btn"
 				>
 					×
 				</button>
 			</div>
 
-			<div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+			<div className="mock-editor__element-fields">
 				<input
 					type="text"
 					value={element.label}
 					onChange={(e) => onChange({ label: e.target.value })}
 					placeholder="Label"
-					style={{
-						background: "#1e2433",
-						border: "1px solid #2d3548",
-						borderRadius: "4px",
-						padding: "6px 8px",
-						color: "#e2e8f0",
-						fontSize: "12px",
-					}}
+					className="mock-editor__field-input"
 				/>
 
 				{element.type === "button" && (
-					<select
-						value={(element as any).variant || "secondary"}
-						onChange={(e) => onChange({ variant: e.target.value as any })}
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#94a3b8",
-							fontSize: "12px",
-						}}
-					>
-						<option value="primary">Primary</option>
-						<option value="secondary">Secondary</option>
-						<option value="danger">Danger</option>
-					</select>
-				)}
-
-				{element.type === "button" && (
-					<input
-						type="text"
-						value={(element as any).navigateTo || ""}
-						onChange={(e) =>
-							onChange({ navigateTo: e.target.value || undefined })
-						}
-						placeholder="Navigate to (screen id)"
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#e2e8f0",
-							fontSize: "12px",
-						}}
-					/>
+					<>
+						<select
+							value={(element as any).variant || "secondary"}
+							onChange={(e) => onChange({ variant: e.target.value as any })}
+							className="mock-editor__field-select"
+						>
+							<option value="primary">Primary</option>
+							<option value="secondary">Secondary</option>
+							<option value="danger">Danger</option>
+						</select>
+						<input
+							type="text"
+							value={(element as any).navigateTo || ""}
+							onChange={(e) =>
+								onChange({ navigateTo: e.target.value || undefined })
+							}
+							placeholder="Navigate to (screen id)"
+							className="mock-editor__field-input"
+						/>
+					</>
 				)}
 
 				{element.type === "input" && (
@@ -927,14 +694,7 @@ function ElementEditor({
 						<select
 							value={(element as any).inputType || "text"}
 							onChange={(e) => onChange({ inputType: e.target.value as any })}
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#94a3b8",
-								fontSize: "12px",
-							}}
+							className="mock-editor__field-select"
 						>
 							<option value="text">Text</option>
 							<option value="email">Email</option>
@@ -947,14 +707,7 @@ function ElementEditor({
 							value={(element as any).placeholder || ""}
 							onChange={(e) => onChange({ placeholder: e.target.value })}
 							placeholder="Placeholder text"
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#e2e8f0",
-								fontSize: "12px",
-							}}
+							className="mock-editor__field-input"
 						/>
 					</>
 				)}
@@ -963,14 +716,7 @@ function ElementEditor({
 					<select
 						value={(element as any).variant || "body"}
 						onChange={(e) => onChange({ variant: e.target.value as any })}
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#94a3b8",
-							fontSize: "12px",
-						}}
+						className="mock-editor__field-select"
 					>
 						<option value="heading">Heading</option>
 						<option value="subheading">Subheading</option>
@@ -987,14 +733,7 @@ function ElementEditor({
 							onChange({ navigateTo: e.target.value || undefined })
 						}
 						placeholder="Navigate to (screen id)"
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#e2e8f0",
-							fontSize: "12px",
-						}}
+						className="mock-editor__field-input"
 					/>
 				)}
 
@@ -1002,14 +741,7 @@ function ElementEditor({
 					<select
 						value={(element as any).aspectRatio || "16:9"}
 						onChange={(e) => onChange({ aspectRatio: e.target.value })}
-						style={{
-							background: "#1e2433",
-							border: "1px solid #2d3548",
-							borderRadius: "4px",
-							padding: "6px 8px",
-							color: "#94a3b8",
-							fontSize: "12px",
-						}}
+						className="mock-editor__field-select"
 					>
 						<option value="16:9">16:9</option>
 						<option value="4:3">4:3</option>
@@ -1019,25 +751,17 @@ function ElementEditor({
 				)}
 
 				{element.type === "list" && (
-					<>
+					<div className="mock-editor__field-row">
 						<input
 							type="number"
 							value={(element as any).itemCount || 3}
 							onChange={(e) =>
 								onChange({ itemCount: parseInt(e.target.value, 10) || 3 })
 							}
-							placeholder="Item count"
+							placeholder="Items"
 							min={1}
 							max={10}
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#e2e8f0",
-								fontSize: "12px",
-								width: "80px",
-							}}
+							className="mock-editor__field-input mock-editor__field-input--small"
 						/>
 						<input
 							type="text"
@@ -1046,17 +770,9 @@ function ElementEditor({
 								onChange({ itemNavigateTo: e.target.value || undefined })
 							}
 							placeholder="Navigate to screen..."
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#e2e8f0",
-								fontSize: "12px",
-								flex: 1,
-							}}
+							className="mock-editor__field-input"
 						/>
-					</>
+					</div>
 				)}
 
 				{element.type === "table" && (
@@ -1073,50 +789,30 @@ function ElementEditor({
 								})
 							}
 							placeholder="Columns (comma separated)"
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#e2e8f0",
-								fontSize: "12px",
-							}}
+							className="mock-editor__field-input"
 						/>
-						<input
-							type="number"
-							value={(element as any).rowCount || 3}
-							onChange={(e) =>
-								onChange({ rowCount: parseInt(e.target.value, 10) || 3 })
-							}
-							placeholder="Row count"
-							min={1}
-							max={10}
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#e2e8f0",
-								fontSize: "12px",
-								width: "80px",
-							}}
-						/>
-						<input
-							type="text"
-							value={(element as any).rowNavigateTo || ""}
-							onChange={(e) =>
-								onChange({ rowNavigateTo: e.target.value || undefined })
-							}
-							placeholder="Navigate to screen..."
-							style={{
-								background: "#1e2433",
-								border: "1px solid #2d3548",
-								borderRadius: "4px",
-								padding: "6px 8px",
-								color: "#e2e8f0",
-								fontSize: "12px",
-							}}
-						/>
+						<div className="mock-editor__field-row">
+							<input
+								type="number"
+								value={(element as any).rowCount || 3}
+								onChange={(e) =>
+									onChange({ rowCount: parseInt(e.target.value, 10) || 3 })
+								}
+								placeholder="Rows"
+								min={1}
+								max={10}
+								className="mock-editor__field-input mock-editor__field-input--small"
+							/>
+							<input
+								type="text"
+								value={(element as any).rowNavigateTo || ""}
+								onChange={(e) =>
+									onChange({ rowNavigateTo: e.target.value || undefined })
+								}
+								placeholder="Navigate to screen..."
+								className="mock-editor__field-input"
+							/>
+						</div>
 					</>
 				)}
 			</div>
@@ -1133,48 +829,14 @@ function MockPreview({
 	title?: string
 }) {
 	return (
-		<div
-			style={{
-				background: "#1a1f2e",
-				border: "2px solid #2d3548",
-				borderRadius: "16px",
-				overflow: "hidden",
-				maxWidth: "400px",
-			}}
-		>
-			{title && (
-				<div
-					style={{
-						background: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
-						padding: "10px 16px",
-						color: "white",
-						fontSize: "13px",
-						fontWeight: 600,
-					}}
-				>
-					{title}
-				</div>
-			)}
-			<div
-				style={{
-					padding: "16px",
-					display: "flex",
-					flexDirection: "column",
-					gap: "16px",
-				}}
-			>
+		<div className="mock-editor__preview">
+			{title && <div className="mock-editor__preview-header">{title}</div>}
+			<div className="mock-editor__preview-body">
 				{sections.map((section, i) => (
 					<SectionPreview key={i} section={section} depth={0} />
 				))}
 				{sections.length === 0 && (
-					<div
-						style={{
-							color: "#475569",
-							fontSize: "13px",
-							textAlign: "center",
-							padding: "40px",
-						}}
-					>
+					<div className="mock-editor__preview-empty">
 						Add sections to see preview
 					</div>
 				)}
@@ -1191,87 +853,42 @@ function SectionPreview({
 	section: MockSection
 	depth: number
 }) {
-	const indentPx = depth * 12
+	const sectionClass = `mock-editor__preview-section${depth > 0 ? " mock-editor__preview-section--child" : ""}`
+	const titleClass = `mock-editor__preview-section-title${depth > 0 ? " mock-editor__preview-section-title--child" : ""}`
+
+	const bodyClass = `mock-editor__preview-section-body${
+		section.layout === "horizontal"
+			? " mock-editor__preview-section-body--horizontal"
+			: section.layout === "grid"
+				? " mock-editor__preview-section-body--grid"
+				: ""
+	}`
 
 	return (
-		<div
-			style={{
-				marginLeft: `${indentPx}px`,
-				borderLeft: depth > 0 ? "2px solid rgba(20, 184, 166, 0.3)" : undefined,
-				paddingLeft: depth > 0 ? "10px" : undefined,
-			}}
-		>
-			<div
-				style={{
-					background: "#1e2433",
-					borderRadius: "10px",
-					overflow: "hidden",
-				}}
-			>
-				{section.title && (
-					<div
-						style={{
-							background:
-								depth > 0
-									? "rgba(20, 184, 166, 0.08)"
-									: "rgba(20, 184, 166, 0.15)",
-							padding: "8px 14px",
-							borderBottom: "1px solid rgba(20, 184, 166, 0.2)",
-							fontSize: depth > 0 ? "10px" : "11px",
-							fontWeight: 600,
-							color: "#14b8a6",
-							textTransform: "uppercase",
-						}}
-					>
-						{section.title}
-					</div>
-				)}
-				<div
-					style={{
-						padding: "14px",
-						display: "flex",
-						flexDirection: section.layout === "horizontal" ? "row" : "column",
-						gap: "10px",
-						flexWrap: "wrap",
-					}}
-				>
-					{section.elements.map((el, j) => (
-						<PreviewElement
-							key={j}
-							element={el}
-							horizontal={section.layout === "horizontal"}
-						/>
-					))}
-					{section.elements.length === 0 &&
-						(!section.children || section.children.length === 0) && (
-							<div
-								style={{
-									color: "#475569",
-									fontSize: "12px",
-									fontStyle: "italic",
-								}}
-							>
-								No elements
-							</div>
-						)}
-				</div>
-
-				{/* Render Child Sections */}
-				{section.children && section.children.length > 0 && (
-					<div
-						style={{
-							padding: "0 14px 14px",
-							display: "flex",
-							flexDirection: "column",
-							gap: "10px",
-						}}
-					>
-						{section.children.map((child, i) => (
-							<SectionPreview key={i} section={child} depth={depth + 1} />
-						))}
-					</div>
-				)}
+		<div className={sectionClass}>
+			{section.title && <div className={titleClass}>{section.title}</div>}
+			<div className={bodyClass}>
+				{section.elements.map((el, j) => (
+					<PreviewElement
+						key={j}
+						element={el}
+						horizontal={section.layout === "horizontal"}
+					/>
+				))}
+				{section.elements.length === 0 &&
+					(!section.children || section.children.length === 0) && (
+						<div className="mock-editor__preview-empty">No elements</div>
+					)}
 			</div>
+
+			{/* Render Child Sections */}
+			{section.children && section.children.length > 0 && (
+				<div style={{ padding: "0 14px 14px" }}>
+					{section.children.map((child, i) => (
+						<SectionPreview key={i} section={child} depth={depth + 1} />
+					))}
+				</div>
+			)}
 		</div>
 	)
 }
@@ -1283,65 +900,28 @@ function PreviewElement({
 	element: MockElement
 	horizontal?: boolean
 }) {
-	const style: React.CSSProperties = {
-		flex: horizontal ? 1 : undefined,
-		minWidth: horizontal ? "100px" : undefined,
-	}
+	const wrapperClass = `mock-editor__preview-element${horizontal ? " mock-editor__preview-element--horizontal" : ""}`
 
 	if (element.type === "button") {
 		const variant = (element as any).variant || "secondary"
-		const bgColors = {
-			primary: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
-			secondary: "#2d3548",
-			danger: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-		}
 		return (
-			<div
-				style={{
-					...style,
-					background: bgColors[variant as keyof typeof bgColors],
-					padding: "10px 14px",
-					borderRadius: "8px",
-					fontSize: "12px",
-					fontWeight: 600,
-					color: variant === "secondary" ? "#94a3b8" : "white",
-					textAlign: "center",
-				}}
-			>
-				{element.label}
+			<div className={wrapperClass}>
+				<div
+					className={`mock-editor__preview-button mock-editor__preview-button--${variant}`}
+				>
+					{element.label}
+				</div>
 			</div>
 		)
 	}
 
 	if (element.type === "input") {
 		return (
-			<div
-				style={{
-					...style,
-					display: "flex",
-					flexDirection: "column",
-					gap: "6px",
-				}}
-			>
-				<span
-					style={{
-						fontSize: "11px",
-						color: "#64748b",
-						textTransform: "uppercase",
-					}}
-				>
+			<div className={`${wrapperClass} mock-editor__preview-input`}>
+				<span className="mock-editor__preview-input-label">
 					{element.label}
 				</span>
-				<div
-					style={{
-						background: "#0f1219",
-						border: "1px solid #2d3548",
-						borderRadius: "6px",
-						padding: "10px 12px",
-						fontSize: "12px",
-						color: "#475569",
-					}}
-				>
+				<div className="mock-editor__preview-input-field">
 					{(element as any).placeholder || "..."}
 				</div>
 			</div>
@@ -1350,25 +930,16 @@ function PreviewElement({
 
 	if (element.type === "text") {
 		const variant = (element as any).variant || "body"
-		const styles: Record<string, React.CSSProperties> = {
-			heading: { fontSize: "16px", fontWeight: 700, color: "#e2e8f0" },
-			subheading: { fontSize: "13px", fontWeight: 600, color: "#cbd5e1" },
-			body: { fontSize: "12px", color: "#94a3b8" },
-			caption: { fontSize: "11px", color: "#64748b" },
-		}
-		return <div style={{ ...style, ...styles[variant] }}>{element.label}</div>
+		return (
+			<div className={`${wrapperClass} mock-editor__preview-text--${variant}`}>
+				{element.label}
+			</div>
+		)
 	}
 
 	if (element.type === "link") {
 		return (
-			<div
-				style={{
-					...style,
-					fontSize: "12px",
-					color: "#14b8a6",
-					textDecoration: "underline",
-				}}
-			>
+			<div className={`${wrapperClass} mock-editor__preview-link`}>
 				{element.label}
 			</div>
 		)
@@ -1379,19 +950,8 @@ function PreviewElement({
 		const [w, h] = ratio.split(":").map(Number)
 		return (
 			<div
-				style={{
-					...style,
-					aspectRatio: `${w}/${h}`,
-					maxHeight: "120px",
-					background: "#252d40",
-					border: "2px dashed #3d4660",
-					borderRadius: "8px",
-					display: "flex",
-					alignItems: "center",
-					justifyContent: "center",
-					fontSize: "11px",
-					color: "#64748b",
-				}}
+				className={`${wrapperClass} mock-editor__preview-image`}
+				style={{ aspectRatio: `${w}/${h}` }}
 			>
 				{element.label}
 			</div>
@@ -1400,44 +960,11 @@ function PreviewElement({
 
 	if (element.type === "list") {
 		return (
-			<div
-				style={{
-					...style,
-					background: "#0f1219",
-					borderRadius: "8px",
-					overflow: "hidden",
-				}}
-			>
-				<div
-					style={{
-						padding: "8px 12px",
-						background: "#1a1f2e",
-						fontSize: "11px",
-						color: "#64748b",
-						borderBottom: "1px solid #2d3548",
-					}}
-				>
-					{element.label}
-				</div>
+			<div className={`${wrapperClass} mock-editor__preview-list`}>
+				<div className="mock-editor__preview-list-header">{element.label}</div>
 				{Array.from({ length: (element as any).itemCount || 3 }).map((_, i) => (
-					<div
-						key={i}
-						style={{
-							padding: "8px 12px",
-							borderBottom:
-								i < ((element as any).itemCount || 3) - 1
-									? "1px solid #1e2433"
-									: undefined,
-						}}
-					>
-						<div
-							style={{
-								height: "4px",
-								background: "#2d3548",
-								borderRadius: "2px",
-								width: "70%",
-							}}
-						/>
+					<div key={i} className="mock-editor__preview-list-item">
+						<div className="mock-editor__preview-list-placeholder" />
 					</div>
 				))}
 			</div>
@@ -1448,47 +975,13 @@ function PreviewElement({
 		const columns = (element as any).columns || ["Col 1", "Col 2", "Col 3"]
 		const rowCount = (element as any).rowCount || 3
 		return (
-			<div
-				style={{
-					...style,
-					background: "#0f1219",
-					borderRadius: "8px",
-					overflow: "hidden",
-				}}
-			>
-				<div
-					style={{
-						padding: "8px 12px",
-						background: "#1a1f2e",
-						fontSize: "11px",
-						color: "#64748b",
-						borderBottom: "1px solid #2d3548",
-					}}
-				>
-					{element.label}
-				</div>
-				<table
-					style={{
-						width: "100%",
-						borderCollapse: "collapse",
-						fontSize: "11px",
-					}}
-				>
+			<div className={`${wrapperClass} mock-editor__preview-table`}>
+				<div className="mock-editor__preview-table-header">{element.label}</div>
+				<table>
 					<thead>
 						<tr>
 							{columns.map((col: string, i: number) => (
-								<th
-									key={i}
-									style={{
-										padding: "6px 8px",
-										textAlign: "left",
-										color: "#64748b",
-										fontWeight: 600,
-										borderBottom: "1px solid #2d3548",
-									}}
-								>
-									{col}
-								</th>
+								<th key={i}>{col}</th>
 							))}
 						</tr>
 					</thead>
@@ -1496,24 +989,8 @@ function PreviewElement({
 						{Array.from({ length: rowCount }).map((_, rowIndex) => (
 							<tr key={rowIndex}>
 								{columns.map((_: string, colIndex: number) => (
-									<td
-										key={colIndex}
-										style={{
-											padding: "6px 8px",
-											borderBottom:
-												rowIndex < rowCount - 1
-													? "1px solid #1e2433"
-													: undefined,
-										}}
-									>
-										<div
-											style={{
-												height: "4px",
-												background: "#2d3548",
-												borderRadius: "2px",
-												width: "60%",
-											}}
-										/>
+									<td key={colIndex}>
+										<div className="mock-editor__preview-table-placeholder" />
 									</td>
 								))}
 							</tr>
@@ -1524,7 +1001,5 @@ function PreviewElement({
 		)
 	}
 
-	return (
-		<div style={{ color: "#475569", fontSize: "12px" }}>[{element.type}]</div>
-	)
+	return <div className={wrapperClass}>[{element.type}]</div>
 }
