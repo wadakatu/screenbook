@@ -38,6 +38,7 @@ export const screen = defineScreen({
 | `next` | `string[]` | Screen IDs this screen can navigate to |
 | `description` | `string` | Optional description |
 | `links` | `Link[]` | External resource links |
+| `mock` | `ScreenMock` | Wireframe-level UI mock definition |
 
 ## Complete Example
 
@@ -162,6 +163,120 @@ npx screenbook build
 npx screenbook build --strict
 ```
 
+## Mock Wireframes
+
+The `mock` field allows you to define wireframe-level UI mockups for screen flow documentation. Navigation targets defined in mocks are automatically extracted and merged into the `next` array.
+
+### Basic Mock Structure
+
+```ts
+import { defineScreen } from "@screenbook/core"
+
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+  mock: {
+    sections: [
+      {
+        title: "Header",
+        layout: "horizontal",
+        elements: [
+          { type: "text", label: "Invoice #123", variant: "heading" },
+          { type: "button", label: "Edit", navigateTo: "billing.invoice.edit" },
+        ],
+      },
+      {
+        title: "Line Items",
+        elements: [
+          { type: "list", label: "Items", itemCount: 5, itemNavigateTo: "billing.lineitem.detail" },
+        ],
+      },
+    ],
+  },
+})
+```
+
+### Element Types
+
+| Type | Properties | Description |
+|------|------------|-------------|
+| `button` | `label`, `variant?`, `navigateTo?` | Clickable button |
+| `input` | `label`, `placeholder?`, `inputType?` | Form input field |
+| `link` | `label`, `navigateTo?` | Text link |
+| `text` | `label`, `variant?` | Static text |
+| `image` | `label`, `aspectRatio?` | Image placeholder |
+| `list` | `label`, `itemCount?`, `itemNavigateTo?` | List of items |
+| `table` | `label`, `columns?`, `rowCount?`, `rowNavigateTo?` | Data table |
+
+### Button Variants
+
+```ts
+{ type: "button", label: "Submit", variant: "primary" }
+{ type: "button", label: "Cancel", variant: "secondary" }
+{ type: "button", label: "Delete", variant: "danger" }
+```
+
+### Text Variants
+
+```ts
+{ type: "text", label: "Page Title", variant: "heading" }
+{ type: "text", label: "Section Title", variant: "subheading" }
+{ type: "text", label: "Normal text", variant: "body" }
+{ type: "text", label: "Small text", variant: "caption" }
+```
+
+### Input Types
+
+```ts
+{ type: "input", label: "Email", inputType: "email" }
+{ type: "input", label: "Password", inputType: "password" }
+{ type: "input", label: "Search", inputType: "search" }
+{ type: "input", label: "Description", inputType: "textarea" }
+```
+
+### Section Layouts
+
+```ts
+// Vertical layout (default)
+{ title: "Form", layout: "vertical", elements: [...] }
+
+// Horizontal layout
+{ title: "Actions", layout: "horizontal", elements: [...] }
+```
+
+### Nested Sections
+
+Sections can contain child sections for complex layouts:
+
+```ts
+{
+  title: "Parent Section",
+  elements: [{ type: "text", label: "Parent content" }],
+  children: [
+    {
+      title: "Child Section",
+      elements: [{ type: "button", label: "Child action" }],
+    },
+  ],
+}
+```
+
+### Auto-Generated Navigation
+
+Navigation targets from mock elements are automatically merged into `next`:
+
+```ts
+// These navigateTo values...
+{ type: "button", label: "Edit", navigateTo: "billing.invoice.edit" }
+{ type: "list", label: "Items", itemNavigateTo: "billing.lineitem.detail" }
+{ type: "table", label: "Invoices", rowNavigateTo: "billing.invoice.detail" }
+
+// ...are automatically added to the screen's `next` array
+```
+
+This means you don't need to manually maintain `next` when using mocks - navigation is derived from the UI definition.
+
 ## Best Practices
 
 1. **Keep metadata close to routes** - Place `screen.meta.ts` in the same directory as your page component
@@ -171,3 +286,5 @@ npx screenbook build --strict
 3. **Track real dependencies** - Only list APIs actually called by the screen
 
 4. **Update on changes** - Keep navigation relationships in sync with actual links
+
+5. **Use mocks for documentation** - Define wireframes to visualize screen structure and auto-generate navigation
