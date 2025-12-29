@@ -1,6 +1,6 @@
-import type { APIRoute } from "astro"
 import { existsSync, readFileSync } from "node:fs"
 import { join } from "node:path"
+import type { APIRoute } from "astro"
 import { Project, SyntaxKind } from "ts-morph"
 
 interface ScreenWithFilePath {
@@ -36,12 +36,16 @@ export const POST: APIRoute = async ({ request }) => {
 		const screensPath = join(process.cwd(), ".screenbook", "screens.json")
 		if (!existsSync(screensPath)) {
 			return new Response(
-				JSON.stringify({ error: "screens.json not found. Run screenbook build first." }),
+				JSON.stringify({
+					error: "screens.json not found. Run screenbook build first.",
+				}),
 				{ status: 404, headers: { "Content-Type": "application/json" } },
 			)
 		}
 
-		const screens = JSON.parse(readFileSync(screensPath, "utf-8")) as ScreenWithFilePath[]
+		const screens = JSON.parse(
+			readFileSync(screensPath, "utf-8"),
+		) as ScreenWithFilePath[]
 		const screen = screens.find((s) => s.id === screenId)
 
 		if (!screen) {
@@ -53,7 +57,9 @@ export const POST: APIRoute = async ({ request }) => {
 
 		if (!screen.filePath) {
 			return new Response(
-				JSON.stringify({ error: `Screen '${screenId}' does not have filePath. Rebuild with latest CLI.` }),
+				JSON.stringify({
+					error: `Screen '${screenId}' does not have filePath. Rebuild with latest CLI.`,
+				}),
 				{ status: 400, headers: { "Content-Type": "application/json" } },
 			)
 		}
@@ -62,10 +68,10 @@ export const POST: APIRoute = async ({ request }) => {
 		const result = await updateMockInFile(screen.filePath, mock)
 
 		if (!result.success) {
-			return new Response(
-				JSON.stringify({ error: result.error }),
-				{ status: 500, headers: { "Content-Type": "application/json" } },
-			)
+			return new Response(JSON.stringify({ error: result.error }), {
+				status: 500,
+				headers: { "Content-Type": "application/json" },
+			})
 		}
 
 		return new Response(
@@ -74,10 +80,10 @@ export const POST: APIRoute = async ({ request }) => {
 		)
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Unknown error"
-		return new Response(
-			JSON.stringify({ error: message }),
-			{ status: 500, headers: { "Content-Type": "application/json" } },
-		)
+		return new Response(JSON.stringify({ error: message }), {
+			status: 500,
+			headers: { "Content-Type": "application/json" },
+		})
 	}
 }
 
@@ -90,7 +96,9 @@ async function updateMockInFile(
 		const sourceFile = project.addSourceFileAtPath(filePath)
 
 		// Find the defineScreen call
-		const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
+		const callExpressions = sourceFile.getDescendantsOfKind(
+			SyntaxKind.CallExpression,
+		)
 		const defineScreenCall = callExpressions.find((call) => {
 			const expression = call.getExpression()
 			return expression.getText() === "defineScreen"
@@ -102,16 +110,19 @@ async function updateMockInFile(
 
 		// Get the object literal argument
 		const args = defineScreenCall.getArguments()
-		if (args.length === 0) {
+		const firstArg = args[0]
+		if (!firstArg) {
 			return { success: false, error: "defineScreen() has no arguments" }
 		}
 
-		const objectLiteral = args[0]
-		if (objectLiteral.getKind() !== SyntaxKind.ObjectLiteralExpression) {
-			return { success: false, error: "defineScreen() argument is not an object literal" }
+		if (firstArg.getKind() !== SyntaxKind.ObjectLiteralExpression) {
+			return {
+				success: false,
+				error: "defineScreen() argument is not an object literal",
+			}
 		}
 
-		const obj = objectLiteral.asKind(SyntaxKind.ObjectLiteralExpression)
+		const obj = firstArg.asKind(SyntaxKind.ObjectLiteralExpression)
 		if (!obj) {
 			return { success: false, error: "Failed to parse object literal" }
 		}

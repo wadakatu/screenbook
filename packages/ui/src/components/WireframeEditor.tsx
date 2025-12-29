@@ -1,4 +1,4 @@
-import { Tldraw, createShapeId, type Editor } from "tldraw"
+import { createShapeId, type Editor, Tldraw } from "tldraw"
 import "tldraw/tldraw.css"
 import { useCallback, useState } from "react"
 
@@ -7,89 +7,95 @@ interface WireframeEditorProps {
 	screenTitle?: string
 }
 
-export function WireframeEditor({ screenId, screenTitle }: WireframeEditorProps) {
+export function WireframeEditor({
+	screenId,
+	screenTitle,
+}: WireframeEditorProps) {
 	const [editor, setEditor] = useState<Editor | null>(null)
 
-	const handleMount = useCallback((editor: Editor) => {
-		setEditor(editor)
+	const handleMount = useCallback(
+		(editor: Editor) => {
+			setEditor(editor)
 
-		// Add some initial shapes for demo
-		if (screenTitle) {
-			// Create a frame for the screen
-			const frameId = createShapeId()
-			editor.createShape({
-				id: frameId,
-				type: "frame",
-				x: 100,
-				y: 100,
-				props: {
-					w: 375,
-					h: 667,
-					name: screenTitle,
-				},
-			})
+			// Add some initial shapes for demo
+			if (screenTitle) {
+				// Create a frame for the screen
+				const frameId = createShapeId()
+				editor.createShape({
+					id: frameId,
+					type: "frame",
+					x: 100,
+					y: 100,
+					props: {
+						w: 375,
+						h: 667,
+						name: screenTitle,
+					},
+				})
 
-			// Add a sample button (rectangle with text)
-			editor.createShape({
-				type: "geo",
-				x: 120,
-				y: 130,
-				props: {
-					geo: "rectangle",
-					w: 335,
-					h: 44,
-					fill: "solid",
-					color: "light-green",
-				},
-			})
+				// Add a sample button (rectangle with text)
+				editor.createShape({
+					type: "geo",
+					x: 120,
+					y: 130,
+					props: {
+						geo: "rectangle",
+						w: 335,
+						h: 44,
+						fill: "solid",
+						color: "light-green",
+					},
+				})
 
-			// Add button label
-			editor.createShape({
-				type: "geo",
-				x: 120,
-				y: 200,
-				props: {
-					geo: "rectangle",
-					w: 335,
-					h: 44,
-					fill: "none",
-					color: "grey",
-				},
-			})
+				// Add button label
+				editor.createShape({
+					type: "geo",
+					x: 120,
+					y: 200,
+					props: {
+						geo: "rectangle",
+						w: 335,
+						h: 44,
+						fill: "none",
+						color: "grey",
+					},
+				})
 
-			// Add another button
-			editor.createShape({
-				type: "geo",
-				x: 120,
-				y: 270,
-				props: {
-					geo: "rectangle",
-					w: 335,
-					h: 44,
-					fill: "solid",
-					color: "grey",
-				},
-			})
+				// Add another button
+				editor.createShape({
+					type: "geo",
+					x: 120,
+					y: 270,
+					props: {
+						geo: "rectangle",
+						w: 335,
+						h: 44,
+						fill: "solid",
+						color: "grey",
+					},
+				})
 
-			// Add image placeholder
-			editor.createShape({
-				type: "geo",
-				x: 120,
-				y: 340,
-				props: {
-					geo: "rectangle",
-					w: 335,
-					h: 200,
-					fill: "pattern",
-					color: "grey",
-					dash: "dashed",
-				},
-			})
+				// Add image placeholder
+				editor.createShape({
+					type: "geo",
+					x: 120,
+					y: 340,
+					props: {
+						geo: "rectangle",
+						w: 335,
+						h: 200,
+						fill: "pattern",
+						color: "grey",
+						dash: "dashed",
+					},
+				})
 
-			// Zoom to fit
-			editor.zoomToFit()
-		}
-	}, [screenTitle])
+				// Zoom to fit
+				editor.zoomToFit()
+			}
+		},
+		[screenTitle],
+	)
 
 	const handleExport = useCallback(() => {
 		if (!editor) return
@@ -104,7 +110,7 @@ export function WireframeEditor({ screenId, screenTitle }: WireframeEditorProps)
 		}))
 
 		console.log("Export data:", JSON.stringify(exportData, null, 2))
-		alert("Canvas data exported to console. Check DevTools.")
+		window.alert("Canvas data exported to console. Check DevTools.")
 	}, [editor])
 
 	return (
@@ -141,6 +147,7 @@ export function WireframeEditor({ screenId, screenTitle }: WireframeEditorProps)
 				</div>
 				<div style={{ display: "flex", gap: "8px" }}>
 					<button
+						type="button"
 						onClick={handleExport}
 						style={{
 							background: "#2d3548",
@@ -155,6 +162,7 @@ export function WireframeEditor({ screenId, screenTitle }: WireframeEditorProps)
 						Export JSON
 					</button>
 					<button
+						type="button"
 						style={{
 							background: "linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)",
 							color: "white",
@@ -171,10 +179,7 @@ export function WireframeEditor({ screenId, screenTitle }: WireframeEditorProps)
 				</div>
 			</div>
 			<div style={{ flex: 1, position: "relative" }}>
-				<Tldraw
-					onMount={handleMount}
-					inferDarkMode
-				/>
+				<Tldraw onMount={handleMount} inferDarkMode />
 			</div>
 		</div>
 	)
