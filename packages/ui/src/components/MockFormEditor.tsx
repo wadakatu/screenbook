@@ -55,6 +55,66 @@ function createDefaultElement(type: ElementType): MockElement {
 	}
 }
 
+// Helper to update a section at a given path (e.g., [0, 1] = sections[0].children[1])
+function updateSectionAtPath(
+	sections: MockSection[],
+	path: number[],
+	updater: (section: MockSection) => MockSection,
+): MockSection[] {
+	if (path.length === 0) return sections
+
+	const [index, ...rest] = path
+
+	return sections.map((section, i) => {
+		if (i !== index) return section
+
+		if (rest.length === 0) {
+			return updater(section)
+		}
+
+		return {
+			...section,
+			children: updateSectionAtPath(section.children || [], rest, updater),
+		}
+	})
+}
+
+// Helper to remove a section at a given path
+function removeSectionAtPath(
+	sections: MockSection[],
+	path: number[],
+): MockSection[] {
+	if (path.length === 0) return sections
+
+	const [index, ...rest] = path
+
+	if (rest.length === 0) {
+		return sections.filter((_, i) => i !== index)
+	}
+
+	return sections.map((section, i) => {
+		if (i !== index) return section
+		return {
+			...section,
+			children: removeSectionAtPath(section.children || [], rest),
+		}
+	})
+}
+
+// Helper to add a child section at a given path
+function addChildSectionAtPath(
+	sections: MockSection[],
+	path: number[],
+): MockSection[] {
+	return updateSectionAtPath(sections, path, (section) => ({
+		...section,
+		children: [
+			...(section.children || []),
+			{ title: "Child Section", elements: [] },
+		],
+	}))
+}
+
 export function MockFormEditor({
 	screenId,
 	screenTitle,
@@ -74,84 +134,61 @@ export function MockFormEditor({
 		setSections((prev) => [...prev, { title: "New Section", elements: [] }])
 	}, [])
 
-	const removeSection = useCallback((index: number) => {
-		setSections((prev) => prev.filter((_, i) => i !== index))
-	}, [])
-
-	const updateSection = useCallback(
-		(index: number, updates: Partial<MockSection>) => {
+	// Path-based section operations
+	const updateSectionByPath = useCallback(
+		(path: number[], updates: Partial<MockSection>) => {
 			setSections((prev) =>
-				prev.map((section, i) =>
-					i === index ? { ...section, ...updates } : section,
-				),
+				updateSectionAtPath(prev, path, (section) => ({
+					...section,
+					...updates,
+				})),
 			)
 		},
 		[],
 	)
 
-	const addElement = useCallback((sectionIndex: number, type: ElementType) => {
+	const removeSectionByPath = useCallback((path: number[]) => {
+		setSections((prev) => removeSectionAtPath(prev, path))
+	}, [])
+
+	const addChildSection = useCallback((path: number[]) => {
+		setSections((prev) => addChildSectionAtPath(prev, path))
+	}, [])
+
+	const addElementByPath = useCallback((path: number[], type: ElementType) => {
 		setSections((prev) =>
-			prev.map((section, i) =>
-				i === sectionIndex
-					? {
-							...section,
-							elements: [...section.elements, createDefaultElement(type)],
-						}
-					: section,
-			),
+			updateSectionAtPath(prev, path, (section) => ({
+				...section,
+				elements: [...section.elements, createDefaultElement(type)],
+			})),
 		)
 	}, [])
 
-	const removeElement = useCallback(
-		(sectionIndex: number, elementIndex: number) => {
+	const removeElementByPath = useCallback(
+		(path: number[], elementIndex: number) => {
 			setSections((prev) =>
-				prev.map((section, i) =>
-					i === sectionIndex
-						? {
-								...section,
-								elements: section.elements.filter((_, j) => j !== elementIndex),
-							}
-						: section,
-				),
+				updateSectionAtPath(prev, path, (section) => ({
+					...section,
+					elements: section.elements.filter((_, j) => j !== elementIndex),
+				})),
 			)
 		},
 		[],
 	)
 
-	const updateElement = useCallback(
-		(
-			sectionIndex: number,
-			elementIndex: number,
-			updates: Partial<MockElement>,
-		) => {
+	const updateElementByPath = useCallback(
+		(path: number[], elementIndex: number, updates: Partial<MockElement>) => {
 			setSections((prev) =>
-				prev.map((section, i) =>
-					i === sectionIndex
-						? {
-								...section,
-								elements: section.elements.map((el, j) =>
-									j === elementIndex
-										? ({ ...el, ...updates } as MockElement)
-										: el,
-								),
-							}
-						: section,
-				),
+				updateSectionAtPath(prev, path, (section) => ({
+					...section,
+					elements: section.elements.map((el, j) =>
+						j === elementIndex ? ({ ...el, ...updates } as MockElement) : el,
+					),
+				})),
 			)
 		},
 		[],
 	)
-
-	const moveSection = useCallback((from: number, to: number) => {
-		setSections((prev) => {
-			const newSections = [...prev]
-			const [removed] = newSections.splice(from, 1)
-			if (removed) {
-				newSections.splice(to, 0, removed)
-			}
-			return newSections
-		})
-	}, [])
 
 	const exportMock = useCallback(() => {
 		const mock: ScreenMock = { sections }
@@ -292,159 +329,18 @@ export function MockFormEditor({
 
 				<div style={{ padding: "16px" }}>
 					{sections.map((section, sectionIndex) => (
-						<div
+						<SectionEditor
 							key={sectionIndex}
-							style={{
-								background: "#1e2433",
-								borderRadius: "8px",
-								marginBottom: "12px",
-								overflow: "hidden",
-							}}
-						>
-							{/* Section Header */}
-							<div
-								style={{
-									padding: "12px",
-									background: "#252d40",
-									display: "flex",
-									alignItems: "center",
-									gap: "8px",
-								}}
-							>
-								<input
-									type="text"
-									value={section.title || ""}
-									onChange={(e) =>
-										updateSection(sectionIndex, { title: e.target.value })
-									}
-									placeholder="Section title"
-									style={{
-										flex: 1,
-										background: "#1e2433",
-										border: "1px solid #3d4660",
-										borderRadius: "4px",
-										padding: "6px 10px",
-										color: "#e2e8f0",
-										fontSize: "13px",
-									}}
-								/>
-								<select
-									value={section.layout || "vertical"}
-									onChange={(e) =>
-										updateSection(sectionIndex, {
-											layout: e.target.value as MockLayout,
-										})
-									}
-									style={{
-										background: "#1e2433",
-										border: "1px solid #3d4660",
-										borderRadius: "4px",
-										padding: "6px 10px",
-										color: "#94a3b8",
-										fontSize: "12px",
-									}}
-								>
-									<option value="vertical">Vertical</option>
-									<option value="horizontal">Horizontal</option>
-								</select>
-								<button
-									type="button"
-									onClick={() =>
-										sectionIndex > 0 &&
-										moveSection(sectionIndex, sectionIndex - 1)
-									}
-									disabled={sectionIndex === 0}
-									style={{
-										background: "transparent",
-										border: "none",
-										color: sectionIndex === 0 ? "#475569" : "#94a3b8",
-										cursor: sectionIndex === 0 ? "default" : "pointer",
-										padding: "4px",
-									}}
-								>
-									↑
-								</button>
-								<button
-									type="button"
-									onClick={() =>
-										sectionIndex < sections.length - 1 &&
-										moveSection(sectionIndex, sectionIndex + 1)
-									}
-									disabled={sectionIndex === sections.length - 1}
-									style={{
-										background: "transparent",
-										border: "none",
-										color:
-											sectionIndex === sections.length - 1
-												? "#475569"
-												: "#94a3b8",
-										cursor:
-											sectionIndex === sections.length - 1
-												? "default"
-												: "pointer",
-										padding: "4px",
-									}}
-								>
-									↓
-								</button>
-								<button
-									type="button"
-									onClick={() => removeSection(sectionIndex)}
-									style={{
-										background: "transparent",
-										border: "none",
-										color: "#ef4444",
-										cursor: "pointer",
-										padding: "4px",
-									}}
-								>
-									×
-								</button>
-							</div>
-
-							{/* Elements */}
-							<div style={{ padding: "12px" }}>
-								{section.elements.map((element, elementIndex) => (
-									<ElementEditor
-										key={elementIndex}
-										element={element}
-										onChange={(updates) =>
-											updateElement(sectionIndex, elementIndex, updates)
-										}
-										onRemove={() => removeElement(sectionIndex, elementIndex)}
-									/>
-								))}
-
-								{/* Add Element */}
-								<div
-									style={{
-										display: "flex",
-										gap: "6px",
-										flexWrap: "wrap",
-										marginTop: "8px",
-									}}
-								>
-									{ELEMENT_TYPES.map((type) => (
-										<button
-											type="button"
-											key={type.value}
-											onClick={() => addElement(sectionIndex, type.value)}
-											style={{
-												background: "#2d3548",
-												border: "1px solid #3d4660",
-												borderRadius: "4px",
-												padding: "4px 10px",
-												color: "#94a3b8",
-												fontSize: "11px",
-												cursor: "pointer",
-											}}
-										>
-											+ {type.label}
-										</button>
-									))}
-								</div>
-							</div>
-						</div>
+							section={section}
+							path={[sectionIndex]}
+							depth={0}
+							onUpdate={updateSectionByPath}
+							onRemove={removeSectionByPath}
+							onAddChild={addChildSection}
+							onAddElement={addElementByPath}
+							onRemoveElement={removeElementByPath}
+							onUpdateElement={updateElementByPath}
+						/>
 					))}
 
 					<button
@@ -481,6 +377,228 @@ export function MockFormEditor({
 				</div>
 				<MockPreview sections={sections} title={screenTitle} />
 			</div>
+		</div>
+	)
+}
+
+// Section Editor Component (recursive for child sections)
+function SectionEditor({
+	section,
+	path,
+	depth,
+	onUpdate,
+	onRemove,
+	onAddChild,
+	onAddElement,
+	onRemoveElement,
+	onUpdateElement,
+}: {
+	section: MockSection
+	path: number[]
+	depth: number
+	onUpdate: (path: number[], updates: Partial<MockSection>) => void
+	onRemove: (path: number[]) => void
+	onAddChild: (path: number[]) => void
+	onAddElement: (path: number[], type: ElementType) => void
+	onRemoveElement: (path: number[], elementIndex: number) => void
+	onUpdateElement: (
+		path: number[],
+		elementIndex: number,
+		updates: Partial<MockElement>,
+	) => void
+}) {
+	const indentPx = depth * 16
+
+	return (
+		<div
+			style={{
+				marginBottom: "12px",
+				marginLeft: `${indentPx}px`,
+				borderLeft: depth > 0 ? "2px solid #3d4660" : undefined,
+				paddingLeft: depth > 0 ? "12px" : undefined,
+			}}
+		>
+			<div
+				style={{
+					background: "#1e2433",
+					borderRadius: "8px",
+					overflow: "hidden",
+				}}
+			>
+				{/* Section Header */}
+				<div
+					style={{
+						display: "flex",
+						alignItems: "center",
+						gap: "8px",
+						padding: "10px 12px",
+						background: "#252d40",
+						borderBottom: "1px solid #2d3548",
+					}}
+				>
+					<input
+						type="text"
+						value={section.title || ""}
+						onChange={(e) => onUpdate(path, { title: e.target.value })}
+						placeholder="Section title"
+						style={{
+							flex: 1,
+							background: "#1e2433",
+							border: "1px solid #2d3548",
+							borderRadius: "4px",
+							padding: "6px 8px",
+							color: "#e2e8f0",
+							fontSize: "13px",
+						}}
+					/>
+					<select
+						value={section.layout || "vertical"}
+						onChange={(e) =>
+							onUpdate(path, { layout: e.target.value as MockLayout })
+						}
+						style={{
+							background: "#1e2433",
+							border: "1px solid #2d3548",
+							borderRadius: "4px",
+							padding: "6px 8px",
+							color: "#94a3b8",
+							fontSize: "12px",
+						}}
+					>
+						<option value="vertical">Vertical</option>
+						<option value="horizontal">Horizontal</option>
+						<option value="grid">Grid</option>
+					</select>
+					{depth > 0 && (
+						<span
+							style={{
+								fontSize: "10px",
+								color: "#64748b",
+								padding: "2px 6px",
+								background: "#1e2433",
+								borderRadius: "4px",
+							}}
+						>
+							L{depth}
+						</span>
+					)}
+					<button
+						type="button"
+						onClick={() => onRemove(path)}
+						style={{
+							background: "transparent",
+							border: "none",
+							color: "#ef4444",
+							cursor: "pointer",
+							fontSize: "16px",
+							padding: "0 4px",
+						}}
+					>
+						×
+					</button>
+				</div>
+
+				{/* Elements */}
+				<div style={{ padding: "12px" }}>
+					{section.elements.map((element, elementIndex) => (
+						<ElementEditor
+							key={elementIndex}
+							element={element}
+							onChange={(updates) =>
+								onUpdateElement(path, elementIndex, updates)
+							}
+							onRemove={() => onRemoveElement(path, elementIndex)}
+						/>
+					))}
+
+					{section.elements.length === 0 && (
+						<div
+							style={{
+								color: "#475569",
+								fontSize: "12px",
+								fontStyle: "italic",
+								padding: "8px 0",
+							}}
+						>
+							No elements yet
+						</div>
+					)}
+
+					{/* Add Element Buttons */}
+					<div
+						style={{
+							display: "flex",
+							flexWrap: "wrap",
+							gap: "4px",
+							marginTop: "8px",
+						}}
+					>
+						{ELEMENT_TYPES.map((type) => (
+							<button
+								key={type.value}
+								type="button"
+								onClick={() => onAddElement(path, type.value)}
+								style={{
+									background: "#2d3548",
+									border: "1px solid #3d4660",
+									borderRadius: "4px",
+									padding: "4px 8px",
+									color: "#94a3b8",
+									fontSize: "11px",
+									cursor: "pointer",
+								}}
+							>
+								+ {type.label}
+							</button>
+						))}
+					</div>
+				</div>
+
+				{/* Add Child Section Button */}
+				<div
+					style={{
+						padding: "8px 12px",
+						borderTop: "1px solid #2d3548",
+					}}
+				>
+					<button
+						type="button"
+						onClick={() => onAddChild(path)}
+						style={{
+							background: "transparent",
+							border: "1px dashed #3d4660",
+							borderRadius: "4px",
+							padding: "6px 12px",
+							color: "#64748b",
+							fontSize: "11px",
+							cursor: "pointer",
+							width: "100%",
+						}}
+					>
+						+ Add Child Section
+					</button>
+				</div>
+			</div>
+
+			{/* Render Child Sections Recursively */}
+			{section.children && section.children.length > 0 && (
+				<div style={{ marginTop: "8px" }}>
+					{section.children.map((childSection, childIndex) => (
+						<SectionEditor
+							key={childIndex}
+							section={childSection}
+							path={[...path, childIndex]}
+							depth={depth + 1}
+							onUpdate={onUpdate}
+							onRemove={onRemove}
+							onAddChild={onAddChild}
+							onAddElement={onAddElement}
+							onRemoveElement={onRemoveElement}
+							onUpdateElement={onUpdateElement}
+						/>
+					))}
+				</div>
+			)}
 		</div>
 	)
 }
@@ -845,59 +963,7 @@ function MockPreview({
 				}}
 			>
 				{sections.map((section, i) => (
-					<div
-						key={i}
-						style={{
-							background: "#1e2433",
-							borderRadius: "10px",
-							overflow: "hidden",
-						}}
-					>
-						{section.title && (
-							<div
-								style={{
-									background: "rgba(20, 184, 166, 0.15)",
-									padding: "8px 14px",
-									borderBottom: "1px solid rgba(20, 184, 166, 0.2)",
-									fontSize: "11px",
-									fontWeight: 600,
-									color: "#14b8a6",
-									textTransform: "uppercase",
-								}}
-							>
-								{section.title}
-							</div>
-						)}
-						<div
-							style={{
-								padding: "14px",
-								display: "flex",
-								flexDirection:
-									section.layout === "horizontal" ? "row" : "column",
-								gap: "10px",
-								flexWrap: "wrap",
-							}}
-						>
-							{section.elements.map((el, j) => (
-								<PreviewElement
-									key={j}
-									element={el}
-									horizontal={section.layout === "horizontal"}
-								/>
-							))}
-							{section.elements.length === 0 && (
-								<div
-									style={{
-										color: "#475569",
-										fontSize: "12px",
-										fontStyle: "italic",
-									}}
-								>
-									No elements
-								</div>
-							)}
-						</div>
-					</div>
+					<SectionPreview key={i} section={section} depth={0} />
 				))}
 				{sections.length === 0 && (
 					<div
@@ -909,6 +975,99 @@ function MockPreview({
 						}}
 					>
 						Add sections to see preview
+					</div>
+				)}
+			</div>
+		</div>
+	)
+}
+
+// Section Preview Component (recursive for child sections)
+function SectionPreview({
+	section,
+	depth,
+}: {
+	section: MockSection
+	depth: number
+}) {
+	const indentPx = depth * 12
+
+	return (
+		<div
+			style={{
+				marginLeft: `${indentPx}px`,
+				borderLeft: depth > 0 ? "2px solid rgba(20, 184, 166, 0.3)" : undefined,
+				paddingLeft: depth > 0 ? "10px" : undefined,
+			}}
+		>
+			<div
+				style={{
+					background: "#1e2433",
+					borderRadius: "10px",
+					overflow: "hidden",
+				}}
+			>
+				{section.title && (
+					<div
+						style={{
+							background:
+								depth > 0
+									? "rgba(20, 184, 166, 0.08)"
+									: "rgba(20, 184, 166, 0.15)",
+							padding: "8px 14px",
+							borderBottom: "1px solid rgba(20, 184, 166, 0.2)",
+							fontSize: depth > 0 ? "10px" : "11px",
+							fontWeight: 600,
+							color: "#14b8a6",
+							textTransform: "uppercase",
+						}}
+					>
+						{section.title}
+					</div>
+				)}
+				<div
+					style={{
+						padding: "14px",
+						display: "flex",
+						flexDirection: section.layout === "horizontal" ? "row" : "column",
+						gap: "10px",
+						flexWrap: "wrap",
+					}}
+				>
+					{section.elements.map((el, j) => (
+						<PreviewElement
+							key={j}
+							element={el}
+							horizontal={section.layout === "horizontal"}
+						/>
+					))}
+					{section.elements.length === 0 &&
+						(!section.children || section.children.length === 0) && (
+							<div
+								style={{
+									color: "#475569",
+									fontSize: "12px",
+									fontStyle: "italic",
+								}}
+							>
+								No elements
+							</div>
+						)}
+				</div>
+
+				{/* Render Child Sections */}
+				{section.children && section.children.length > 0 && (
+					<div
+						style={{
+							padding: "0 14px 14px",
+							display: "flex",
+							flexDirection: "column",
+							gap: "10px",
+						}}
+					>
+						{section.children.map((child, i) => (
+							<SectionPreview key={i} section={child} depth={depth + 1} />
+						))}
 					</div>
 				)}
 			</div>
