@@ -4,7 +4,7 @@ import type {
 	MockSection,
 	ScreenMock,
 } from "@screenbook/core"
-import { useCallback, useState } from "react"
+import { useCallback, useId, useRef, useState } from "react"
 import "../styles/mock-editor.css"
 
 interface MockFormEditorProps {
@@ -292,14 +292,62 @@ export function MockFormEditor({
 			{ title: "Header", layout: "horizontal", elements: [] },
 		],
 	)
+	const [activeSection, setActiveSection] = useState(0)
 	const [saveStatus, setSaveStatus] = useState<
 		"idle" | "saving" | "saved" | "error"
 	>("idle")
 	const [saveError, setSaveError] = useState<string | null>(null)
+	const tabListRef = useRef<HTMLDivElement>(null)
+	const uniqueId = useId()
 
 	const addSection = useCallback(() => {
-		setSections((prev) => [...prev, { title: "New Section", elements: [] }])
+		setSections((prev) => {
+			const newSections = [...prev, { title: "New Section", elements: [] }]
+			// Set active section to the newly added one
+			setActiveSection(newSections.length - 1)
+			return newSections
+		})
 	}, [])
+
+	// Handle keyboard navigation for tab list (Arrow keys)
+	const handleTabKeyDown = useCallback(
+		(e: React.KeyboardEvent, index: number) => {
+			const lastIndex = sections.length - 1
+			let newIndex = index
+
+			switch (e.key) {
+				case "ArrowDown":
+				case "ArrowRight":
+					e.preventDefault()
+					newIndex = index >= lastIndex ? 0 : index + 1
+					break
+				case "ArrowUp":
+				case "ArrowLeft":
+					e.preventDefault()
+					newIndex = index <= 0 ? lastIndex : index - 1
+					break
+				case "Home":
+					e.preventDefault()
+					newIndex = 0
+					break
+				case "End":
+					e.preventDefault()
+					newIndex = lastIndex
+					break
+				default:
+					return
+			}
+
+			setActiveSection(newIndex)
+			// Focus the new tab
+			const tabList = tabListRef.current
+			if (tabList) {
+				const tabs = tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]')
+				tabs[newIndex]?.focus()
+			}
+		},
+		[sections.length],
+	)
 
 	const applyTemplate = useCallback((templateId: string) => {
 		const template = TEMPLATES.find((t) => t.id === templateId)
@@ -322,9 +370,24 @@ export function MockFormEditor({
 		[],
 	)
 
-	const removeSectionByPath = useCallback((path: number[]) => {
-		setSections((prev) => removeSectionAtPath(prev, path))
-	}, [])
+	const removeSectionByPath = useCallback(
+		(path: number[]) => {
+			setSections((prev) => {
+				const newSections = removeSectionAtPath(prev, path)
+				// Adjust active section if needed
+				if (path.length === 1) {
+					const removedIndex = path[0]
+					if (activeSection >= newSections.length) {
+						setActiveSection(Math.max(0, newSections.length - 1))
+					} else if (activeSection > removedIndex) {
+						setActiveSection(activeSection - 1)
+					}
+				}
+				return newSections
+			})
+		},
+		[activeSection],
+	)
 
 	const addChildSection = useCallback((path: number[]) => {
 		setSections((prev) => addChildSectionAtPath(prev, path))
@@ -408,83 +471,71 @@ export function MockFormEditor({
 		}
 	}, [screenId, sections])
 
+	const currentSection = sections[activeSection]
+
 	return (
 		<div className="mock-editor">
-			{/* Left Panel - Form Editor */}
-			<div className="mock-editor__form-panel">
-				<div className="mock-editor__header">
-					<div className="mock-editor__header-content">
-						<div className="mock-editor__title-area">
-							<span className="mock-editor__title">Mock Editor</span>
-							{screenId && (
-								<span className="mock-editor__screen-badge">{screenId}</span>
-							)}
+			{/* Skip Link for Accessibility */}
+			<a href="#main-editor" className="mock-editor__skip-link">
+				Skip to editor
+			</a>
+
+			{/* Left Sidebar - Section Navigation */}
+			<nav
+				className="mock-editor__sidebar"
+				aria-label="Section navigation"
+			>
+				<div className="mock-editor__sidebar-header">
+					<span className="mock-editor__title">Mock Editor</span>
+					{screenId && (
+						<div className="mock-editor__screen-info">
+							<span className="mock-editor__screen-label">SCREEN</span>
+							<span className="mock-editor__screen-badge">{screenId}</span>
 						</div>
-						<div className="mock-editor__actions">
-							<select
-								className="mock-editor__template-select"
-								onChange={(e) => {
-									if (e.target.value) {
-										applyTemplate(e.target.value)
-										e.target.value = ""
-									}
-								}}
-								defaultValue=""
-							>
-								<option value="" disabled>
-									Templates
-								</option>
-								{TEMPLATES.map((template) => (
-									<option key={template.id} value={template.id}>
-										{template.label}
-									</option>
-								))}
-							</select>
-							{saveStatus === "error" && (
-								<span className="mock-editor__status mock-editor__status--error">
-									{saveError}
-								</span>
-							)}
-							{saveStatus === "saved" && (
-								<span className="mock-editor__status mock-editor__status--success">
-									Saved!
-								</span>
-							)}
-							<button
-								type="button"
-								onClick={exportMock}
-								className="mock-editor__btn mock-editor__btn--secondary"
-							>
-								Copy Code
-							</button>
-							<button
-								type="button"
-								onClick={saveMock}
-								disabled={saveStatus === "saving" || !screenId}
-								className="mock-editor__btn mock-editor__btn--primary"
-								title={!screenId ? "Save requires a screen ID" : undefined}
-							>
-								{saveStatus === "saving" ? "Saving..." : "Save to File"}
-							</button>
-						</div>
-					</div>
+					)}
 				</div>
 
-				<div className="mock-editor__form-content">
-					{sections.map((section, sectionIndex) => (
-						<SectionEditor
-							key={sectionIndex}
-							section={section}
-							path={[sectionIndex]}
-							depth={0}
-							onUpdate={updateSectionByPath}
-							onRemove={removeSectionByPath}
-							onAddChild={addChildSection}
-							onAddElement={addElementByPath}
-							onRemoveElement={removeElementByPath}
-							onUpdateElement={updateElementByPath}
-						/>
-					))}
+				<div className="mock-editor__sidebar-content">
+					<h2 id={`${uniqueId}-sections-label`} className="mock-editor__sections-label">
+						SECTIONS
+					</h2>
+					<div
+						ref={tabListRef}
+						role="tablist"
+						aria-labelledby={`${uniqueId}-sections-label`}
+						aria-orientation="vertical"
+						className="mock-editor__tab-list"
+					>
+						{sections.map((section, index) => (
+							<button
+								key={index}
+								type="button"
+								role="tab"
+								id={`${uniqueId}-tab-${index}`}
+								aria-selected={activeSection === index}
+								aria-controls={`${uniqueId}-panel-${index}`}
+								tabIndex={activeSection === index ? 0 : -1}
+								className={`mock-editor__section-tab ${activeSection === index ? "mock-editor__section-tab--active" : ""}`}
+								onClick={() => setActiveSection(index)}
+								onKeyDown={(e) => handleTabKeyDown(e, index)}
+							>
+								<span className="mock-editor__tab-icon">
+									{(section.title || "Section")[0].toUpperCase()}
+								</span>
+								<span className="mock-editor__tab-content">
+									<span className="mock-editor__tab-title">
+										{section.title || "Untitled"}
+									</span>
+									<span className="mock-editor__tab-count">
+										{section.elements.length} element{section.elements.length !== 1 ? "s" : ""}
+									</span>
+								</span>
+								{activeSection === index && (
+									<span className="mock-editor__tab-indicator" aria-hidden="true" />
+								)}
+							</button>
+						))}
+					</div>
 
 					<button
 						type="button"
@@ -494,13 +545,208 @@ export function MockFormEditor({
 						+ Add Section
 					</button>
 				</div>
-			</div>
+			</nav>
+
+			{/* Center Panel - Editor */}
+			<section id="main-editor" className="mock-editor__main" aria-label="Section editor">
+				{/* Editor Header */}
+				<header className="mock-editor__header">
+					<div className="mock-editor__header-left">
+						<label className="mock-editor__field-label">
+							<span className="mock-editor__field-label-text">Section title</span>
+							<input
+								type="text"
+								value={currentSection?.title || ""}
+								onChange={(e) =>
+									updateSectionByPath([activeSection], { title: e.target.value })
+								}
+								placeholder="Section title"
+								className="mock-editor__section-input"
+								aria-describedby={`${uniqueId}-title-hint`}
+							/>
+							<span id={`${uniqueId}-title-hint`} className="mock-editor__sr-only">
+								Edit the section title
+							</span>
+						</label>
+
+						<fieldset className="mock-editor__layout-group">
+							<legend className="mock-editor__sr-only">Section layout</legend>
+							{(["horizontal", "vertical", "grid"] as const).map((layout) => (
+								<label
+									key={layout}
+									className={`mock-editor__layout-option ${currentSection?.layout === layout || (!currentSection?.layout && layout === "vertical") ? "mock-editor__layout-option--active" : ""}`}
+								>
+									<input
+										type="radio"
+										name={`${uniqueId}-layout`}
+										value={layout}
+										checked={
+											currentSection?.layout === layout ||
+											(!currentSection?.layout && layout === "vertical")
+										}
+										onChange={() =>
+											updateSectionByPath([activeSection], { layout })
+										}
+										className="mock-editor__sr-only"
+									/>
+									<span className="mock-editor__layout-label">
+										{layout.charAt(0).toUpperCase() + layout.slice(1)}
+									</span>
+								</label>
+							))}
+						</fieldset>
+					</div>
+
+					<div className="mock-editor__header-right">
+						<label className="mock-editor__sr-only" htmlFor={`${uniqueId}-template`}>
+							Select template
+						</label>
+						<select
+							id={`${uniqueId}-template`}
+							className="mock-editor__template-select"
+							onChange={(e) => {
+								if (e.target.value) {
+									applyTemplate(e.target.value)
+									e.target.value = ""
+								}
+							}}
+							defaultValue=""
+						>
+							<option value="" disabled>
+								Templates
+							</option>
+							{TEMPLATES.map((template) => (
+								<option key={template.id} value={template.id}>
+									{template.label}
+								</option>
+							))}
+						</select>
+
+						{saveStatus === "error" && (
+							<span className="mock-editor__status mock-editor__status--error" role="alert">
+								{saveError}
+							</span>
+						)}
+						{saveStatus === "saved" && (
+							<span className="mock-editor__status mock-editor__status--success" role="status">
+								Saved!
+							</span>
+						)}
+
+						<button
+							type="button"
+							onClick={exportMock}
+							className="mock-editor__btn mock-editor__btn--secondary"
+						>
+							Copy Code
+						</button>
+						<button
+							type="button"
+							onClick={saveMock}
+							disabled={saveStatus === "saving" || !screenId}
+							className="mock-editor__btn mock-editor__btn--primary"
+							title={!screenId ? "Save requires a screen ID" : undefined}
+						>
+							{saveStatus === "saving" ? "Saving..." : "Save"}
+						</button>
+					</div>
+				</header>
+
+				{/* Editor Content - Active Section */}
+				<div
+					id={`${uniqueId}-panel-${activeSection}`}
+					role="tabpanel"
+					aria-labelledby={`${uniqueId}-tab-${activeSection}`}
+					tabIndex={0}
+					className="mock-editor__editor-content"
+				>
+					{currentSection && (
+						<>
+							<h2 className="mock-editor__sr-only">
+								{currentSection.title || "Untitled"} section editor
+							</h2>
+
+							{/* Elements */}
+							<div className="mock-editor__elements">
+								{currentSection.elements.map((element, elementIndex) => (
+									<ElementEditor
+										key={elementIndex}
+										element={element}
+										onChange={(updates) =>
+											updateElementByPath([activeSection], elementIndex, updates)
+										}
+										onRemove={() =>
+											removeElementByPath([activeSection], elementIndex)
+										}
+									/>
+								))}
+
+								{currentSection.elements.length === 0 && (
+									<div className="mock-editor__empty-elements">
+										No elements yet. Add elements using the buttons below.
+									</div>
+								)}
+							</div>
+
+							{/* Add Element Buttons */}
+							<div className="mock-editor__element-buttons" role="group" aria-label="Add element">
+								{ELEMENT_TYPES.map((type) => (
+									<button
+										key={type.value}
+										type="button"
+										onClick={() => addElementByPath([activeSection], type.value)}
+										className={`mock-editor__add-element-btn mock-editor__add-element-btn--${type.value}`}
+										aria-label={`Add ${type.label} element`}
+									>
+										+ {type.label}
+									</button>
+								))}
+							</div>
+
+							{/* Child Sections */}
+							{currentSection.children && currentSection.children.length > 0 && (
+								<div className="mock-editor__children">
+									<h3 className="mock-editor__children-title">Child Sections</h3>
+									{currentSection.children.map((childSection, childIndex) => (
+										<SectionEditor
+											key={childIndex}
+											section={childSection}
+											path={[activeSection, childIndex]}
+											depth={1}
+											onUpdate={updateSectionByPath}
+											onRemove={removeSectionByPath}
+											onAddChild={addChildSection}
+											onAddElement={addElementByPath}
+											onRemoveElement={removeElementByPath}
+											onUpdateElement={updateElementByPath}
+										/>
+									))}
+								</div>
+							)}
+
+							<button
+								type="button"
+								onClick={() => addChildSection([activeSection])}
+								className="mock-editor__add-child-btn"
+								aria-label="Add child section to current section"
+							>
+								+ Add Child Section
+							</button>
+						</>
+					)}
+				</div>
+			</section>
 
 			{/* Right Panel - Preview */}
-			<div className="mock-editor__preview-panel">
-				<div className="mock-editor__preview-label">Live Preview</div>
-				<MockPreview sections={sections} title={screenTitle} />
-			</div>
+			<aside className="mock-editor__preview-panel" aria-label="Live preview">
+				<div className="mock-editor__preview-header">
+					<span className="mock-editor__preview-label">LIVE PREVIEW</span>
+					<span className="mock-editor__preview-scale">100%</span>
+				</div>
+				<div className="mock-editor__preview-wrapper">
+					<MockPreview sections={sections} title={screenTitle} />
+				</div>
+			</aside>
 		</div>
 	)
 }
