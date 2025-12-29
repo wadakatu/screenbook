@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/wadakatu/screenbook/actions/workflows/ci.yml"><img src="https://github.com/wadakatu/screenbook/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/wadakatu/screenbook/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
   <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/TypeScript-5.0+-blue.svg" alt="TypeScript"></a>
   <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/Node.js-22+-green.svg" alt="Node.js"></a>
