@@ -95,6 +95,14 @@ export interface Screen {
 	next?: string[]
 
 	/**
+	 * Allow circular navigation involving this screen.
+	 * When true, cycles that include this screen will not trigger warnings.
+	 * @default false
+	 * @example true
+	 */
+	allowCycles?: boolean
+
+	/**
 	 * Optional description explaining the screen's purpose
 	 * @example "Displays detailed invoice information including line items and payment status"
 	 */
@@ -126,6 +134,7 @@ export const screenSchema = z.object({
 	dependsOn: z.array(z.string()).optional(),
 	entryPoints: z.array(z.string()).optional(),
 	next: z.array(z.string()).optional(),
+	allowCycles: z.boolean().optional(),
 	description: z.string().optional(),
 	links: z
 		.array(
