@@ -31,6 +31,172 @@ const ELEMENT_TYPES: { value: ElementType; label: string }[] = [
 	{ value: "table", label: "Table" },
 ]
 
+// Template definitions for quick-start mock creation
+const TEMPLATES: { id: string; label: string; sections: MockSection[] }[] = [
+	{
+		id: "basic-form",
+		label: "Basic Form",
+		sections: [
+			{
+				title: "Header",
+				layout: "horizontal",
+				elements: [{ type: "text", label: "Page Title", variant: "heading" }],
+			},
+			{
+				title: "Form",
+				elements: [
+					{ type: "input", label: "Name", placeholder: "Enter name..." },
+					{
+						type: "input",
+						label: "Email",
+						inputType: "email",
+						placeholder: "Enter email...",
+					},
+					{
+						type: "input",
+						label: "Message",
+						inputType: "textarea",
+						placeholder: "Enter message...",
+					},
+				],
+			},
+			{
+				title: "Actions",
+				layout: "horizontal",
+				elements: [
+					{ type: "link", label: "Cancel" },
+					{ type: "button", label: "Submit", variant: "primary" },
+				],
+			},
+		],
+	},
+	{
+		id: "list-view",
+		label: "List View",
+		sections: [
+			{
+				title: "Header",
+				layout: "horizontal",
+				elements: [
+					{ type: "text", label: "Items", variant: "heading" },
+					{ type: "button", label: "Add New", variant: "primary" },
+				],
+			},
+			{
+				title: "Search",
+				elements: [
+					{
+						type: "input",
+						label: "Search",
+						inputType: "search",
+						placeholder: "Search items...",
+					},
+				],
+			},
+			{
+				title: "Content",
+				elements: [{ type: "list", label: "Item List", itemCount: 5 }],
+			},
+		],
+	},
+	{
+		id: "detail-view",
+		label: "Detail View",
+		sections: [
+			{
+				title: "Header",
+				layout: "horizontal",
+				elements: [
+					{ type: "text", label: "Item Detail", variant: "heading" },
+					{ type: "button", label: "Edit", variant: "secondary" },
+					{ type: "button", label: "Delete", variant: "danger" },
+				],
+			},
+			{
+				title: "Info",
+				elements: [
+					{ type: "text", label: "Name: Example Item", variant: "body" },
+					{ type: "text", label: "Created: 2024-01-01", variant: "caption" },
+					{ type: "image", label: "Item Image", aspectRatio: "16:9" },
+				],
+			},
+			{
+				title: "Actions",
+				layout: "horizontal",
+				elements: [{ type: "link", label: "Back to List" }],
+			},
+		],
+	},
+	{
+		id: "dashboard",
+		label: "Dashboard",
+		sections: [
+			{
+				title: "Header",
+				layout: "horizontal",
+				elements: [{ type: "text", label: "Dashboard", variant: "heading" }],
+			},
+			{
+				title: "Stats",
+				layout: "horizontal",
+				elements: [
+					{ type: "text", label: "Total: 100", variant: "subheading" },
+					{ type: "text", label: "Active: 80", variant: "subheading" },
+					{ type: "text", label: "Pending: 20", variant: "subheading" },
+				],
+			},
+			{
+				title: "Data",
+				elements: [
+					{
+						type: "table",
+						label: "Recent Items",
+						columns: ["Name", "Status", "Date"],
+						rowCount: 5,
+					},
+				],
+			},
+		],
+	},
+	{
+		id: "settings",
+		label: "Settings",
+		sections: [
+			{
+				title: "Header",
+				elements: [{ type: "text", label: "Settings", variant: "heading" }],
+			},
+			{
+				title: "Profile",
+				elements: [
+					{ type: "image", label: "Avatar", aspectRatio: "1:1" },
+					{ type: "input", label: "Display Name", placeholder: "Your name" },
+					{
+						type: "input",
+						label: "Email",
+						inputType: "email",
+						placeholder: "your@email.com",
+					},
+				],
+			},
+			{
+				title: "Preferences",
+				elements: [
+					{ type: "input", label: "Language", placeholder: "Select language" },
+					{ type: "input", label: "Timezone", placeholder: "Select timezone" },
+				],
+			},
+			{
+				title: "Actions",
+				layout: "horizontal",
+				elements: [
+					{ type: "button", label: "Save Changes", variant: "primary" },
+				],
+			},
+		],
+	},
+]
+
 function createDefaultElement(type: ElementType): MockElement {
 	switch (type) {
 		case "button":
@@ -132,6 +298,14 @@ export function MockFormEditor({
 
 	const addSection = useCallback(() => {
 		setSections((prev) => [...prev, { title: "New Section", elements: [] }])
+	}, [])
+
+	const applyTemplate = useCallback((templateId: string) => {
+		const template = TEMPLATES.find((t) => t.id === templateId)
+		if (template) {
+			// Deep clone the template sections to avoid mutation
+			setSections(JSON.parse(JSON.stringify(template.sections)))
+		}
 	}, [])
 
 	// Path-based section operations
@@ -272,6 +446,33 @@ export function MockFormEditor({
 							)}
 						</div>
 						<div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+							<select
+								onChange={(e) => {
+									if (e.target.value) {
+										applyTemplate(e.target.value)
+										e.target.value = ""
+									}
+								}}
+								defaultValue=""
+								style={{
+									background: "#2d3548",
+									border: "1px solid #3d4660",
+									borderRadius: "6px",
+									padding: "8px 12px",
+									color: "#94a3b8",
+									fontSize: "13px",
+									cursor: "pointer",
+								}}
+							>
+								<option value="" disabled>
+									Templates
+								</option>
+								{TEMPLATES.map((template) => (
+									<option key={template.id} value={template.id}>
+										{template.label}
+									</option>
+								))}
+							</select>
 							{saveStatus === "error" && (
 								<span style={{ color: "#ef4444", fontSize: "12px" }}>
 									{saveError}
