@@ -5,6 +5,11 @@ import { define } from "gunshi"
 import { createJiti } from "jiti"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import {
+	detectCycles,
+	formatCycleWarnings,
+	getCycleSummary,
+} from "../utils/cycleDetection.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
 import {
@@ -42,7 +47,12 @@ export const buildCommand = define({
 		strict: {
 			type: "boolean",
 			short: "s",
-			description: "Fail on invalid screen references",
+			description: "Fail on validation errors and disallowed cycles",
+			default: false,
+		},
+		allowCycles: {
+			type: "boolean",
+			description: "Suppress all circular navigation warnings",
 			default: false,
 		},
 	},
@@ -101,6 +111,24 @@ export const buildCommand = define({
 			if (ctx.values.strict) {
 				logger.errorWithHelp(ERRORS.VALIDATION_FAILED(validation.errors.length))
 				process.exit(1)
+			}
+		}
+
+		// Detect circular navigation
+		if (!ctx.values.allowCycles) {
+			const cycleResult = detectCycles(screens)
+			if (cycleResult.hasCycles) {
+				logger.blank()
+				logger.warn(getCycleSummary(cycleResult))
+				logger.log(formatCycleWarnings(cycleResult.cycles))
+
+				if (ctx.values.strict && cycleResult.disallowedCycles.length > 0) {
+					logger.blank()
+					logger.errorWithHelp(
+						ERRORS.CYCLES_DETECTED(cycleResult.disallowedCycles.length),
+					)
+					process.exit(1)
+				}
 			}
 		}
 

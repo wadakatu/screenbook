@@ -5,7 +5,7 @@ prev: false
 title: "Screen"
 ---
 
-Defined in: [packages/core/src/types.ts:37](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L37)
+Defined in: [packages/core/src/types.ts:37](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L37)
 
 Screen metadata definition for the screen catalog.
 
@@ -25,11 +25,34 @@ const screen: Screen = {
 
 ## Properties
 
+### allowCycles?
+
+> `optional` **allowCycles**: `boolean`
+
+Defined in: [packages/core/src/types.ts:103](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L103)
+
+Allow circular navigation involving this screen.
+When true, cycles that include this screen will not trigger warnings.
+
+#### Default
+
+```ts
+false
+```
+
+#### Example
+
+```ts
+true
+```
+
+***
+
 ### dependsOn?
 
 > `optional` **dependsOn**: `string`[]
 
-Defined in: [packages/core/src/types.ts:81](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L81)
+Defined in: [packages/core/src/types.ts:81](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L81)
 
 APIs or services this screen depends on for impact analysis
 
@@ -49,7 +72,7 @@ APIs or services this screen depends on for impact analysis
 
 > `optional` **description**: `string`
 
-Defined in: [packages/core/src/types.ts:101](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L101)
+Defined in: [packages/core/src/types.ts:109](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L109)
 
 Optional description explaining the screen's purpose
 
@@ -65,7 +88,7 @@ Optional description explaining the screen's purpose
 
 > `optional` **entryPoints**: `string`[]
 
-Defined in: [packages/core/src/types.ts:88](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L88)
+Defined in: [packages/core/src/types.ts:88](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L88)
 
 Screen IDs that can navigate to this screen (incoming edges)
 
@@ -85,7 +108,7 @@ Screen IDs that can navigate to this screen (incoming edges)
 
 > **id**: `string`
 
-Defined in: [packages/core/src/types.ts:44](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L44)
+Defined in: [packages/core/src/types.ts:44](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L44)
 
 Unique identifier for the screen using dot notation
 
@@ -109,7 +132,7 @@ Unique identifier for the screen using dot notation
 
 > `optional` **links**: `ScreenLink`[]
 
-Defined in: [packages/core/src/types.ts:107](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L107)
+Defined in: [packages/core/src/types.ts:115](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L115)
 
 Links to external resources like Storybook, Figma, or documentation
 
@@ -125,7 +148,7 @@ Links to external resources like Storybook, Figma, or documentation
 
 > `optional` **next**: `string`[]
 
-Defined in: [packages/core/src/types.ts:95](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L95)
+Defined in: [packages/core/src/types.ts:95](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L95)
 
 Screen IDs this screen can navigate to (outgoing edges)
 
@@ -145,7 +168,7 @@ Screen IDs this screen can navigate to (outgoing edges)
 
 > `optional` **owner**: `string`[]
 
-Defined in: [packages/core/src/types.ts:67](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L67)
+Defined in: [packages/core/src/types.ts:67](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L67)
 
 Team(s) or domain(s) that own this screen
 
@@ -165,7 +188,7 @@ Team(s) or domain(s) that own this screen
 
 > **route**: `string`
 
-Defined in: [packages/core/src/types.ts:60](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L60)
+Defined in: [packages/core/src/types.ts:60](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L60)
 
 Route path pattern with optional dynamic segments
 
@@ -189,7 +212,7 @@ Route path pattern with optional dynamic segments
 
 > `optional` **tags**: `string`[]
 
-Defined in: [packages/core/src/types.ts:74](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L74)
+Defined in: [packages/core/src/types.ts:74](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L74)
 
 Tags for categorization and filtering in the catalog
 
@@ -209,7 +232,7 @@ Tags for categorization and filtering in the catalog
 
 > **title**: `string`
 
-Defined in: [packages/core/src/types.ts:52](https://github.com/wadakatu/screenbook/blob/304a54cb1545d1a2928b1abeb26e7ccfc81fbab4/packages/core/src/types.ts#L52)
+Defined in: [packages/core/src/types.ts:52](https://github.com/wadakatu/screenbook/blob/b46f17911c7424f697e59b3c5c1e4a9e75b6b7c3/packages/core/src/types.ts#L52)
 
 Human-readable title displayed in the screen catalog
 
