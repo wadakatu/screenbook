@@ -31,6 +31,10 @@ export interface CycleDetectionResult {
 	 * Cycles that are not allowed (allowed: false)
 	 */
 	disallowedCycles: CycleInfo[]
+	/**
+	 * Screen IDs that appear more than once (indicates data issue)
+	 */
+	duplicateIds: string[]
 }
 
 // Node colors for DFS
@@ -58,7 +62,17 @@ enum Color {
  */
 export function detectCycles(screens: Screen[]): CycleDetectionResult {
 	const screenMap = new Map<string, Screen>()
+	const duplicateIds: string[] = []
+
+	// Build screen map and detect duplicates
 	for (const screen of screens) {
+		if (!screen.id || typeof screen.id !== "string") {
+			// Skip screens with invalid IDs
+			continue
+		}
+		if (screenMap.has(screen.id)) {
+			duplicateIds.push(screen.id)
+		}
 		screenMap.set(screen.id, screen)
 	}
 
@@ -67,14 +81,14 @@ export function detectCycles(screens: Screen[]): CycleDetectionResult {
 	const cycles: CycleInfo[] = []
 
 	// Initialize all nodes as white
-	for (const screen of screens) {
-		color.set(screen.id, Color.White)
+	for (const id of screenMap.keys()) {
+		color.set(id, Color.White)
 	}
 
 	// DFS from each unvisited node
-	for (const screen of screens) {
-		if (color.get(screen.id) === Color.White) {
-			dfs(screen.id, null)
+	for (const id of screenMap.keys()) {
+		if (color.get(id) === Color.White) {
+			dfs(id, null)
 		}
 	}
 
@@ -111,9 +125,17 @@ export function detectCycles(screens: Screen[]): CycleDetectionResult {
 	function reconstructCycle(from: string, to: string): string[] {
 		const path: string[] = []
 		let current: string | null | undefined = from
+		const visited = new Set<string>()
+		const maxIterations = screenMap.size + 1
 
-		// Trace back from 'from' to 'to'
-		while (current && current !== to) {
+		// Trace back from 'from' to 'to' with loop guard
+		while (
+			current &&
+			current !== to &&
+			!visited.has(current) &&
+			path.length < maxIterations
+		) {
+			visited.add(current)
 			path.unshift(current)
 			current = parent.get(current)
 		}
@@ -133,6 +155,7 @@ export function detectCycles(screens: Screen[]): CycleDetectionResult {
 		hasCycles: cycles.length > 0,
 		cycles,
 		disallowedCycles,
+		duplicateIds,
 	}
 }
 
