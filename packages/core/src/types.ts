@@ -113,7 +113,229 @@ export interface Screen {
 	 * @example [{ label: "Figma", url: "https://figma.com/file/..." }]
 	 */
 	links?: ScreenLink[]
+
+	/**
+	 * Wireframe-level mock definition for UI documentation.
+	 * When defined, navigation targets (navigateTo, itemNavigateTo, rowNavigateTo)
+	 * are automatically extracted and merged into the `next` array.
+	 */
+	mock?: ScreenMock
 }
+
+// =============================================================================
+// Mock Types - Wireframe-level UI mockups for screen flow documentation
+// =============================================================================
+
+/**
+ * Layout direction for mock sections
+ */
+export type MockLayout = "vertical" | "horizontal"
+
+/**
+ * Available element types for mock wireframes
+ */
+export type MockElementType =
+	| "button"
+	| "input"
+	| "link"
+	| "text"
+	| "image"
+	| "list"
+	| "table"
+
+/**
+ * Base interface for all mock elements
+ */
+interface MockElementBase {
+	/** Element type identifier */
+	type: MockElementType
+	/** Display label for the element */
+	label: string
+}
+
+/**
+ * Button element with optional navigation and styling
+ */
+export interface MockButtonElement extends MockElementBase {
+	type: "button"
+	/** Screen ID to navigate to when clicked */
+	navigateTo?: string
+	/** Visual style variant */
+	variant?: "primary" | "secondary" | "danger"
+}
+
+/**
+ * Input field element
+ */
+export interface MockInputElement extends MockElementBase {
+	type: "input"
+	/** Placeholder text */
+	placeholder?: string
+	/** Input type for semantics */
+	inputType?: "text" | "email" | "password" | "textarea" | "search"
+}
+
+/**
+ * Link element with optional navigation
+ */
+export interface MockLinkElement extends MockElementBase {
+	type: "link"
+	/** Screen ID to navigate to when clicked */
+	navigateTo?: string
+}
+
+/**
+ * Text element for labels and headings
+ */
+export interface MockTextElement extends MockElementBase {
+	type: "text"
+	/** Text style variant */
+	variant?: "heading" | "subheading" | "body" | "caption"
+}
+
+/**
+ * Image placeholder element
+ */
+export interface MockImageElement extends MockElementBase {
+	type: "image"
+	/** Aspect ratio (e.g., "16:9", "1:1") */
+	aspectRatio?: string
+}
+
+/**
+ * List element for displaying multiple items
+ */
+export interface MockListElement extends MockElementBase {
+	type: "list"
+	/** Number of items to display (default: 3) */
+	itemCount?: number
+	/** Screen ID to navigate to when an item is clicked */
+	itemNavigateTo?: string
+}
+
+/**
+ * Table element for displaying tabular data
+ */
+export interface MockTableElement extends MockElementBase {
+	type: "table"
+	/** Column headers */
+	columns?: string[]
+	/** Number of rows to display (default: 3) */
+	rowCount?: number
+	/** Screen ID to navigate to when a row is clicked */
+	rowNavigateTo?: string
+}
+
+/**
+ * Union type of all mock element variants
+ */
+export type MockElement =
+	| MockButtonElement
+	| MockInputElement
+	| MockLinkElement
+	| MockTextElement
+	| MockImageElement
+	| MockListElement
+	| MockTableElement
+
+/**
+ * Section containing grouped mock elements
+ */
+export interface MockSection {
+	/** Optional section title */
+	title?: string
+	/** Layout direction (default: "vertical") */
+	layout?: MockLayout
+	/** Elements within this section */
+	elements: MockElement[]
+}
+
+/**
+ * Complete mock definition for a screen
+ */
+export interface ScreenMock {
+	/** Sections containing UI elements */
+	sections: MockSection[]
+}
+
+// =============================================================================
+// Mock Zod Schemas
+// =============================================================================
+
+const mockLayoutSchema = z.enum(["vertical", "horizontal"])
+
+const mockElementBaseSchema = z.object({
+	type: z.enum(["button", "input", "link", "text", "image", "list", "table"]),
+	label: z.string().min(1),
+})
+
+const mockButtonElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("button"),
+	navigateTo: z.string().optional(),
+	variant: z.enum(["primary", "secondary", "danger"]).optional(),
+})
+
+const mockInputElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("input"),
+	placeholder: z.string().optional(),
+	inputType: z
+		.enum(["text", "email", "password", "textarea", "search"])
+		.optional(),
+})
+
+const mockLinkElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("link"),
+	navigateTo: z.string().optional(),
+})
+
+const mockTextElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("text"),
+	variant: z.enum(["heading", "subheading", "body", "caption"]).optional(),
+})
+
+const mockImageElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("image"),
+	aspectRatio: z.string().optional(),
+})
+
+const mockListElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("list"),
+	itemCount: z.number().int().positive().optional(),
+	itemNavigateTo: z.string().optional(),
+})
+
+const mockTableElementSchema = mockElementBaseSchema.extend({
+	type: z.literal("table"),
+	columns: z.array(z.string()).optional(),
+	rowCount: z.number().int().positive().optional(),
+	rowNavigateTo: z.string().optional(),
+})
+
+const mockElementSchema = z.discriminatedUnion("type", [
+	mockButtonElementSchema,
+	mockInputElementSchema,
+	mockLinkElementSchema,
+	mockTextElementSchema,
+	mockImageElementSchema,
+	mockListElementSchema,
+	mockTableElementSchema,
+])
+
+const mockSectionSchema = z.object({
+	title: z.string().optional(),
+	layout: mockLayoutSchema.optional(),
+	elements: z.array(mockElementSchema),
+})
+
+/**
+ * Schema for screen mock definition (runtime validation)
+ * @internal
+ */
+export const screenMockSchema = z.object({
+	sections: z.array(mockSectionSchema),
+})
+
+// =============================================================================
 
 /**
  * Input type for defineScreen function.
@@ -144,6 +366,7 @@ export const screenSchema = z.object({
 			}),
 		)
 		.optional(),
+	mock: screenMockSchema.optional(),
 })
 
 /**

@@ -6,13 +6,19 @@ const screens = loadScreens()
 
 // Generate Navigation Mermaid graph
 let navigationGraph = ""
+const screensWithMock: string[] = []
 if (screens.length > 0) {
 	const lines: string[] = ["flowchart TD"]
 
 	for (const screen of screens) {
 		const label = screen.title.replace(/"/g, "'")
 		const id = screen.id.replace(/\./g, "_")
-		lines.push(`    ${id}["${label}"]`)
+		const mockIndicator = screen.mock ? " 📱" : ""
+		lines.push(`    ${id}["${label}${mockIndicator}"]`)
+		lines.push(`    click ${id} "/screen/${screen.id}"`)
+		if (screen.mock) {
+			screensWithMock.push(id)
+		}
 	}
 
 	lines.push("")
@@ -27,8 +33,21 @@ if (screens.length > 0) {
 		}
 	}
 
+	// Add styling for screens with mock
+	if (screensWithMock.length > 0) {
+		lines.push("")
+		lines.push("    %% Mock styling")
+		lines.push("    classDef hasMock stroke:#14b8a6,stroke-width:2px")
+		for (const id of screensWithMock) {
+			lines.push(`    class ${id} hasMock`)
+		}
+	}
+
 	navigationGraph = lines.join("\n")
 }
+
+// Count screens with mock
+const mockCount = screens.filter(s => s.mock).length
 
 // Generate API Dependency Mermaid graph
 let apiGraph = ""
@@ -145,6 +164,7 @@ const apiCount = new Set(
 					<div class="graph-stats">
 						<span class="stat">{screens.length} screens</span>
 						<span class="stat">{apiCount} APIs</span>
+						{mockCount > 0 && <span class="stat stat-mock">📱 {mockCount} with mock</span>}
 					</div>
 				</div>
 
@@ -160,6 +180,10 @@ const apiCount = new Set(
 					<div class="graph-legend-item">
 						<div class="legend-node"></div>
 						<span>Screen</span>
+					</div>
+					<div class="graph-legend-item">
+						<div class="legend-node legend-mock"></div>
+						<span>Screen with mock 📱</span>
 					</div>
 					<div class="graph-legend-item">
 						<div class="legend-edge"></div>
@@ -191,6 +215,7 @@ const apiCount = new Set(
 		const mermaidConfig = {
 			startOnLoad: false,
 			theme: "dark",
+			securityLevel: "loose", // Enable click handlers
 			themeVariables: {
 				darkMode: true,
 				background: "transparent",
@@ -330,5 +355,14 @@ const apiCount = new Set(
 	.legend-api {
 		background: #14b8a6 !important;
 		border-color: #5eead4 !important;
+	}
+
+	.legend-mock {
+		border-color: #14b8a6 !important;
+		border-width: 2px !important;
+	}
+
+	.stat-mock {
+		color: #14b8a6;
 	}
 </style>
