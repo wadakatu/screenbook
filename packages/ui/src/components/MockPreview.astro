@@ -1,0 +1,444 @@
+---
+import type { ScreenMock, MockElement, MockSection } from "@screenbook/core"
+
+interface Props {
+	mock: ScreenMock
+	screenId: string
+}
+
+const { mock, screenId } = Astro.props
+
+// Helper to get element variant color for buttons
+function getButtonStyle(variant?: string): string {
+	switch (variant) {
+		case "primary":
+			return "background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%); color: white;"
+		case "danger":
+			return "background: #ef4444; color: white;"
+		default:
+			return "background: #3d4660; color: #94a3b8;"
+	}
+}
+
+// Helper to get text variant styles
+function getTextStyle(variant?: string): string {
+	switch (variant) {
+		case "heading":
+			return "font-size: 16px; font-weight: 700; color: #e2e8f0;"
+		case "subheading":
+			return "font-size: 14px; font-weight: 600; color: #cbd5e1;"
+		case "caption":
+			return "font-size: 11px; color: #64748b;"
+		default:
+			return "font-size: 13px; color: #94a3b8;"
+	}
+}
+
+// Calculate aspect ratio padding for image placeholders
+function getAspectRatioPadding(ratio?: string): string {
+	if (!ratio) return "56.25%" // 16:9 default
+	const [w, h] = ratio.split(":").map(Number)
+	if (!w || !h) return "56.25%"
+	return `${(h / w) * 100}%`
+}
+---
+
+<div class="mock-preview">
+	<div class="mock-header">
+		<div class="mock-header-left">
+			<svg class="mock-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+			</svg>
+			<span>Wireframe Mock</span>
+		</div>
+		<a href={`/editor?screen=${screenId}`} class="edit-mock-link">
+			<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+			</svg>
+			Edit Mock
+		</a>
+	</div>
+
+	<div class="mock-frame">
+		{mock.sections.map((section) => (
+			<div class="mock-section">
+				{section.title && (
+					<div class="section-title">{section.title}</div>
+				)}
+				<div class={`section-elements ${section.layout === "horizontal" ? "horizontal" : "vertical"}`}>
+					{section.elements.map((element) => {
+						if (element.type === "button") {
+							return (
+								<div class="element-wrapper">
+									<div class="mock-button" style={getButtonStyle(element.variant)}>
+										{element.label}
+									</div>
+									{element.navigateTo && (
+										<a href={`/screen/${element.navigateTo}`} class="navigate-link">
+											→ {element.navigateTo}
+										</a>
+									)}
+								</div>
+							)
+						}
+
+						if (element.type === "input") {
+							return (
+								<div class="mock-input">
+									<span class="input-label">{element.label}</span>
+									<span class="input-placeholder">{element.placeholder || "Enter value..."}</span>
+								</div>
+							)
+						}
+
+						if (element.type === "link") {
+							return (
+								<div class="element-wrapper">
+									<div class="mock-link">{element.label}</div>
+									{element.navigateTo && (
+										<a href={`/screen/${element.navigateTo}`} class="navigate-link">
+											→ {element.navigateTo}
+										</a>
+									)}
+								</div>
+							)
+						}
+
+						if (element.type === "text") {
+							return (
+								<div class="mock-text" style={getTextStyle(element.variant)}>
+									{element.label}
+								</div>
+							)
+						}
+
+						if (element.type === "image") {
+							return (
+								<div class="mock-image" style={`padding-bottom: ${getAspectRatioPadding(element.aspectRatio)}`}>
+									<div class="image-placeholder">
+										<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+											<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+										</svg>
+										<span>{element.label}</span>
+									</div>
+								</div>
+							)
+						}
+
+						if (element.type === "list") {
+							const itemCount = element.itemCount || 3
+							return (
+								<div class="element-wrapper">
+									<div class="mock-list">
+										<div class="list-header">{element.label}</div>
+										{Array.from({ length: itemCount }).map((_, i) => (
+											<div class="list-item" style={i < itemCount - 1 ? "border-bottom: 1px solid #1e2433;" : ""}>
+												Item {i + 1}
+											</div>
+										))}
+									</div>
+									{element.itemNavigateTo && (
+										<a href={`/screen/${element.itemNavigateTo}`} class="navigate-link">
+											→ {element.itemNavigateTo}
+										</a>
+									)}
+								</div>
+							)
+						}
+
+						if (element.type === "table") {
+							const columns = element.columns || ["Column 1", "Column 2", "Column 3"]
+							const rowCount = element.rowCount || 3
+							return (
+								<div class="element-wrapper">
+									<div class="mock-table">
+										<div class="table-header">{element.label}</div>
+										<div class="table-content">
+											<div class="table-row table-header-row">
+												{columns.map((col) => (
+													<div class="table-cell">{col}</div>
+												))}
+											</div>
+											{Array.from({ length: rowCount }).map((_, i) => (
+												<div class="table-row">
+													{columns.map((_, j) => (
+														<div class="table-cell">Data {i + 1}-{j + 1}</div>
+													))}
+												</div>
+											))}
+										</div>
+									</div>
+									{element.rowNavigateTo && (
+										<a href={`/screen/${element.rowNavigateTo}`} class="navigate-link">
+											→ {element.rowNavigateTo}
+										</a>
+									)}
+								</div>
+							)
+						}
+
+						return null
+					})}
+				</div>
+			</div>
+		))}
+	</div>
+</div>
+
+<style>
+	.mock-preview {
+		background: #1e2433;
+		border-radius: 12px;
+		overflow: hidden;
+		border: 1px solid #2d3548;
+	}
+
+	.mock-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 12px 16px;
+		background: #1a1f2e;
+		border-bottom: 1px solid #2d3548;
+	}
+
+	.mock-header-left {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		color: #94a3b8;
+		font-size: 14px;
+	}
+
+	.mock-icon {
+		width: 18px;
+		height: 18px;
+	}
+
+	.edit-mock-link {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 12px;
+		background: #2d3548;
+		color: #94a3b8;
+		border-radius: 6px;
+		font-size: 12px;
+		text-decoration: none;
+		transition: all 0.2s;
+	}
+
+	.edit-mock-link:hover {
+		background: #3d4660;
+		color: #14b8a6;
+	}
+
+	.edit-mock-link svg {
+		width: 14px;
+		height: 14px;
+	}
+
+	.mock-frame {
+		padding: 20px;
+		background: #0f1219;
+		max-width: 400px;
+		margin: 20px auto;
+		border-radius: 8px;
+		border: 1px solid #2d3548;
+	}
+
+	.mock-section {
+		margin-bottom: 16px;
+	}
+
+	.mock-section:last-child {
+		margin-bottom: 0;
+	}
+
+	.section-title {
+		font-size: 11px;
+		font-weight: 600;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: 8px;
+	}
+
+	.section-elements {
+		display: flex;
+		gap: 8px;
+	}
+
+	.section-elements.vertical {
+		flex-direction: column;
+	}
+
+	.section-elements.horizontal {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.section-elements.horizontal > * {
+		flex: 1;
+		min-width: 80px;
+	}
+
+	.element-wrapper {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.mock-button {
+		padding: 10px 16px;
+		border-radius: 6px;
+		font-size: 13px;
+		font-weight: 500;
+		text-align: center;
+		cursor: default;
+	}
+
+	.mock-input {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		padding: 10px 12px;
+		background: #1e2433;
+		border: 1px solid #3d4660;
+		border-radius: 6px;
+	}
+
+	.input-label {
+		font-size: 11px;
+		color: #64748b;
+		font-weight: 500;
+	}
+
+	.input-placeholder {
+		font-size: 13px;
+		color: #475569;
+	}
+
+	.mock-link {
+		color: #14b8a6;
+		font-size: 13px;
+		text-decoration: underline;
+		cursor: default;
+	}
+
+	.mock-text {
+		padding: 4px 0;
+	}
+
+	.mock-image {
+		position: relative;
+		background: #1e2433;
+		border: 2px dashed #3d4660;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.image-placeholder {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		color: #475569;
+	}
+
+	.image-placeholder svg {
+		width: 32px;
+		height: 32px;
+	}
+
+	.image-placeholder span {
+		font-size: 12px;
+	}
+
+	.mock-list {
+		background: #1e2433;
+		border: 1px solid #3d4660;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.list-header {
+		padding: 10px 12px;
+		background: #2d3548;
+		font-size: 12px;
+		font-weight: 600;
+		color: #94a3b8;
+	}
+
+	.list-item {
+		padding: 10px 12px;
+		font-size: 13px;
+		color: #94a3b8;
+	}
+
+	.mock-table {
+		background: #1e2433;
+		border: 1px solid #3d4660;
+		border-radius: 6px;
+		overflow: hidden;
+	}
+
+	.table-header {
+		padding: 10px 12px;
+		background: #2d3548;
+		font-size: 12px;
+		font-weight: 600;
+		color: #94a3b8;
+	}
+
+	.table-content {
+		overflow-x: auto;
+	}
+
+	.table-row {
+		display: flex;
+		border-bottom: 1px solid #2d3548;
+	}
+
+	.table-row:last-child {
+		border-bottom: none;
+	}
+
+	.table-header-row {
+		background: #252d3d;
+	}
+
+	.table-header-row .table-cell {
+		font-weight: 600;
+		font-size: 11px;
+		color: #64748b;
+	}
+
+	.table-cell {
+		flex: 1;
+		padding: 8px 12px;
+		font-size: 12px;
+		color: #94a3b8;
+		min-width: 80px;
+	}
+
+	.navigate-link {
+		font-size: 11px;
+		color: #14b8a6;
+		text-decoration: none;
+		padding: 2px 8px;
+		background: rgba(20, 184, 166, 0.1);
+		border-radius: 4px;
+		align-self: flex-start;
+	}
+
+	.navigate-link:hover {
+		background: rgba(20, 184, 166, 0.2);
+	}
+</style>

@@ -1,5 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro"
+import MockPreview from "@/components/MockPreview.astro"
 import { loadScreens } from "@/utils/loadScreens"
 import { getApiDependencyCount } from "@/utils/impactAnalysis"
 
@@ -126,6 +127,14 @@ const nextScreens = screens.filter((s) => screen.next?.includes(s.id))
 								</a>
 							))}
 						</div>
+					</div>
+				)}
+
+				<!-- Mock Preview -->
+				{screen.mock && (
+					<div class="section">
+						<h2 class="section-title">UI Wireframe</h2>
+						<MockPreview mock={screen.mock} screenId={screen.id} />
 					</div>
 				)}
 			</div>
