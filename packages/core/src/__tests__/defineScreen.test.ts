@@ -302,5 +302,144 @@ describe("defineScreen", () => {
 				}),
 			).toThrow()
 		})
+
+		it("should extract navigation targets from child sections", () => {
+			const screen = defineScreen({
+				id: "billing.invoice.detail",
+				title: "Invoice Detail",
+				route: "/billing/invoices/:id",
+				mock: {
+					sections: [
+						{
+							title: "Parent",
+							elements: [
+								{
+									type: "button",
+									label: "Parent Action",
+									navigateTo: "parent.target",
+								},
+							],
+							children: [
+								{
+									title: "Child",
+									elements: [
+										{
+											type: "button",
+											label: "Child Action",
+											navigateTo: "child.target",
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toContain("parent.target")
+			expect(screen.next).toContain("child.target")
+			expect(screen.next).toHaveLength(2)
+		})
+
+		it("should extract navigation targets from deeply nested child sections", () => {
+			const screen = defineScreen({
+				id: "complex.screen",
+				title: "Complex Screen",
+				route: "/complex",
+				mock: {
+					sections: [
+						{
+							title: "Level 0",
+							elements: [
+								{ type: "link", label: "L0 Link", navigateTo: "level0.target" },
+							],
+							children: [
+								{
+									title: "Level 1",
+									elements: [
+										{
+											type: "list",
+											label: "L1 List",
+											itemNavigateTo: "level1.target",
+										},
+									],
+									children: [
+										{
+											title: "Level 2",
+											elements: [
+												{
+													type: "table",
+													label: "L2 Table",
+													columns: ["Col"],
+													rowNavigateTo: "level2.target",
+												},
+											],
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toContain("level0.target")
+			expect(screen.next).toContain("level1.target")
+			expect(screen.next).toContain("level2.target")
+			expect(screen.next).toHaveLength(3)
+		})
+
+		it("should handle mock with empty child sections array", () => {
+			const screen = defineScreen({
+				id: "home",
+				title: "Home",
+				route: "/",
+				mock: {
+					sections: [
+						{
+							title: "Section",
+							elements: [{ type: "text", label: "Hello" }],
+							children: [],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toBeUndefined()
+		})
+
+		it("should deduplicate targets from parent and child sections", () => {
+			const screen = defineScreen({
+				id: "home",
+				title: "Home",
+				route: "/",
+				mock: {
+					sections: [
+						{
+							elements: [
+								{
+									type: "button",
+									label: "Go",
+									navigateTo: "same.target",
+								},
+							],
+							children: [
+								{
+									elements: [
+										{
+											type: "link",
+											label: "Also Go",
+											navigateTo: "same.target",
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			})
+
+			expect(screen.next).toEqual(["same.target"])
+		})
 	})
 })
