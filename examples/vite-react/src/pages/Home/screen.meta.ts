@@ -9,13 +9,4 @@ export const screen = defineScreen({
 	description: "Landing page with navigation to main sections",
 	next: ["dashboard", "settings"],
 	dependsOn: [],
-	mock: {
-		sections: [
-			{
-				title: "Header",
-				layout: "horizontal",
-				elements: [{ type: "button", label: "Button", variant: "primary" }],
-			},
-		],
-	},
 })
