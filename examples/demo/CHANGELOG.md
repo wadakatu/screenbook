@@ -1,5 +1,14 @@
 # screenbook-demo
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @screenbook/core@1.0.0
+  - @screenbook/cli@1.0.0
+  - @screenbook/ui@1.0.0
+
 ## 0.0.2
 
 ### Patch Changes
