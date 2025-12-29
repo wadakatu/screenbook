@@ -68,18 +68,19 @@ function getAspectRatioPadding(ratio?: string): string {
 				<div class={`section-elements ${section.layout === "horizontal" ? "horizontal" : "vertical"}`}>
 					{section.elements.map((element) => {
 						if (element.type === "button") {
-							return (
-								<div class="element-wrapper">
-									<div class="mock-button" style={getButtonStyle(element.variant)}>
-										{element.label}
-									</div>
+							const buttonContent = (
+								<div class={`mock-button ${element.navigateTo ? "has-navigation" : ""}`} style={getButtonStyle(element.variant)}>
+									<span class="button-label">{element.label}</span>
 									{element.navigateTo && (
-										<a href={`/screen/${element.navigateTo}`} class="navigate-link">
-											→ {element.navigateTo}
-										</a>
+										<span class="button-navigate">→ {element.navigateTo}</span>
 									)}
 								</div>
 							)
+							return element.navigateTo ? (
+								<a href={`/screen/${element.navigateTo}`} class="element-link">
+									{buttonContent}
+								</a>
+							) : buttonContent
 						}
 
 						if (element.type === "input") {
@@ -92,16 +93,19 @@ function getAspectRatioPadding(ratio?: string): string {
 						}
 
 						if (element.type === "link") {
-							return (
-								<div class="element-wrapper">
-									<div class="mock-link">{element.label}</div>
+							const linkContent = (
+								<div class={`mock-link-card ${element.navigateTo ? "has-navigation" : ""}`}>
+									<span class="link-label">{element.label}</span>
 									{element.navigateTo && (
-										<a href={`/screen/${element.navigateTo}`} class="navigate-link">
-											→ {element.navigateTo}
-										</a>
+										<span class="link-navigate">→ {element.navigateTo}</span>
 									)}
 								</div>
 							)
+							return element.navigateTo ? (
+								<a href={`/screen/${element.navigateTo}`} class="element-link">
+									{linkContent}
+								</a>
+							) : <div class="mock-link">{element.label}</div>
 						}
 
 						if (element.type === "text") {
@@ -127,54 +131,56 @@ function getAspectRatioPadding(ratio?: string): string {
 
 						if (element.type === "list") {
 							const itemCount = element.itemCount || 3
-							return (
-								<div class="element-wrapper">
-									<div class="mock-list">
-										<div class="list-header">{element.label}</div>
-										{Array.from({ length: itemCount }).map((_, i) => (
-											<div class="list-item" style={i < itemCount - 1 ? "border-bottom: 1px solid #1e2433;" : ""}>
-												Item {i + 1}
-											</div>
-										))}
-									</div>
+							const listContent = (
+								<div class={`mock-list ${element.itemNavigateTo ? "has-navigation" : ""}`}>
+									<div class="list-header">{element.label}</div>
+									{Array.from({ length: itemCount }).map((_, i) => (
+										<div class="list-item" style={i < itemCount - 1 ? "border-bottom: 1px solid #1e2433;" : ""}>
+											Item {i + 1}
+										</div>
+									))}
 									{element.itemNavigateTo && (
-										<a href={`/screen/${element.itemNavigateTo}`} class="navigate-link">
-											→ {element.itemNavigateTo}
-										</a>
+										<div class="list-footer">→ {element.itemNavigateTo}</div>
 									)}
 								</div>
 							)
+							return element.itemNavigateTo ? (
+								<a href={`/screen/${element.itemNavigateTo}`} class="element-link">
+									{listContent}
+								</a>
+							) : listContent
 						}
 
 						if (element.type === "table") {
 							const columns = element.columns || ["Column 1", "Column 2", "Column 3"]
 							const rowCount = element.rowCount || 3
-							return (
-								<div class="element-wrapper">
-									<div class="mock-table">
-										<div class="table-header">{element.label}</div>
-										<div class="table-content">
-											<div class="table-row table-header-row">
-												{columns.map((col) => (
-													<div class="table-cell">{col}</div>
-												))}
-											</div>
-											{Array.from({ length: rowCount }).map((_, i) => (
-												<div class="table-row">
-													{columns.map((_, j) => (
-														<div class="table-cell">Data {i + 1}-{j + 1}</div>
-													))}
-												</div>
+							const tableContent = (
+								<div class={`mock-table ${element.rowNavigateTo ? "has-navigation" : ""}`}>
+									<div class="table-header">{element.label}</div>
+									<div class="table-content">
+										<div class="table-row table-header-row">
+											{columns.map((col) => (
+												<div class="table-cell">{col}</div>
 											))}
 										</div>
+										{Array.from({ length: rowCount }).map((_, i) => (
+											<div class="table-row">
+												{columns.map((_, j) => (
+													<div class="table-cell">Data {i + 1}-{j + 1}</div>
+												))}
+											</div>
+										))}
 									</div>
 									{element.rowNavigateTo && (
-										<a href={`/screen/${element.rowNavigateTo}`} class="navigate-link">
-											→ {element.rowNavigateTo}
-										</a>
+										<div class="table-footer">→ {element.rowNavigateTo}</div>
 									)}
 								</div>
 							)
+							return element.rowNavigateTo ? (
+								<a href={`/screen/${element.rowNavigateTo}`} class="element-link">
+									{tableContent}
+								</a>
+							) : tableContent
 						}
 
 						return null
@@ -283,10 +289,19 @@ function getAspectRatioPadding(ratio?: string): string {
 		min-width: 80px;
 	}
 
-	.element-wrapper {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
+	.element-link {
+		text-decoration: none;
+		display: block;
+		border-radius: 6px;
+		transition: all 0.2s;
+	}
+
+	.element-link:hover .mock-button,
+	.element-link:hover .mock-link-card,
+	.element-link:hover .mock-list,
+	.element-link:hover .mock-table {
+		transform: translateY(-2px);
+		box-shadow: 0 4px 12px rgba(20, 184, 166, 0.2);
 	}
 
 	.mock-button {
@@ -296,6 +311,24 @@ function getAspectRatioPadding(ratio?: string): string {
 		font-weight: 500;
 		text-align: center;
 		cursor: default;
+		transition: all 0.2s;
+	}
+
+	.mock-button.has-navigation {
+		cursor: pointer;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		align-items: center;
+	}
+
+	.button-label {
+		display: block;
+	}
+
+	.button-navigate {
+		font-size: 10px;
+		opacity: 0.8;
 	}
 
 	.mock-input {
@@ -324,6 +357,33 @@ function getAspectRatioPadding(ratio?: string): string {
 		font-size: 13px;
 		text-decoration: underline;
 		cursor: default;
+	}
+
+	.mock-link-card {
+		padding: 10px 12px;
+		background: rgba(20, 184, 166, 0.1);
+		border: 1px solid rgba(20, 184, 166, 0.3);
+		border-radius: 6px;
+		transition: all 0.2s;
+	}
+
+	.mock-link-card.has-navigation {
+		cursor: pointer;
+	}
+
+	.link-label {
+		color: #14b8a6;
+		font-size: 13px;
+		text-decoration: underline;
+		display: block;
+	}
+
+	.link-navigate {
+		font-size: 10px;
+		color: #5eead4;
+		opacity: 0.8;
+		display: block;
+		margin-top: 4px;
 	}
 
 	.mock-text {
@@ -382,6 +442,18 @@ function getAspectRatioPadding(ratio?: string): string {
 		color: #94a3b8;
 	}
 
+	.list-footer {
+		padding: 8px 12px;
+		background: rgba(20, 184, 166, 0.1);
+		font-size: 10px;
+		color: #14b8a6;
+		border-top: 1px solid #3d4660;
+	}
+
+	.mock-list.has-navigation {
+		cursor: pointer;
+	}
+
 	.mock-table {
 		background: #1e2433;
 		border: 1px solid #3d4660;
@@ -428,17 +500,15 @@ function getAspectRatioPadding(ratio?: string): string {
 		min-width: 80px;
 	}
 
-	.navigate-link {
-		font-size: 11px;
-		color: #14b8a6;
-		text-decoration: none;
-		padding: 2px 8px;
+	.table-footer {
+		padding: 8px 12px;
 		background: rgba(20, 184, 166, 0.1);
-		border-radius: 4px;
-		align-self: flex-start;
+		font-size: 10px;
+		color: #14b8a6;
+		border-top: 1px solid #3d4660;
 	}
 
-	.navigate-link:hover {
-		background: rgba(20, 184, 166, 0.2);
+	.mock-table.has-navigation {
+		cursor: pointer;
 	}
 </style>
