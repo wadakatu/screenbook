@@ -248,6 +248,8 @@ export interface MockSection {
 	layout?: MockLayout
 	/** Elements within this section */
 	elements: MockElement[]
+	/** Nested child sections */
+	children?: MockSection[]
 }
 
 /**
@@ -321,11 +323,14 @@ const mockElementSchema = z.discriminatedUnion("type", [
 	mockTableElementSchema,
 ])
 
-const mockSectionSchema = z.object({
-	title: z.string().optional(),
-	layout: mockLayoutSchema.optional(),
-	elements: z.array(mockElementSchema),
-})
+const mockSectionSchema: z.ZodType<MockSection> = z.lazy(() =>
+	z.object({
+		title: z.string().optional(),
+		layout: mockLayoutSchema.optional(),
+		elements: z.array(mockElementSchema),
+		children: z.array(mockSectionSchema).optional(),
+	}),
+)
 
 /**
  * Schema for screen mock definition (runtime validation)

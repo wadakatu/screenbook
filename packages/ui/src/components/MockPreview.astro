@@ -46,148 +46,424 @@ function getAspectRatioPadding(ratio?: string): string {
 <div class="mock-preview">
 	<div class="mock-header">
 		<div class="mock-header-left">
-			<svg class="mock-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+			<svg
+				class="mock-icon"
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
+				></path>
 			</svg>
 			<span>Wireframe Mock</span>
 		</div>
 		<a href={`/editor?screen=${screenId}`} class="edit-mock-link">
-			<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-				<path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+			<svg
+				fill="none"
+				viewBox="0 0 24 24"
+				stroke="currentColor"
+				stroke-width="2"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+				></path>
 			</svg>
 			Edit Mock
 		</a>
 	</div>
 
 	<div class="mock-frame">
-		{mock.sections.map((section) => (
-			<div class="mock-section">
-				{section.title && (
-					<div class="section-title">{section.title}</div>
-				)}
-				<div class={`section-elements ${section.layout === "horizontal" ? "horizontal" : "vertical"}`}>
-					{section.elements.map((element) => {
-						if (element.type === "button") {
-							const buttonContent = (
-								<div class={`mock-button ${element.navigateTo ? "has-navigation" : ""}`} style={getButtonStyle(element.variant)}>
-									<span class="button-label">{element.label}</span>
-									{element.navigateTo && (
-										<span class="button-navigate">→ {element.navigateTo}</span>
-									)}
-								</div>
-							)
-							return element.navigateTo ? (
-								<a href={`/screen/${element.navigateTo}`} class="element-link">
-									{buttonContent}
-								</a>
-							) : buttonContent
-						}
-
-						if (element.type === "input") {
-							return (
-								<div class="mock-input">
-									<span class="input-label">{element.label}</span>
-									<span class="input-placeholder">{element.placeholder || "Enter value..."}</span>
-								</div>
-							)
-						}
-
-						if (element.type === "link") {
-							const linkContent = (
-								<div class={`mock-link-card ${element.navigateTo ? "has-navigation" : ""}`}>
-									<span class="link-label">{element.label}</span>
-									{element.navigateTo && (
-										<span class="link-navigate">→ {element.navigateTo}</span>
-									)}
-								</div>
-							)
-							return element.navigateTo ? (
-								<a href={`/screen/${element.navigateTo}`} class="element-link">
-									{linkContent}
-								</a>
-							) : <div class="mock-link">{element.label}</div>
-						}
-
-						if (element.type === "text") {
-							return (
-								<div class="mock-text" style={getTextStyle(element.variant)}>
-									{element.label}
-								</div>
-							)
-						}
-
-						if (element.type === "image") {
-							return (
-								<div class="mock-image" style={`padding-bottom: ${getAspectRatioPadding(element.aspectRatio)}`}>
-									<div class="image-placeholder">
-										<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-											<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
-										</svg>
-										<span>{element.label}</span>
+		{
+			mock.sections.map((section) => (
+				<div class="mock-section">
+					{section.title && <div class="section-title">{section.title}</div>}
+					<div
+						class={`section-elements ${section.layout === "horizontal" ? "horizontal" : "vertical"}`}
+					>
+						{section.elements.map((element) => {
+							if (element.type === "button") {
+								const buttonContent = (
+									<div
+										class={`mock-button ${element.navigateTo ? "has-navigation" : ""}`}
+										style={getButtonStyle(element.variant)}
+									>
+										<span class="button-label">{element.label}</span>
+										{element.navigateTo && (
+											<span class="button-navigate">
+												→ {element.navigateTo}
+											</span>
+										)}
 									</div>
-								</div>
-							)
-						}
+								)
+								return element.navigateTo ? (
+									<a
+										href={`/screen/${element.navigateTo}`}
+										class="element-link"
+									>
+										{buttonContent}
+									</a>
+								) : (
+									buttonContent
+								)
+							}
 
-						if (element.type === "list") {
-							const itemCount = element.itemCount || 3
-							const listContent = (
-								<div class={`mock-list ${element.itemNavigateTo ? "has-navigation" : ""}`}>
-									<div class="list-header">{element.label}</div>
-									{Array.from({ length: itemCount }).map((_, i) => (
-										<div class="list-item" style={i < itemCount - 1 ? "border-bottom: 1px solid #1e2433;" : ""}>
-											Item {i + 1}
-										</div>
-									))}
-									{element.itemNavigateTo && (
-										<div class="list-footer">→ {element.itemNavigateTo}</div>
-									)}
-								</div>
-							)
-							return element.itemNavigateTo ? (
-								<a href={`/screen/${element.itemNavigateTo}`} class="element-link">
-									{listContent}
-								</a>
-							) : listContent
-						}
+							if (element.type === "input") {
+								return (
+									<div class="mock-input">
+										<span class="input-label">{element.label}</span>
+										<span class="input-placeholder">
+											{element.placeholder || "Enter value..."}
+										</span>
+									</div>
+								)
+							}
 
-						if (element.type === "table") {
-							const columns = element.columns || ["Column 1", "Column 2", "Column 3"]
-							const rowCount = element.rowCount || 3
-							const tableContent = (
-								<div class={`mock-table ${element.rowNavigateTo ? "has-navigation" : ""}`}>
-									<div class="table-header">{element.label}</div>
-									<div class="table-content">
-										<div class="table-row table-header-row">
-											{columns.map((col) => (
-												<div class="table-cell">{col}</div>
-											))}
+							if (element.type === "link") {
+								const linkContent = (
+									<div
+										class={`mock-link-card ${element.navigateTo ? "has-navigation" : ""}`}
+									>
+										<span class="link-label">{element.label}</span>
+										{element.navigateTo && (
+											<span class="link-navigate">→ {element.navigateTo}</span>
+										)}
+									</div>
+								)
+								return element.navigateTo ? (
+									<a
+										href={`/screen/${element.navigateTo}`}
+										class="element-link"
+									>
+										{linkContent}
+									</a>
+								) : (
+									<div class="mock-link">{element.label}</div>
+								)
+							}
+
+							if (element.type === "text") {
+								return (
+									<div class="mock-text" style={getTextStyle(element.variant)}>
+										{element.label}
+									</div>
+								)
+							}
+
+							if (element.type === "image") {
+								return (
+									<div
+										class="mock-image"
+										style={`padding-bottom: ${getAspectRatioPadding(element.aspectRatio)}`}
+									>
+										<div class="image-placeholder">
+											<svg
+												fill="none"
+												viewBox="0 0 24 24"
+												stroke="currentColor"
+												stroke-width="1.5"
+											>
+												<path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+												/>
+											</svg>
+											<span>{element.label}</span>
 										</div>
-										{Array.from({ length: rowCount }).map((_, i) => (
-											<div class="table-row">
-												{columns.map((_, j) => (
-													<div class="table-cell">Data {i + 1}-{j + 1}</div>
-												))}
+									</div>
+								)
+							}
+
+							if (element.type === "list") {
+								const itemCount = element.itemCount || 3
+								const listContent = (
+									<div
+										class={`mock-list ${element.itemNavigateTo ? "has-navigation" : ""}`}
+									>
+										<div class="list-header">{element.label}</div>
+										{Array.from({ length: itemCount }).map((_, i) => (
+											<div
+												class="list-item"
+												style={
+													i < itemCount - 1
+														? "border-bottom: 1px solid #1e2433;"
+														: ""
+												}
+											>
+												Item {i + 1}
 											</div>
 										))}
+										{element.itemNavigateTo && (
+											<div class="list-footer">→ {element.itemNavigateTo}</div>
+										)}
 									</div>
-									{element.rowNavigateTo && (
-										<div class="table-footer">→ {element.rowNavigateTo}</div>
-									)}
-								</div>
-							)
-							return element.rowNavigateTo ? (
-								<a href={`/screen/${element.rowNavigateTo}`} class="element-link">
-									{tableContent}
-								</a>
-							) : tableContent
-						}
+								)
+								return element.itemNavigateTo ? (
+									<a
+										href={`/screen/${element.itemNavigateTo}`}
+										class="element-link"
+									>
+										{listContent}
+									</a>
+								) : (
+									listContent
+								)
+							}
 
-						return null
-					})}
+							if (element.type === "table") {
+								const columns = element.columns || [
+									"Column 1",
+									"Column 2",
+									"Column 3",
+								]
+								const rowCount = element.rowCount || 3
+								const tableContent = (
+									<div
+										class={`mock-table ${element.rowNavigateTo ? "has-navigation" : ""}`}
+									>
+										<div class="table-header">{element.label}</div>
+										<div class="table-content">
+											<div class="table-row table-header-row">
+												{columns.map((col) => (
+													<div class="table-cell">{col}</div>
+												))}
+											</div>
+											{Array.from({ length: rowCount }).map((_, i) => (
+												<div class="table-row">
+													{columns.map((_, j) => (
+														<div class="table-cell">
+															Data {i + 1}-{j + 1}
+														</div>
+													))}
+												</div>
+											))}
+										</div>
+										{element.rowNavigateTo && (
+											<div class="table-footer">→ {element.rowNavigateTo}</div>
+										)}
+									</div>
+								)
+								return element.rowNavigateTo ? (
+									<a
+										href={`/screen/${element.rowNavigateTo}`}
+										class="element-link"
+									>
+										{tableContent}
+									</a>
+								) : (
+									tableContent
+								)
+							}
+
+							return null
+						})}
+					</div>
+					{/* Child sections */}
+					{section.children && section.children.length > 0 && (
+						<div class="child-sections">
+							{section.children.map((childSection) => (
+								<div class="mock-section child-section">
+									{childSection.title && (
+										<div class="section-title child-section-title">
+											{childSection.title}
+										</div>
+									)}
+									<div
+										class={`section-elements ${childSection.layout === "horizontal" ? "horizontal" : "vertical"}`}
+									>
+										{childSection.elements.map((element) => {
+											if (element.type === "button") {
+												const buttonContent = (
+													<div
+														class={`mock-button ${element.navigateTo ? "has-navigation" : ""}`}
+														style={getButtonStyle(element.variant)}
+													>
+														<span class="button-label">{element.label}</span>
+														{element.navigateTo && (
+															<span class="button-navigate">
+																→ {element.navigateTo}
+															</span>
+														)}
+													</div>
+												)
+												return element.navigateTo ? (
+													<a
+														href={`/screen/${element.navigateTo}`}
+														class="element-link"
+													>
+														{buttonContent}
+													</a>
+												) : (
+													buttonContent
+												)
+											}
+											if (element.type === "input") {
+												return (
+													<div class="mock-input">
+														<span class="input-label">{element.label}</span>
+														<span class="input-placeholder">
+															{element.placeholder || "Enter value..."}
+														</span>
+													</div>
+												)
+											}
+											if (element.type === "link") {
+												const linkContent = (
+													<div
+														class={`mock-link-card ${element.navigateTo ? "has-navigation" : ""}`}
+													>
+														<span class="link-label">{element.label}</span>
+														{element.navigateTo && (
+															<span class="link-navigate">
+																→ {element.navigateTo}
+															</span>
+														)}
+													</div>
+												)
+												return element.navigateTo ? (
+													<a
+														href={`/screen/${element.navigateTo}`}
+														class="element-link"
+													>
+														{linkContent}
+													</a>
+												) : (
+													<div class="mock-link">{element.label}</div>
+												)
+											}
+											if (element.type === "text") {
+												return (
+													<div
+														class="mock-text"
+														style={getTextStyle(element.variant)}
+													>
+														{element.label}
+													</div>
+												)
+											}
+											if (element.type === "image") {
+												return (
+													<div
+														class="mock-image"
+														style={`padding-bottom: ${getAspectRatioPadding(element.aspectRatio)}`}
+													>
+														<div class="image-placeholder">
+															<svg
+																fill="none"
+																viewBox="0 0 24 24"
+																stroke="currentColor"
+																stroke-width="1.5"
+															>
+																<path
+																	stroke-linecap="round"
+																	stroke-linejoin="round"
+																	d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+																/>
+															</svg>
+															<span>{element.label}</span>
+														</div>
+													</div>
+												)
+											}
+											if (element.type === "list") {
+												const itemCount = element.itemCount || 3
+												const listContent = (
+													<div
+														class={`mock-list ${element.itemNavigateTo ? "has-navigation" : ""}`}
+													>
+														<div class="list-header">{element.label}</div>
+														{Array.from({ length: itemCount }).map((_, i) => (
+															<div
+																class="list-item"
+																style={
+																	i < itemCount - 1
+																		? "border-bottom: 1px solid #1e2433;"
+																		: ""
+																}
+															>
+																Item {i + 1}
+															</div>
+														))}
+														{element.itemNavigateTo && (
+															<div class="list-footer">
+																→ {element.itemNavigateTo}
+															</div>
+														)}
+													</div>
+												)
+												return element.itemNavigateTo ? (
+													<a
+														href={`/screen/${element.itemNavigateTo}`}
+														class="element-link"
+													>
+														{listContent}
+													</a>
+												) : (
+													listContent
+												)
+											}
+											if (element.type === "table") {
+												const columns = element.columns || [
+													"Column 1",
+													"Column 2",
+													"Column 3",
+												]
+												const rowCount = element.rowCount || 3
+												const tableContent = (
+													<div
+														class={`mock-table ${element.rowNavigateTo ? "has-navigation" : ""}`}
+													>
+														<div class="table-header">{element.label}</div>
+														<div class="table-content">
+															<div class="table-row table-header-row">
+																{columns.map((col) => (
+																	<div class="table-cell">{col}</div>
+																))}
+															</div>
+															{Array.from({ length: rowCount }).map((_, i) => (
+																<div class="table-row">
+																	{columns.map((_, j) => (
+																		<div class="table-cell">
+																			Data {i + 1}-{j + 1}
+																		</div>
+																	))}
+																</div>
+															))}
+														</div>
+														{element.rowNavigateTo && (
+															<div class="table-footer">
+																→ {element.rowNavigateTo}
+															</div>
+														)}
+													</div>
+												)
+												return element.rowNavigateTo ? (
+													<a
+														href={`/screen/${element.rowNavigateTo}`}
+														class="element-link"
+													>
+														{tableContent}
+													</a>
+												) : (
+													tableContent
+												)
+											}
+											return null
+										})}
+									</div>
+								</div>
+							))}
+						</div>
+					)}
 				</div>
-			</div>
-		))}
+			))
+		}
 	</div>
 </div>
 
@@ -268,6 +544,27 @@ function getAspectRatioPadding(ratio?: string): string {
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
 		margin-bottom: 8px;
+	}
+
+	.child-sections {
+		margin-top: 12px;
+		padding-left: 16px;
+		border-left: 2px solid #2d3548;
+	}
+
+	.child-section {
+		background: rgba(20, 184, 166, 0.03);
+		padding: 12px;
+		border-radius: 6px;
+		margin-bottom: 12px;
+	}
+
+	.child-section:last-child {
+		margin-bottom: 0;
+	}
+
+	.child-section-title {
+		color: #5eead4;
 	}
 
 	.section-elements {
