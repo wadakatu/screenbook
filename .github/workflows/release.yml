@@ -64,7 +64,6 @@ jobs:
         with:
           node-version: "22"
           cache: "pnpm"
-          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -73,13 +72,13 @@ jobs:
         run: pnpm build
 
       - name: Publish @screenbook/core
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         working-directory: packages/core
 
       - name: Publish @screenbook/cli
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         working-directory: packages/cli
 
       - name: Publish @screenbook/ui
-        run: npm publish --access public
+        run: npm publish --access public --provenance
         working-directory: packages/ui
