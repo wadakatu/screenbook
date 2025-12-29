@@ -1,6 +1,7 @@
 import { existsSync, writeFileSync } from "node:fs"
 import { dirname, join, relative } from "node:path"
 import { define } from "gunshi"
+import prompts from "prompts"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
@@ -27,12 +28,19 @@ export const generateCommand = define({
 			description: "Overwrite existing screen.meta.ts files",
 			default: false,
 		},
+		interactive: {
+			type: "boolean",
+			short: "i",
+			description: "Interactively confirm or modify each screen",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
 		const dryRun = ctx.values.dryRun ?? false
 		const force = ctx.values.force ?? false
+		const interactive = ctx.values.interactive ?? false
 
 		if (!config.routesPattern) {
 			logger.errorWithHelp(ERRORS.ROUTES_PATTERN_MISSING)
@@ -65,23 +73,67 @@ export const generateCommand = define({
 			const absoluteMetaPath = join(cwd, metaPath)
 
 			if (!force && existsSync(absoluteMetaPath)) {
+				if (!interactive) {
+					skipped++
+					continue
+				}
+				logger.itemWarn(
+					`Exists: ${logger.path(metaPath)} (use --force to overwrite)`,
+				)
 				skipped++
 				continue
 			}
 
 			// Generate screen metadata from path
 			const screenMeta = inferScreenMeta(routeDir, config.routesPattern)
-			const content = generateScreenMetaContent(screenMeta)
 
-			if (dryRun) {
-				logger.step(`Would create: ${logger.path(metaPath)}`)
-				logger.log(`    ${logger.dim(`id: "${screenMeta.id}"`)}`)
-				logger.log(`    ${logger.dim(`title: "${screenMeta.title}"`)}`)
-				logger.log(`    ${logger.dim(`route: "${screenMeta.route}"`)}`)
-				logger.blank()
+			if (interactive) {
+				const result = await promptForScreen(routeFile, screenMeta)
+
+				if (result.skip) {
+					logger.itemWarn(`Skipped: ${logger.path(metaPath)}`)
+					skipped++
+					continue
+				}
+
+				const content = generateScreenMetaContent(result.meta, {
+					owner: result.owner,
+					tags: result.tags,
+				})
+
+				if (dryRun) {
+					logger.step(`Would create: ${logger.path(metaPath)}`)
+					logger.log(`    ${logger.dim(`id: "${result.meta.id}"`)}`)
+					logger.log(`    ${logger.dim(`title: "${result.meta.title}"`)}`)
+					logger.log(`    ${logger.dim(`route: "${result.meta.route}"`)}`)
+					if (result.owner.length > 0) {
+						logger.log(
+							`    ${logger.dim(`owner: [${result.owner.map((o) => `"${o}"`).join(", ")}]`)}`,
+						)
+					}
+					if (result.tags.length > 0) {
+						logger.log(
+							`    ${logger.dim(`tags: [${result.tags.map((t) => `"${t}"`).join(", ")}]`)}`,
+						)
+					}
+					logger.blank()
+				} else {
+					writeFileSync(absoluteMetaPath, content)
+					logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				}
 			} else {
-				writeFileSync(absoluteMetaPath, content)
-				logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				const content = generateScreenMetaContent(screenMeta)
+
+				if (dryRun) {
+					logger.step(`Would create: ${logger.path(metaPath)}`)
+					logger.log(`    ${logger.dim(`id: "${screenMeta.id}"`)}`)
+					logger.log(`    ${logger.dim(`title: "${screenMeta.title}"`)}`)
+					logger.log(`    ${logger.dim(`route: "${screenMeta.route}"`)}`)
+					logger.blank()
+				} else {
+					writeFileSync(absoluteMetaPath, content)
+					logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				}
 			}
 
 			created++
@@ -112,6 +164,94 @@ interface InferredScreenMeta {
 	id: string
 	title: string
 	route: string
+}
+
+interface InteractiveResult {
+	skip: boolean
+	meta: InferredScreenMeta
+	owner: string[]
+	tags: string[]
+}
+
+/**
+ * Parse comma-separated string into array
+ */
+export function parseCommaSeparated(input: string): string[] {
+	if (!input.trim()) return []
+	return input
+		.split(",")
+		.map((s) => s.trim())
+		.filter(Boolean)
+}
+
+/**
+ * Prompt user for screen metadata in interactive mode
+ */
+async function promptForScreen(
+	routeFile: string,
+	inferred: InferredScreenMeta,
+): Promise<InteractiveResult> {
+	logger.blank()
+	logger.info(`Found: ${logger.path(routeFile)}`)
+	logger.blank()
+	logger.log(
+		`  ${logger.dim("ID:")} ${inferred.id} ${logger.dim("(inferred)")}`,
+	)
+	logger.log(
+		`  ${logger.dim("Title:")} ${inferred.title} ${logger.dim("(inferred)")}`,
+	)
+	logger.log(
+		`  ${logger.dim("Route:")} ${inferred.route} ${logger.dim("(inferred)")}`,
+	)
+	logger.blank()
+
+	const response = await prompts([
+		{
+			type: "confirm",
+			name: "proceed",
+			message: "Generate this screen?",
+			initial: true,
+		},
+		{
+			type: (prev) => (prev ? "text" : null),
+			name: "id",
+			message: "ID",
+			initial: inferred.id,
+		},
+		{
+			type: (_prev, values) => (values.proceed ? "text" : null),
+			name: "title",
+			message: "Title",
+			initial: inferred.title,
+		},
+		{
+			type: (_prev, values) => (values.proceed ? "text" : null),
+			name: "owner",
+			message: "Owner (comma-separated)",
+			initial: "",
+		},
+		{
+			type: (_prev, values) => (values.proceed ? "text" : null),
+			name: "tags",
+			message: "Tags (comma-separated)",
+			initial: inferred.id.split(".")[0] || "",
+		},
+	])
+
+	if (!response.proceed) {
+		return { skip: true, meta: inferred, owner: [], tags: [] }
+	}
+
+	return {
+		skip: false,
+		meta: {
+			id: response.id || inferred.id,
+			title: response.title || inferred.title,
+			route: inferred.route,
+		},
+		owner: parseCommaSeparated(response.owner || ""),
+		tags: parseCommaSeparated(response.tags || ""),
+	}
 }
 
 /**
@@ -173,12 +313,28 @@ function inferScreenMeta(
 	return { id, title, route }
 }
 
+interface GenerateOptions {
+	owner?: string[]
+	tags?: string[]
+}
+
 /**
  * Generate screen.meta.ts file content
  */
-function generateScreenMetaContent(meta: InferredScreenMeta): string {
-	// Infer a tag from the first segment of the ID
-	const inferredTag = meta.id.split(".")[0] || "general"
+function generateScreenMetaContent(
+	meta: InferredScreenMeta,
+	options?: GenerateOptions,
+): string {
+	// Use provided values or infer defaults
+	const owner = options?.owner ?? []
+	const tags =
+		options?.tags && options.tags.length > 0
+			? options.tags
+			: [meta.id.split(".")[0] || "general"]
+
+	const ownerStr =
+		owner.length > 0 ? `[${owner.map((o) => `"${o}"`).join(", ")}]` : "[]"
+	const tagsStr = `[${tags.map((t) => `"${t}"`).join(", ")}]`
 
 	return `import { defineScreen } from "@screenbook/core"
 
@@ -188,10 +344,10 @@ export const screen = defineScreen({
 	route: "${meta.route}",
 
 	// Team or individual responsible for this screen
-	owner: [],
+	owner: ${ownerStr},
 
 	// Tags for filtering in the catalog
-	tags: ["${inferredTag}"],
+	tags: ${tagsStr},
 
 	// APIs/services this screen depends on (for impact analysis)
 	// Example: ["UserAPI.getProfile", "PaymentService.checkout"]
