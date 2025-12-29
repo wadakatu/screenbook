@@ -121,4 +121,20 @@ screenbook impact "PaymentAPI.*"  # Use quotes for patterns`,
 		suggestion:
 			"Add screen.meta.ts files next to your route files, or run 'screenbook generate' to create them.",
 	}),
+
+	// ============================================
+	// Cycle Detection Errors
+	// ============================================
+
+	CYCLES_DETECTED: (cycleCount: number): ErrorOptions => ({
+		title: `${cycleCount} circular navigation${cycleCount === 1 ? "" : "s"} detected`,
+		suggestion:
+			"Review the navigation flow. Use 'allowCycles: true' in screen.meta.ts to allow intentional cycles, or use --allow-cycles to suppress all warnings.",
+		example: `// Allow a specific screen to be part of cycles
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  next: ["billing.invoices"],
+  allowCycles: true,  // This cycle is intentional
+})`,
+	}),
 }
