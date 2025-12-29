@@ -5,6 +5,11 @@ import { define } from "gunshi"
 import { minimatch } from "minimatch"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
+import {
+	detectCycles,
+	formatCycleWarnings,
+	getCycleSummary,
+} from "../utils/cycleDetection.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
 
@@ -16,6 +21,11 @@ export const lintCommand = define({
 			type: "string",
 			short: "c",
 			description: "Path to config file",
+		},
+		allowCycles: {
+			type: "boolean",
+			description: "Suppress circular navigation warnings",
+			default: false,
 		},
 	},
 	run: async (ctx) => {
@@ -136,12 +146,14 @@ export const lintCommand = define({
 			logger.done("All routes have screen.meta.ts files")
 		}
 
-		// Check for orphan screens (unreachable screens)
+		// Check for orphan screens (unreachable screens) and cycles
 		const screensPath = join(cwd, config.outDir, "screens.json")
 		if (existsSync(screensPath)) {
 			try {
 				const content = readFileSync(screensPath, "utf-8")
 				const screens = JSON.parse(content) as Screen[]
+
+				// Check for orphan screens
 				const orphans = findOrphanScreens(screens)
 
 				if (orphans.length > 0) {
@@ -159,6 +171,23 @@ export const lintCommand = define({
 					logger.log(
 						`  ${logger.dim("Consider adding entryPoints or removing these screens.")}`,
 					)
+				}
+
+				// Check for circular navigation
+				if (!ctx.values.allowCycles) {
+					const cycleResult = detectCycles(screens)
+					if (cycleResult.hasCycles) {
+						hasWarnings = true
+						logger.blank()
+						logger.warn(getCycleSummary(cycleResult))
+						logger.log(formatCycleWarnings(cycleResult.cycles))
+						logger.blank()
+						if (cycleResult.disallowedCycles.length > 0) {
+							logger.log(
+								`  ${logger.dim("Use 'allowCycles: true' in screen.meta.ts to allow intentional cycles.")}`,
+							)
+						}
+					}
 				}
 			} catch {
 				// Ignore errors reading screens.json
