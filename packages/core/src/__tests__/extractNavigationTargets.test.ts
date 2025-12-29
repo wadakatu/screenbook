@@ -193,13 +193,21 @@ describe("extractNavigationTargets", () => {
 				{
 					title: "Parent Section",
 					elements: [
-						{ type: "button", label: "Parent Button", navigateTo: "parent.target" },
+						{
+							type: "button",
+							label: "Parent Button",
+							navigateTo: "parent.target",
+						},
 					],
 					children: [
 						{
 							title: "Child Section",
 							elements: [
-								{ type: "button", label: "Child Button", navigateTo: "child.target" },
+								{
+									type: "button",
+									label: "Child Button",
+									navigateTo: "child.target",
+								},
 							],
 							children: [
 								{
