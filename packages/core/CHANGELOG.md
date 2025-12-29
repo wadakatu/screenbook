@@ -1,5 +1,43 @@
 # @screenbook/core
 
+## 1.0.0
+
+### Major Changes
+
+- # Screenbook v1.0.0
+
+  First stable release of Screenbook - Screen catalog and navigation graph generator for frontend applications.
+
+  ## @screenbook/core
+  - `defineScreen()` function for declaring screen metadata
+  - `defineConfig()` function for configuration
+  - TypeScript types and Zod validation
+
+  ## @screenbook/cli
+  - `screenbook init` - Initialize Screenbook in a project with framework detection
+  - `screenbook generate` - Auto-generate screen.meta.ts files from routes
+  - `screenbook build` - Build screen metadata JSON with validation
+  - `screenbook dev` - Start the development server
+  - `screenbook lint` - Detect routes without screen.meta (CI-ready)
+  - `screenbook impact` - Analyze API dependency impact
+  - `screenbook pr-impact` - Analyze PR changes impact on screens
+  - `screenbook doctor` - Diagnose common setup issues
+
+  ### CLI Features
+  - Circular navigation detection with allowCycles option
+  - Screen reference validation
+  - Progressive adoption mode
+  - Interactive mode for generate command
+  - Colored output with actionable error messages
+
+  ## @screenbook/ui
+  - Screen catalog with search and filtering
+  - Screen detail view with metadata
+  - Navigation graph visualization (Mermaid)
+  - Impact analysis view
+  - Coverage report
+  - Responsive design with accessibility improvements
+
 ## 0.1.0
 
 ### Minor Changes
