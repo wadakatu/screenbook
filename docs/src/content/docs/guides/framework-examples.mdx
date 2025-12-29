@@ -1,0 +1,129 @@
+---
+title: Framework Examples
+description: Integration examples for popular frontend frameworks
+---
+
+Screenbook provides example projects demonstrating integration with popular frontend frameworks.
+
+## Available Examples
+
+| Framework | Directory | Routing |
+|-----------|-----------|---------|
+| Next.js App Router | `examples/nextjs-app-router/` | File-based (`src/app/**/page.tsx`) |
+| Vite + React | `examples/vite-react/` | React Router (`src/pages/**/index.tsx`) |
+
+## Next.js App Router
+
+The Next.js example uses the App Router with colocated `screen.meta.ts` files:
+
+```
+src/app/
+├── page.tsx
+├── screen.meta.ts
+├── dashboard/
+│   ├── page.tsx
+│   └── screen.meta.ts
+└── settings/
+    ├── page.tsx
+    └── screen.meta.ts
+```
+
+### Configuration
+
+```ts
+// screenbook.config.ts
+import { defineConfig } from "@screenbook/core"
+
+export default defineConfig({
+  metaPattern: "src/app/**/screen.meta.ts",
+  routesPattern: "src/app/**/page.tsx",
+})
+```
+
+### Running the Example
+
+```bash
+cd examples/nextjs-app-router
+pnpm install
+pnpm screenbook:build
+pnpm screenbook:dev
+```
+
+## Vite + React
+
+The Vite example uses React Router with a pages directory structure:
+
+```
+src/
+├── App.tsx           # Route definitions
+└── pages/
+    ├── Home/
+    │   ├── index.tsx
+    │   └── screen.meta.ts
+    ├── Dashboard/
+    │   ├── index.tsx
+    │   └── screen.meta.ts
+    └── Settings/
+        ├── index.tsx
+        └── screen.meta.ts
+```
+
+### Configuration
+
+```ts
+// screenbook.config.ts
+import { defineConfig } from "@screenbook/core"
+
+export default defineConfig({
+  metaPattern: "src/pages/**/screen.meta.ts",
+  routesPattern: "src/pages/**/index.tsx",
+})
+```
+
+### Running the Example
+
+```bash
+cd examples/vite-react
+pnpm install
+pnpm screenbook:build
+pnpm screenbook:dev
+```
+
+## Common Patterns
+
+Both examples demonstrate:
+
+- **Screen metadata**: `id`, `title`, `route`, `owner`, `tags`, `description`
+- **Navigation relationships**: `entryPoints`, `next`
+- **API dependencies**: `dependsOn`
+- **100% coverage**: All routes have corresponding `screen.meta.ts` files
+
+### Screen Definition Example
+
+```ts
+// screen.meta.ts
+import { defineScreen } from "@screenbook/core"
+
+export const screen = defineScreen({
+  id: "dashboard",
+  title: "Dashboard",
+  route: "/dashboard",
+  owner: ["platform"],
+  tags: ["analytics", "dashboard"],
+  description: "Main dashboard showing analytics and metrics",
+  entryPoints: ["home"],
+  next: ["settings"],
+  dependsOn: ["AnalyticsAPI.getStats", "AnalyticsAPI.getRevenue"],
+})
+```
+
+## Adapting for Your Framework
+
+To integrate Screenbook with other frameworks:
+
+1. Identify your route file pattern (e.g., `pages/**/*.vue` for Nuxt)
+2. Configure `routesPattern` in `screenbook.config.ts`
+3. Create `screen.meta.ts` files alongside your routes
+4. Run `screenbook build` to generate metadata
+
+See the [Configuration](/screenbook/getting-started/configuration/) guide for more options.
