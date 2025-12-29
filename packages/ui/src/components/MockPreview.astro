@@ -1,0 +1,544 @@
+---
+import type { ScreenMock, MockElement, MockSection } from "@screenbook/core"
+
+interface Props {
+	mock: ScreenMock
+	title?: string
+}
+
+const { mock, title } = Astro.props
+
+function getNavigateTo(element: MockElement): string | undefined {
+	if ("navigateTo" in element) return element.navigateTo
+	if ("itemNavigateTo" in element) return element.itemNavigateTo
+	if ("rowNavigateTo" in element) return element.rowNavigateTo
+	return undefined
+}
+---
+
+<div class="mock-preview">
+	<div class="mock-device">
+		{title && (
+			<div class="mock-device-header">
+				<span class="mock-device-title">{title}</span>
+			</div>
+		)}
+		<div class="mock-device-screen">
+			{mock.sections.map((section: MockSection) => (
+				<div class="mock-section">
+					{section.title && (
+						<div class="mock-section-header">
+							<span class="mock-section-title">{section.title}</span>
+						</div>
+					)}
+					<div class={`mock-section-content ${section.layout === "horizontal" ? "layout-horizontal" : "layout-vertical"}`}>
+						{section.elements.map((element: MockElement) => {
+							const navigateTo = getNavigateTo(element)
+
+							return (
+								<div class={`mock-element`}>
+									{element.type === "button" && (
+										<div class={`mock-btn mock-btn-${element.variant || "secondary"}`}>
+											<span class="mock-btn-text">{element.label}</span>
+											{navigateTo && (
+												<span class="mock-nav-badge" title={`→ ${navigateTo}`}>
+													→ {navigateTo}
+												</span>
+											)}
+										</div>
+									)}
+
+									{element.type === "input" && (
+										<div class="mock-input-field">
+											<span class="mock-input-label">{element.label}</span>
+											<div class="mock-input-box">
+												<span class="mock-input-placeholder">{element.placeholder || "..."}</span>
+											</div>
+										</div>
+									)}
+
+									{element.type === "link" && (
+										<div class="mock-link-element">
+											<span class="mock-link-text">{element.label}</span>
+											{navigateTo && (
+												<span class="mock-nav-badge small" title={`→ ${navigateTo}`}>
+													→ {navigateTo}
+												</span>
+											)}
+										</div>
+									)}
+
+									{element.type === "text" && (
+										<div class={`mock-text-element mock-text-${element.variant || "body"}`}>
+											{element.variant === "heading" && <div class="mock-text-bar heading" />}
+											{element.variant === "subheading" && <div class="mock-text-bar subheading" />}
+											<span>{element.label}</span>
+										</div>
+									)}
+
+									{element.type === "image" && (
+										<div
+											class="mock-image-element"
+											style={element.aspectRatio ? `aspect-ratio: ${element.aspectRatio.replace(":", "/")}` : "aspect-ratio: 16/9"}
+										>
+											<div class="mock-image-icon">
+												<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+													<rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+													<circle cx="9" cy="9" r="2" />
+													<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+												</svg>
+											</div>
+											<span class="mock-image-label">{element.label}</span>
+										</div>
+									)}
+
+									{element.type === "list" && (
+										<div class="mock-list-element">
+											<div class="mock-list-header">{element.label}</div>
+											<div class="mock-list-items">
+												{Array.from({ length: element.itemCount || 3 }).map((_, i) => (
+													<div class="mock-list-item">
+														<div class="mock-list-item-content">
+															<div class="mock-list-item-bar" />
+															<div class="mock-list-item-bar short" />
+														</div>
+														{navigateTo && (
+															<span class="mock-list-arrow">›</span>
+														)}
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									{element.type === "table" && (
+										<div class="mock-table-element">
+											<div class="mock-table-header-row">
+												{(element.columns || ["Col 1", "Col 2", "Col 3"]).map((col) => (
+													<div class="mock-table-header-cell">{col}</div>
+												))}
+											</div>
+											<div class="mock-table-body">
+												{Array.from({ length: element.rowCount || 3 }).map((_, i) => (
+													<div class="mock-table-row">
+														{(element.columns || ["Col 1", "Col 2", "Col 3"]).map((_, j) => (
+															<div class="mock-table-cell">
+																<div class="mock-table-cell-bar" />
+															</div>
+														))}
+														{navigateTo && (
+															<span class="mock-table-arrow">›</span>
+														)}
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+								</div>
+							)
+						})}
+					</div>
+				</div>
+			))}
+		</div>
+	</div>
+</div>
+
+<style>
+	.mock-preview {
+		margin-top: 16px;
+	}
+
+	/* Device Frame */
+	.mock-device {
+		background: #1a1f2e;
+		border: 2px solid #2d3548;
+		border-radius: 16px;
+		overflow: hidden;
+		box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+	}
+
+	.mock-device-header {
+		background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+		padding: 10px 16px;
+		display: flex;
+		align-items: center;
+	}
+
+	.mock-device-title {
+		font-size: 13px;
+		font-weight: 600;
+		color: white;
+		letter-spacing: 0.02em;
+	}
+
+	.mock-device-screen {
+		padding: 16px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+		background: #141822;
+	}
+
+	/* Sections */
+	.mock-section {
+		background: #1e2433;
+		border-radius: 10px;
+		overflow: hidden;
+	}
+
+	.mock-section-header {
+		background: rgba(20, 184, 166, 0.15);
+		padding: 8px 14px;
+		border-bottom: 1px solid rgba(20, 184, 166, 0.2);
+	}
+
+	.mock-section-title {
+		font-size: 11px;
+		font-weight: 600;
+		color: #14b8a6;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.mock-section-content {
+		padding: 14px;
+		display: flex;
+		gap: 10px;
+	}
+
+	.mock-section-content.layout-vertical {
+		flex-direction: column;
+	}
+
+	.mock-section-content.layout-horizontal {
+		flex-direction: row;
+		flex-wrap: wrap;
+	}
+
+	.mock-element {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.layout-horizontal .mock-element {
+		min-width: 120px;
+	}
+
+	/* Button */
+	.mock-btn {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 10px 14px;
+		border-radius: 8px;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: default;
+		transition: transform 0.15s ease;
+	}
+
+	.mock-btn:hover {
+		transform: translateY(-1px);
+	}
+
+	.mock-btn-primary {
+		background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+		color: white;
+		box-shadow: 0 2px 8px rgba(20, 184, 166, 0.3);
+	}
+
+	.mock-btn-secondary {
+		background: #2d3548;
+		color: #94a3b8;
+		border: 1px solid #3d4660;
+	}
+
+	.mock-btn-danger {
+		background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+		color: white;
+		box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+	}
+
+	.mock-btn-text {
+		flex: 1;
+	}
+
+	/* Input */
+	.mock-input-field {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.mock-input-label {
+		font-size: 11px;
+		font-weight: 500;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.mock-input-box {
+		background: #0f1219;
+		border: 1px solid #2d3548;
+		border-radius: 6px;
+		padding: 10px 12px;
+	}
+
+	.mock-input-placeholder {
+		font-size: 12px;
+		color: #475569;
+	}
+
+	/* Link */
+	.mock-link-element {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		padding: 6px 0;
+	}
+
+	.mock-link-text {
+		font-size: 12px;
+		color: #14b8a6;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	/* Text */
+	.mock-text-element {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.mock-text-element span {
+		color: #94a3b8;
+	}
+
+	.mock-text-heading span {
+		font-size: 16px;
+		font-weight: 700;
+		color: #e2e8f0;
+	}
+
+	.mock-text-subheading span {
+		font-size: 13px;
+		font-weight: 600;
+		color: #cbd5e1;
+	}
+
+	.mock-text-body span {
+		font-size: 12px;
+		color: #94a3b8;
+	}
+
+	.mock-text-caption span {
+		font-size: 11px;
+		color: #64748b;
+	}
+
+	.mock-text-bar {
+		height: 4px;
+		background: linear-gradient(90deg, #3d4660 0%, #2d3548 100%);
+		border-radius: 2px;
+	}
+
+	.mock-text-bar.heading {
+		width: 60%;
+		height: 6px;
+		background: linear-gradient(90deg, #14b8a6 0%, #0d9488 100%);
+	}
+
+	.mock-text-bar.subheading {
+		width: 45%;
+		height: 5px;
+	}
+
+	/* Image */
+	.mock-image-element {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		background: linear-gradient(135deg, #1e2433 0%, #252d40 100%);
+		border: 2px dashed #3d4660;
+		border-radius: 10px;
+		min-height: 60px;
+		max-height: 150px;
+		padding: 16px;
+	}
+
+	.mock-image-icon {
+		color: #475569;
+		opacity: 0.6;
+	}
+
+	.mock-image-label {
+		font-size: 11px;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	/* List */
+	.mock-list-element {
+		background: #0f1219;
+		border-radius: 8px;
+		overflow: hidden;
+	}
+
+	.mock-list-header {
+		font-size: 11px;
+		font-weight: 600;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		padding: 10px 12px;
+		background: #1a1f2e;
+		border-bottom: 1px solid #2d3548;
+	}
+
+	.mock-list-items {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mock-list-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 10px 12px;
+		border-bottom: 1px solid #1e2433;
+	}
+
+	.mock-list-item:last-child {
+		border-bottom: none;
+	}
+
+	.mock-list-item-content {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		flex: 1;
+	}
+
+	.mock-list-item-bar {
+		height: 4px;
+		background: #2d3548;
+		border-radius: 2px;
+		width: 70%;
+	}
+
+	.mock-list-item-bar.short {
+		width: 40%;
+		opacity: 0.6;
+	}
+
+	.mock-list-arrow {
+		font-size: 16px;
+		color: #475569;
+		font-weight: 300;
+	}
+
+	/* Table */
+	.mock-table-element {
+		background: #0f1219;
+		border-radius: 8px;
+		overflow: hidden;
+		border: 1px solid #2d3548;
+	}
+
+	.mock-table-header-row {
+		display: flex;
+		background: #1a1f2e;
+		border-bottom: 1px solid #2d3548;
+	}
+
+	.mock-table-header-cell {
+		flex: 1;
+		padding: 10px 12px;
+		font-size: 11px;
+		font-weight: 600;
+		color: #64748b;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
+	.mock-table-body {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.mock-table-row {
+		display: flex;
+		position: relative;
+		border-bottom: 1px solid #1e2433;
+	}
+
+	.mock-table-row:last-child {
+		border-bottom: none;
+	}
+
+	.mock-table-cell {
+		flex: 1;
+		padding: 10px 12px;
+	}
+
+	.mock-table-cell-bar {
+		height: 4px;
+		background: #2d3548;
+		border-radius: 2px;
+		width: 60%;
+	}
+
+	.mock-table-arrow {
+		position: absolute;
+		right: 12px;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 16px;
+		color: #475569;
+	}
+
+	/* Navigation Badge */
+	.mock-nav-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		background: rgba(20, 184, 166, 0.15);
+		color: #14b8a6;
+		font-size: 10px;
+		font-weight: 500;
+		padding: 3px 8px;
+		border-radius: 4px;
+		font-family: ui-monospace, monospace;
+		white-space: nowrap;
+		max-width: 120px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.mock-nav-badge.small {
+		font-size: 9px;
+		padding: 2px 6px;
+	}
+
+	/* Responsive */
+	@media (max-width: 600px) {
+		.mock-section-content.layout-horizontal {
+			flex-direction: column;
+		}
+
+		.mock-nav-badge {
+			display: none;
+		}
+
+		.layout-horizontal .mock-element {
+			min-width: 100%;
+		}
+	}
+</style>

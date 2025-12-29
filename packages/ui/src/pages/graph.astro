@@ -4,19 +4,26 @@ import { loadScreens } from "@/utils/loadScreens"
 
 const screens = loadScreens()
 
+// Track screens with mocks for legend
+const screensWithMock = screens.filter(s => s.mock)
+const hasMocks = screensWithMock.length > 0
+
 // Generate Navigation Mermaid graph
 let navigationGraph = ""
 if (screens.length > 0) {
 	const lines: string[] = ["flowchart TD"]
 
+	// Add nodes with mock indicator
 	for (const screen of screens) {
 		const label = screen.title.replace(/"/g, "'")
 		const id = screen.id.replace(/\./g, "_")
-		lines.push(`    ${id}["${label}"]`)
+		const mockIndicator = screen.mock ? " 📱" : ""
+		lines.push(`    ${id}["${label}${mockIndicator}"]`)
 	}
 
 	lines.push("")
 
+	// Add edges
 	for (const screen of screens) {
 		if (screen.next) {
 			const fromId = screen.id.replace(/\./g, "_")
@@ -24,6 +31,25 @@ if (screens.length > 0) {
 				const toId = nextId.replace(/\./g, "_")
 				lines.push(`    ${fromId} --> ${toId}`)
 			}
+		}
+	}
+
+	// Add click handlers for screens with mocks
+	if (hasMocks) {
+		lines.push("")
+		lines.push("    %% Click handlers for screens with mocks")
+		for (const screen of screensWithMock) {
+			const id = screen.id.replace(/\./g, "_")
+			lines.push(`    click ${id} "/screen/${screen.id}"`)
+		}
+
+		// Add styling for screens with mocks
+		lines.push("")
+		lines.push("    %% Styling for screens with mocks")
+		lines.push(`    classDef hasMock stroke:#14b8a6,stroke-width:2px`)
+		for (const screen of screensWithMock) {
+			const id = screen.id.replace(/\./g, "_")
+			lines.push(`    class ${id} hasMock`)
 		}
 	}
 
@@ -161,6 +187,12 @@ const apiCount = new Set(
 						<div class="legend-node"></div>
 						<span>Screen</span>
 					</div>
+					{hasMocks && (
+						<div class="graph-legend-item">
+							<div class="legend-node legend-mock"></div>
+							<span>Screen with wireframe</span>
+						</div>
+					)}
 					<div class="graph-legend-item">
 						<div class="legend-edge"></div>
 						<span>Navigation flow</span>
@@ -330,5 +362,10 @@ const apiCount = new Set(
 	.legend-api {
 		background: #14b8a6 !important;
 		border-color: #5eead4 !important;
+	}
+
+	.legend-mock {
+		border-color: #14b8a6 !important;
+		border-width: 2px !important;
 	}
 </style>

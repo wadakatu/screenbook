@@ -1,5 +1,6 @@
 ---
 import Layout from "@/layouts/Layout.astro"
+import MockPreview from "@/components/MockPreview.astro"
 import { loadScreens } from "@/utils/loadScreens"
 import { getApiDependencyCount } from "@/utils/impactAnalysis"
 
@@ -80,6 +81,21 @@ const nextScreens = screens.filter((s) => screen.next?.includes(s.id))
 						)}
 					</div>
 				</div>
+
+				<!-- Mock Wireframe -->
+				{screen.mock && (
+					<div class="section">
+						<h2 class="section-title">
+							<span class="section-title-content">
+								<svg aria-hidden="true" class="section-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+									<path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+								</svg>
+								Wireframe Preview
+							</span>
+						</h2>
+						<MockPreview mock={screen.mock} title={screen.title} />
+					</div>
+				)}
 
 				<!-- Dependencies -->
 				{screen.dependsOn && screen.dependsOn.length > 0 && (

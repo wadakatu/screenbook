@@ -5,7 +5,7 @@ prev: false
 title: "ConfigInput"
 ---
 
-Defined in: [packages/core/src/types.ts:251](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L251)
+Defined in: [packages/core/src/types.ts:597](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L597)
 
 Input type for defineConfig function.
 All fields with defaults are optional in input.
@@ -25,7 +25,7 @@ defineConfig({
 
 > `optional` **adoption**: [`AdoptionConfig`](/screenbook/api/interfaces/adoptionconfig/)
 
-Defined in: [packages/core/src/types.ts:281](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L281)
+Defined in: [packages/core/src/types.ts:627](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L627)
 
 Progressive adoption configuration
 
@@ -35,7 +35,7 @@ Progressive adoption configuration
 
 > `optional` **ignore**: `string`[]
 
-Defined in: [packages/core/src/types.ts:276](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L276)
+Defined in: [packages/core/src/types.ts:622](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L622)
 
 Patterns to ignore when scanning.
 Defaults to node_modules and .git directories.
@@ -46,7 +46,7 @@ Defaults to node_modules and .git directories.
 
 > `optional` **metaPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:264](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L264)
+Defined in: [packages/core/src/types.ts:610](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L610)
 
 Glob pattern for screen metadata files
 
@@ -68,7 +68,7 @@ Glob pattern for screen metadata files
 
 > `optional` **outDir**: `string`
 
-Defined in: [packages/core/src/types.ts:257](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L257)
+Defined in: [packages/core/src/types.ts:603](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L603)
 
 Output directory for generated files
 
@@ -90,7 +90,7 @@ Output directory for generated files
 
 > `optional` **routesPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:270](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L270)
+Defined in: [packages/core/src/types.ts:616](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L616)
 
 Glob pattern for route files (for generate/lint commands)
 

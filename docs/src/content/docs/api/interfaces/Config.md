@@ -5,7 +5,7 @@ prev: false
 title: "Config"
 ---
 
-Defined in: [packages/core/src/types.ts:200](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L200)
+Defined in: [packages/core/src/types.ts:546](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L546)
 
 Screenbook configuration options.
 
@@ -15,7 +15,7 @@ Screenbook configuration options.
 
 > `optional` **adoption**: [`AdoptionConfig`](/screenbook/api/interfaces/adoptionconfig/)
 
-Defined in: [packages/core/src/types.ts:236](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L236)
+Defined in: [packages/core/src/types.ts:582](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L582)
 
 Progressive adoption configuration for gradual rollout
 
@@ -31,7 +31,7 @@ Progressive adoption configuration for gradual rollout
 
 > **ignore**: `string`[]
 
-Defined in: [packages/core/src/types.ts:230](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L230)
+Defined in: [packages/core/src/types.ts:576](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L576)
 
 Patterns to ignore when scanning (glob patterns).
 Defaults to node_modules and .git directories.
@@ -42,7 +42,7 @@ Defaults to node_modules and .git directories.
 
 > **metaPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:216](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L216)
+Defined in: [packages/core/src/types.ts:562](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L562)
 
 Glob pattern for screen metadata files.
 Supports colocation: place screen.meta.ts alongside your route files.
@@ -69,7 +69,7 @@ Supports colocation: place screen.meta.ts alongside your route files.
 
 > **outDir**: `string`
 
-Defined in: [packages/core/src/types.ts:207](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L207)
+Defined in: [packages/core/src/types.ts:553](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L553)
 
 Output directory for generated files
 
@@ -95,7 +95,7 @@ Output directory for generated files
 
 > `optional` **routesPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:224](https://github.com/wadakatu/screenbook/blob/80ed6bad308e61bc775211dba9e5241b3fd47533/packages/core/src/types.ts#L224)
+Defined in: [packages/core/src/types.ts:570](https://github.com/wadakatu/screenbook/blob/7458caa0341a34cbc04a2da58e98f73ab73b4d43/packages/core/src/types.ts#L570)
 
 Glob pattern for route files (for generate/lint commands)
 
