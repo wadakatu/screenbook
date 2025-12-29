@@ -27,6 +27,12 @@ export const lintCommand = define({
 			description: "Suppress circular navigation warnings",
 			default: false,
 		},
+		strict: {
+			type: "boolean",
+			short: "s",
+			description: "Fail on disallowed cycles",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
 		const config = await loadConfig(ctx.values.config)
@@ -186,11 +192,27 @@ export const lintCommand = define({
 							logger.log(
 								`  ${logger.dim("Use 'allowCycles: true' in screen.meta.ts to allow intentional cycles.")}`,
 							)
+
+							if (ctx.values.strict) {
+								logger.blank()
+								logger.errorWithHelp(
+									ERRORS.CYCLES_DETECTED(cycleResult.disallowedCycles.length),
+								)
+								process.exit(1)
+							}
 						}
 					}
 				}
-			} catch {
-				// Ignore errors reading screens.json
+			} catch (error) {
+				// Handle specific error types
+				if (error instanceof SyntaxError) {
+					logger.warn("Failed to parse screens.json - file may be corrupted")
+					logger.log(`  ${logger.dim("Run 'screenbook build' to regenerate.")}`)
+					hasWarnings = true
+				} else if (error instanceof Error) {
+					logger.warn(`Failed to analyze screens.json: ${error.message}`)
+					hasWarnings = true
+				}
 			}
 		}
 
