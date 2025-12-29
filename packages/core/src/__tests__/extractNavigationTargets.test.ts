@@ -186,4 +186,51 @@ describe("extractNavigationTargets", () => {
 		expect(targets).toContain("billing.invoice.list")
 		expect(targets).toHaveLength(4)
 	})
+
+	it("should extract targets from nested child sections", () => {
+		const mock: ScreenMock = {
+			sections: [
+				{
+					title: "Parent Section",
+					elements: [
+						{
+							type: "button",
+							label: "Parent Button",
+							navigateTo: "parent.target",
+						},
+					],
+					children: [
+						{
+							title: "Child Section",
+							elements: [
+								{
+									type: "button",
+									label: "Child Button",
+									navigateTo: "child.target",
+								},
+							],
+							children: [
+								{
+									title: "Grandchild Section",
+									elements: [
+										{
+											type: "link",
+											label: "Deep Link",
+											navigateTo: "grandchild.target",
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+			],
+		}
+
+		const targets = extractNavigationTargets(mock)
+		expect(targets).toContain("parent.target")
+		expect(targets).toContain("child.target")
+		expect(targets).toContain("grandchild.target")
+		expect(targets).toHaveLength(3)
+	})
 })
