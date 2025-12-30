@@ -47,6 +47,8 @@ npx screenbook dev
 
 Open http://localhost:4321 and explore your screen catalog.
 
+**For full documentation, visit [wadakatu.github.io/screenbook](https://wadakatu.github.io/screenbook).**
+
 ---
 
 ## Defining Screens
