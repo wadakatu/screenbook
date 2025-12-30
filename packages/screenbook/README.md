@@ -1,0 +1,166 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo/logo-dark.svg">
+    <img alt="Screenbook" src="assets/logo/logo-dark.svg" height="48">
+  </picture>
+</p>
+
+<p align="center">
+  <strong>Define screens in code. Get an always-up-to-date catalog.</strong>
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/hero.png" alt="Screenbook Hero" width="800">
+</p>
+
+<p align="center">
+  <a href="https://github.com/wadakatu/screenbook/actions/workflows/ci.yml"><img src="https://github.com/wadakatu/screenbook/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/wadakatu/screenbook/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/TypeScript-5.0+-blue.svg" alt="TypeScript"></a>
+  <a href="https://github.com/wadakatu/screenbook"><img src="https://img.shields.io/badge/Node.js-22+-green.svg" alt="Node.js"></a>
+</p>
+
+<p align="center">
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#features">Features</a> •
+  <a href="#why-screenbook">Why Screenbook?</a> •
+  <a href="#cli-commands">CLI</a>
+</p>
+
+---
+
+## Features
+
+### Screen Catalog
+
+<img src="assets/screenshots/screens.png" alt="Screen Catalog" width="700">
+
+Browse all screens in your application. **Search by name, filter by tags, find by owner.** Every screen shows its route, dependencies, and navigation connections.
+
+### Navigation Graph
+
+<img src="assets/screenshots/graph.png" alt="Navigation Graph" width="700">
+
+**Visualize how users flow through your app.** See the big picture at a glance. Understand navigation paths without reading code.
+
+### Impact Analysis
+
+<img src="assets/screenshots/impact.png" alt="Impact Analysis" width="700">
+
+**Changing an API? Know exactly which screens break — before you ship.** Enter an API name and instantly see all affected screens, both direct and transitive dependencies.
+
+### Coverage Dashboard
+
+<img src="assets/screenshots/coverage.png" alt="Coverage Report" width="700">
+
+**Track documentation completeness across your app.** See coverage by owner and tag. Find gaps. Enforce coverage in CI to prevent drift.
+
+---
+
+## Quick Start
+
+```bash
+# Install
+pnpm add -D screenbook
+
+# Initialize configuration
+npx screenbook init
+
+# Start the UI
+npx screenbook dev
+```
+
+Open http://localhost:4321 and explore your screen catalog.
+
+---
+
+## Defining Screens
+
+Create `screen.meta.ts` files alongside your routes:
+
+```ts
+import { defineScreen } from "screenbook"
+
+export const screen = defineScreen({
+  id: "billing.invoices",           // Unique identifier
+  title: "Invoice List",            // Human-readable name
+  route: "/billing/invoices",       // URL path
+
+  owner: ["billing-team"],          // Who owns this screen?
+  tags: ["billing", "invoices"],    // For filtering
+
+  next: [                           // Where can users go from here?
+    "billing.invoice.detail",
+    "billing.payments"
+  ],
+
+  dependsOn: [                      // What APIs does this screen call?
+    "BillingAPI.listInvoices",
+    "UserAPI.getCurrent"
+  ],
+})
+```
+
+---
+
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `screenbook init` | Initialize Screenbook in your project |
+| `screenbook build` | Generate metadata JSON from screen definitions |
+| `screenbook dev` | Start the UI server for local development |
+| `screenbook lint` | Check for missing screen definitions (CI-friendly) |
+
+---
+
+## Why Screenbook?
+
+Every team has a screen map somewhere — Figma, Notion, or buried in a wiki. **When was yours last updated?**
+
+Sound familiar?
+
+- "Where's the screen map?" → "Check Notion... or maybe the old Figma file?"
+- "How do users get to the payment screen?" → *crickets*
+- "Which screens use the BillingAPI?" → "Let me grep... actually, I'm not sure"
+
+**Screen maps go stale because they live outside of code.** Screenbook keeps your screen documentation in sync — automatically.
+
+| Traditional Approach | Screenbook |
+|---------------------|------------|
+| Screen maps in Figma/Notion go stale | Lives in code, always up-to-date |
+| "Which screens use this API?" requires grep | Impact analysis in one click |
+| New members lost in undocumented flows | Searchable, visual catalog |
+| No way to enforce documentation | `screenbook lint` in CI |
+
+---
+
+## CI Integration
+
+Prevent documentation drift with a simple CI check:
+
+```yaml
+# .github/workflows/screenbook.yml
+name: Screenbook
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install
+      - run: pnpm screenbook lint
+```
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT
