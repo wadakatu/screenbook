@@ -17,6 +17,9 @@ importers:
       '@biomejs/biome':
         specifier: ^2.3.0
         version: 2.3.10
+      '@changesets/changelog-git':
+        specifier: ^0.2.1
+        version: 0.2.1
       '@changesets/changelog-github':
         specifier: ^0.5.2
         version: 0.5.2
