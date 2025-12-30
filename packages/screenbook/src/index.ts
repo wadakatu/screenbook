@@ -1,0 +1,30 @@
+// Re-export everything from core
+export {
+	// Types
+	type AdoptionConfig,
+	// Schemas
+	adoptionSchema,
+	type Config,
+	type ConfigInput,
+	configSchema,
+	defineConfig,
+	defineScreen,
+	extractNavigationTargets,
+	type MockButtonElement,
+	type MockElement,
+	type MockElementType,
+	type MockImageElement,
+	type MockInputElement,
+	type MockLayout,
+	type MockLinkElement,
+	type MockListElement,
+	type MockSection,
+	type MockTableElement,
+	type MockTextElement,
+	type Screen,
+	type ScreenInput,
+	type ScreenLink,
+	type ScreenMock,
+	screenMockSchema,
+	screenSchema,
+} from "@screenbook/core"

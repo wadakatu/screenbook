@@ -62,16 +62,10 @@ importers:
         version: 4.21.0
 
   examples/demo:
-    dependencies:
-      '@screenbook/cli':
+    devDependencies:
+      screenbook:
         specifier: workspace:*
-        version: link:../../packages/cli
-      '@screenbook/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-      '@screenbook/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/screenbook
 
   examples/nextjs-app-router:
     dependencies:
@@ -174,6 +168,22 @@ importers:
       zod:
         specifier: ^4.0.0
         version: 4.2.1
+    devDependencies:
+      tsdown:
+        specifier: 'catalog:'
+        version: 0.18.3(typescript@5.9.3)
+
+  packages/screenbook:
+    dependencies:
+      '@screenbook/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@screenbook/core':
+        specifier: workspace:*
+        version: link:../core
+      '@screenbook/ui':
+        specifier: workspace:*
+        version: link:../ui
     devDependencies:
       tsdown:
         specifier: 'catalog:'
