@@ -1,5 +1,11 @@
 # @screenbook/core
 
+## 1.1.2
+
+### Patch Changes
+
+- e098a27: Update README with absolute image URLs and npm/pnpm install commands
+
 ## 1.1.1
 
 ### Patch Changes
