@@ -85,3 +85,7 @@ jobs:
       - name: Publish @screenbook/ui
         run: npm publish --access public --provenance
         working-directory: packages/ui
+
+      - name: Publish screenbook
+        run: npm publish --access public --provenance
+        working-directory: packages/screenbook
