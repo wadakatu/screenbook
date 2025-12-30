@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/logo.svg">
-    <source media="(prefers-color-scheme: light)" srcset="assets/logo/logo-dark.svg">
-    <img alt="Screenbook" src="assets/logo/logo-dark.svg" height="48">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/logo/logo.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/logo/logo-dark.svg">
+    <img alt="Screenbook" src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/logo/logo-dark.svg" height="48">
   </picture>
 </p>
 
@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="assets/screenshots/hero.png" alt="Screenbook Hero" width="800">
+  <img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/hero.png" alt="Screenbook Hero" width="800">
 </p>
 
 <p align="center">
@@ -34,25 +34,25 @@
 
 ### Screen Catalog
 
-<img src="assets/screenshots/screens.png" alt="Screen Catalog" width="700">
+<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/screens.png" alt="Screen Catalog" width="700">
 
 Browse all screens in your application. **Search by name, filter by tags, find by owner.** Every screen shows its route, dependencies, and navigation connections.
 
 ### Navigation Graph
 
-<img src="assets/screenshots/graph.png" alt="Navigation Graph" width="700">
+<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/graph.png" alt="Navigation Graph" width="700">
 
 **Visualize how users flow through your app.** See the big picture at a glance. Understand navigation paths without reading code.
 
 ### Impact Analysis
 
-<img src="assets/screenshots/impact.png" alt="Impact Analysis" width="700">
+<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/impact.png" alt="Impact Analysis" width="700">
 
 **Changing an API? Know exactly which screens break — before you ship.** Enter an API name and instantly see all affected screens, both direct and transitive dependencies.
 
 ### Coverage Dashboard
 
-<img src="assets/screenshots/coverage.png" alt="Coverage Report" width="700">
+<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/coverage.png" alt="Coverage Report" width="700">
 
 **Track documentation completeness across your app.** See coverage by owner and tag. Find gaps. Enforce coverage in CI to prevent drift.
 
