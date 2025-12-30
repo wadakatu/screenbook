@@ -38,6 +38,10 @@
 	"bugs": {
 		"url": "https://github.com/wadakatu/screenbook/issues"
 	},
+	"files": [
+		"dist",
+		"README.md"
+	],
 	"devDependencies": {
 		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
