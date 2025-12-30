@@ -8,6 +8,8 @@ Web UI for Screenbook - screen catalog, navigation graph, and impact analysis.
 ## Installation
 
 ```bash
+npm i -D screenbook
+# or
 pnpm add -D screenbook
 ```
 

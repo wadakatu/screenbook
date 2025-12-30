@@ -8,6 +8,8 @@ Core types and utilities for Screenbook.
 ## Installation
 
 ```bash
+npm i -D screenbook
+# or
 pnpm add -D screenbook
 ```
 

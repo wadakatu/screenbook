@@ -62,6 +62,8 @@ Browse all screens in your application. **Search by name, filter by tags, find b
 
 ```bash
 # Install
+npm i -D screenbook
+# or
 pnpm add -D screenbook
 
 # Initialize configuration
