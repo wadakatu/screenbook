@@ -1,5 +1,6 @@
 import starlight from "@astrojs/starlight"
 import { defineConfig } from "astro/config"
+import starlightLlmsTxt from "starlight-llms-txt"
 import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc"
 
 export default defineConfig({
@@ -41,6 +42,7 @@ export default defineConfig({
 				},
 			],
 			plugins: [
+				starlightLlmsTxt(),
 				starlightTypeDoc({
 					entryPoints: ["../packages/core/src/index.ts"],
 					tsconfig: "../packages/core/tsconfig.json",
