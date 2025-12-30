@@ -75,17 +75,41 @@ jobs:
         run: npm install -g npm@latest
 
       - name: Publish @screenbook/core
-        run: npm publish --access public --provenance
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view @screenbook/core@$PKG_VERSION version 2>/dev/null; then
+            echo "Version $PKG_VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
         working-directory: packages/core
 
       - name: Publish @screenbook/cli
-        run: npm publish --access public --provenance
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view @screenbook/cli@$PKG_VERSION version 2>/dev/null; then
+            echo "Version $PKG_VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
         working-directory: packages/cli
 
       - name: Publish @screenbook/ui
-        run: npm publish --access public --provenance
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view @screenbook/ui@$PKG_VERSION version 2>/dev/null; then
+            echo "Version $PKG_VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
         working-directory: packages/ui
 
       - name: Publish screenbook
-        run: npm publish --access public --provenance
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view screenbook@$PKG_VERSION version 2>/dev/null; then
+            echo "Version $PKG_VERSION already published, skipping"
+          else
+            npm publish --access public --provenance
+          fi
         working-directory: packages/screenbook
