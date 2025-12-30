@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mock Editor - Layout Design Proposals</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --me-bg-deep: #0a0e14;
+      --me-bg-panel: #0f1318;
+      --me-bg-surface: #151a22;
+      --me-bg-elevated: #1a2029;
+      --me-border: #252d3a;
+      --me-text: #e8ecf1;
+      --me-text-secondary: #9ca3af;
+      --me-text-muted: #6b7280;
+      --me-accent: #2dd4bf;
+      --me-accent-glow: rgba(45, 212, 191, 0.15);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--me-bg-deep);
+      color: var(--me-text);
+      min-height: 100vh;
+      padding: 48px 32px;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(45, 212, 191, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 212, 191, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .header h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, var(--me-accent) 0%, #14b8a6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header p {
+      font-size: 16px;
+      color: var(--me-text-secondary);
+    }
+
+    .header .subtitle {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--me-text-muted);
+      margin-top: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: var(--me-bg-surface);
+      border: 1px solid var(--me-border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--me-accent);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-preview {
+      height: 200px;
+      overflow: hidden;
+      position: relative;
+      background: var(--me-bg-panel);
+    }
+
+    .card-preview iframe {
+      width: 200%;
+      height: 200%;
+      transform: scale(0.5);
+      transform-origin: top left;
+      border: none;
+      pointer-events: none;
+    }
+
+    .card-content {
+      padding: 20px;
+      border-top: 1px solid var(--me-border);
+    }
+
+    .card-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--me-accent);
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--me-text-secondary);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--me-text-muted);
+      background: var(--me-bg-elevated);
+      padding: 4px 8px;
+      border-radius: 4px;
+    }
+
+    .card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--me-accent);
+      color: var(--me-bg-deep);
+      padding: 10px 18px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.2s ease;
+    }
+
+    .card-link:hover {
+      background: #3de8d4;
+      transform: translateX(4px);
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 64px;
+      padding-top: 32px;
+      border-top: 1px solid var(--me-border);
+    }
+
+    .footer p {
+      font-size: 13px;
+      color: var(--me-text-muted);
+    }
+
+    .footer a {
+      color: var(--me-accent);
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Mock Editor Layout Proposals</h1>
+      <p>Different layout approaches for the Mock Editor interface</p>
+      <p class="subtitle">Using Screenbook Design System (Teal + JetBrains Mono + DM Sans)</p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-preview">
+          <iframe src="01-floating-preview.html"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="card-number">01</div>
+          <h2 class="card-title">Floating Preview</h2>
+          <p class="card-desc">Grid-based editor with a fixed floating preview panel on the right. Sections displayed as compact cards in a grid layout.</p>
+          <div class="card-tags">
+            <span class="tag">Grid Layout</span>
+            <span class="tag">Fixed Preview</span>
+            <span class="tag">Compact Cards</span>
+          </div>
+          <a href="01-floating-preview.html" class="card-link">View Design</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-preview">
+          <iframe src="02-inline-preview.html"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="card-number">02</div>
+          <h2 class="card-title">Inline Preview</h2>
+          <p class="card-desc">Section-by-section editing with inline preview next to each section. Vertical scroll with sticky section previews.</p>
+          <div class="card-tags">
+            <span class="tag">Vertical Flow</span>
+            <span class="tag">Inline Preview</span>
+            <span class="tag">Per-Section</span>
+          </div>
+          <a href="02-inline-preview.html" class="card-link">View Design</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-preview">
+          <iframe src="03-tabbed-panels.html"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="card-number">03</div>
+          <h2 class="card-title">Tabbed Panels</h2>
+          <p class="card-desc">Sidebar navigation with section tabs. One section active at a time with detailed editing view and split preview.</p>
+          <div class="card-tags">
+            <span class="tag">Sidebar Nav</span>
+            <span class="tag">Tab Switching</span>
+            <span class="tag">Detail View</span>
+          </div>
+          <a href="03-tabbed-panels.html" class="card-link">View Design</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-preview">
+          <iframe src="04-wide-preview.html"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="card-number">04</div>
+          <h2 class="card-title">Wide Preview</h2>
+          <p class="card-desc">Narrow compact editor sidebar with large centered preview. Preview-focused design with device size selector.</p>
+          <div class="card-tags">
+            <span class="tag">Preview Focus</span>
+            <span class="tag">Device Selector</span>
+            <span class="tag">Compact Editor</span>
+          </div>
+          <a href="04-wide-preview.html" class="card-link">View Design</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-preview">
+          <iframe src="05-compact-split.html"></iframe>
+        </div>
+        <div class="card-content">
+          <div class="card-number">05</div>
+          <h2 class="card-title">Compact Split</h2>
+          <p class="card-desc">50/50 split with accordion-style sections. Ultra-compact element rows with quick-add buttons per section.</p>
+          <div class="card-tags">
+            <span class="tag">Accordion</span>
+            <span class="tag">50/50 Split</span>
+            <span class="tag">Ultra Compact</span>
+          </div>
+          <a href="05-compact-split.html" class="card-link">View Design</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Screenbook Mock Editor Design Exploration</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mock Editor - Wide Preview Layout</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --me-bg-deep: #0a0e14;
+      --me-bg-panel: #0f1318;
+      --me-bg-surface: #151a22;
+      --me-bg-elevated: #1a2029;
+      --me-border: #252d3a;
+      --me-text: #e8ecf1;
+      --me-text-secondary: #9ca3af;
+      --me-text-muted: #6b7280;
+      --me-accent: #2dd4bf;
+      --me-accent-glow: rgba(45, 212, 191, 0.15);
+      --me-color-button: #2dd4bf;
+      --me-color-input: #818cf8;
+      --me-color-text: #94a3b8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--me-bg-deep);
+      color: var(--me-text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(45, 212, 191, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(45, 212, 191, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+      pointer-events: none;
+      opacity: 0.5;
+    }
+
+    .container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Narrow Editor Sidebar */
+    .editor-sidebar {
+      width: 360px;
+      background: var(--me-bg-panel);
+      border-right: 1px solid var(--me-border);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      z-index: 1;
+    }
+
+    .editor-header {
+      padding: 18px 20px;
+      background: var(--me-bg-surface);
+      border-bottom: 1px solid var(--me-border);
+    }
+
+    .editor-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .editor-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--me-text);
+    }
+
+    .screen-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--me-accent);
+      background: var(--me-accent-glow);
+      border: 1px solid rgba(45, 212, 191, 0.2);
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .editor-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex: 1;
+    }
+
+    .btn-secondary {
+      color: var(--me-text-secondary);
+      background: var(--me-bg-elevated);
+      border: 1px solid var(--me-border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--me-accent);
+    }
+
+    .btn-primary {
+      color: var(--me-bg-deep);
+      background: linear-gradient(135deg, var(--me-accent) 0%, #14b8a6 100%);
+      border: none;
+      font-weight: 600;
+    }
+
+    /* Sections List */
+    .sections-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .section-item {
+      background: var(--me-bg-surface);
+      border: 1px solid var(--me-border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .section-item:hover {
+      border-color: var(--me-accent);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--me-bg-elevated);
+      border-bottom: 1px solid var(--me-border);
+      cursor: pointer;
+    }
+
+    .section-header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--me-accent-glow);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--me-accent);
+    }
+
+    .section-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .section-layout {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      color: var(--me-text-muted);
+      background: var(--me-bg-surface);
+      padding: 3px 8px;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+
+    .section-body {
+      padding: 10px;
+    }
+
+    .element-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: var(--me-bg-panel);
+      border-radius: 6px;
+      margin: 3px;
+      font-size: 11px;
+    }
+
+    .element-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .element-dot--button { background: var(--me-color-button); }
+    .element-dot--input { background: var(--me-color-input); }
+    .element-dot--text { background: var(--me-color-text); }
+
+    .add-section-btn {
+      width: 100%;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--me-text-muted);
+      background: transparent;
+      border: 2px dashed var(--me-border);
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+    }
+
+    .add-section-btn:hover {
+      color: var(--me-accent);
+      border-color: var(--me-accent);
+    }
+
+    /* Wide Preview Area */
+    .preview-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .preview-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .preview-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .preview-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--me-accent);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .preview-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--me-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .device-selector {
+      display: flex;
+      background: var(--me-bg-surface);
+      border-radius: 8px;
+      padding: 4px;
+    }
+
+    .device-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--me-text-muted);
+      background: transparent;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .device-btn.active {
+      background: var(--me-bg-elevated);
+      color: var(--me-accent);
+    }
+
+    /* Large Preview Frame */
+    .preview-frame-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .preview-frame {
+      background: var(--me-bg-surface);
+      border: 2px solid var(--me-border);
+      border-radius: 20px;
+      width: 100%;
+      max-width: 700px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      overflow: hidden;
+    }
+
+    .preview-title-bar {
+      background: linear-gradient(135deg, var(--me-accent) 0%, #14b8a6 100%);
+      padding: 16px 24px;
+      color: var(--me-bg-deep);
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .preview-content {
+      padding: 28px;
+      min-height: 400px;
+    }
+
+    .preview-section {
+      background: var(--me-bg-elevated);
+      border-radius: 14px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .preview-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .preview-section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--me-accent);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 20px;
+      background: var(--me-accent-glow);
+      border-bottom: 1px solid rgba(45, 212, 191, 0.15);
+    }
+
+    .preview-section-body {
+      padding: 20px;
+    }
+
+    .preview-section-body--horizontal {
+      display: flex;
+      gap: 16px;
+    }
+
+    .preview-text {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--me-text);
+    }
+
+    .preview-stat {
+      flex: 1;
+      background: var(--me-bg-surface);
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    .preview-stat-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--me-text);
+      margin-bottom: 4px;
+    }
+
+    .preview-stat-label {
+      font-size: 12px;
+      color: var(--me-text-muted);
+    }
+
+    .preview-input-mock {
+      background: var(--me-bg-deep);
+      border: 1px solid var(--me-border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 14px;
+      color: var(--me-text-muted);
+      margin-bottom: 14px;
+    }
+
+    .preview-button-mock {
+      background: linear-gradient(135deg, var(--me-accent) 0%, #14b8a6 100%);
+      color: var(--me-bg-deep);
+      padding: 14px 24px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      text-align: center;
+      display: inline-block;
+    }
+
+    /* Design Label */
+    .design-label {
+      position: fixed;
+      bottom: 24px;
+      left: 24px;
+      background: var(--me-bg-surface);
+      border: 1px solid var(--me-border);
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 12px;
+      z-index: 100;
+    }
+
+    .design-label strong {
+      color: var(--me-accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="editor-sidebar">
+      <div class="editor-header">
+        <div class="editor-title-row">
+          <span class="editor-title">Mock Editor</span>
+          <span class="screen-badge">dashboard</span>
+        </div>
+        <div class="editor-actions">
+          <button class="btn btn-secondary">Copy</button>
+          <button class="btn btn-primary">Save</button>
+        </div>
+      </div>
+
+      <div class="sections-list">
+        <div class="section-item">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon">H</div>
+              <span class="section-name">Header</span>
+            </div>
+            <span class="section-layout">Horiz</span>
+          </div>
+          <div class="section-body">
+            <span class="element-chip">
+              <span class="element-dot element-dot--text"></span>
+              Dashboard
+            </span>
+          </div>
+        </div>
+
+        <div class="section-item">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon">S</div>
+              <span class="section-name">Stats</span>
+            </div>
+            <span class="section-layout">Horiz</span>
+          </div>
+          <div class="section-body">
+            <span class="element-chip">
+              <span class="element-dot element-dot--text"></span>
+              Total: 100
+            </span>
+            <span class="element-chip">
+              <span class="element-dot element-dot--text"></span>
+              Active: 80
+            </span>
+            <span class="element-chip">
+              <span class="element-dot element-dot--text"></span>
+              Pending: 20
+            </span>
+          </div>
+        </div>
+
+        <div class="section-item">
+          <div class="section-header">
+            <div class="section-header-left">
+              <div class="section-icon">F</div>
+              <span class="section-name">Form</span>
+            </div>
+            <span class="section-layout">Vert</span>
+          </div>
+          <div class="section-body">
+            <span class="element-chip">
+              <span class="element-dot element-dot--input"></span>
+              Username
+            </span>
+            <span class="element-chip">
+              <span class="element-dot element-dot--button"></span>
+              Submit
+            </span>
+          </div>
+        </div>
+
+        <button class="add-section-btn">+ Add Section</button>
+      </div>
+    </div>
+
+    <div class="preview-area">
+      <div class="preview-toolbar">
+        <div class="preview-info">
+          <span class="preview-dot"></span>
+          <span class="preview-label">Live Preview</span>
+        </div>
+        <div class="device-selector">
+          <button class="device-btn">Mobile</button>
+          <button class="device-btn active">Tablet</button>
+          <button class="device-btn">Desktop</button>
+        </div>
+      </div>
+
+      <div class="preview-frame-wrapper">
+        <div class="preview-frame">
+          <div class="preview-title-bar">New Screen</div>
+          <div class="preview-content">
+            <div class="preview-section">
+              <div class="preview-section-title">Header</div>
+              <div class="preview-section-body">
+                <div class="preview-text">Dashboard</div>
+              </div>
+            </div>
+
+            <div class="preview-section">
+              <div class="preview-section-title">Stats</div>
+              <div class="preview-section-body preview-section-body--horizontal">
+                <div class="preview-stat">
+                  <div class="preview-stat-value">100</div>
+                  <div class="preview-stat-label">Total</div>
+                </div>
+                <div class="preview-stat">
+                  <div class="preview-stat-value">80</div>
+                  <div class="preview-stat-label">Active</div>
+                </div>
+                <div class="preview-stat">
+                  <div class="preview-stat-value">20</div>
+                  <div class="preview-stat-label">Pending</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="preview-section">
+              <div class="preview-section-title">Form</div>
+              <div class="preview-section-body">
+                <div class="preview-input-mock">Username</div>
+                <div class="preview-button-mock">Submit</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="design-label">
+    <strong>04</strong> Wide Preview - Narrow editor with large preview focus
+  </div>
+</body>
+</html>
