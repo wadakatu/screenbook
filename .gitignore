@@ -38,3 +38,6 @@ screens.json
 # Screenshots (except assets for README)
 *.png
 !assets/screenshots/*.png
+
+# Design proposals (local only)
+design-proposals/
