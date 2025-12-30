@@ -1,0 +1,45 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": [
+		"config:recommended",
+		":semanticCommits",
+		":semanticCommitTypeAll(chore)",
+		"group:allNonMajor"
+	],
+	"labels": ["dependencies"],
+	"rangeStrategy": "bump",
+	"minimumReleaseAge": "7 days",
+	"lockFileMaintenance": {
+		"enabled": true,
+		"schedule": ["before 5am on monday"]
+	},
+	"packageRules": [
+		{
+			"description": "Auto-merge non-major devDependencies",
+			"matchDepTypes": ["devDependencies"],
+			"matchUpdateTypes": ["minor", "patch"],
+			"automerge": true
+		},
+		{
+			"description": "Group TypeScript related packages",
+			"matchPackagePatterns": ["^typescript", "^@types/"],
+			"groupName": "typescript"
+		},
+		{
+			"description": "Group Astro ecosystem",
+			"matchPackagePatterns": ["^astro", "^@astrojs/"],
+			"groupName": "astro"
+		},
+		{
+			"description": "Group Biome",
+			"matchPackagePatterns": ["^@biomejs/"],
+			"groupName": "biome"
+		},
+		{
+			"description": "Group Vitest",
+			"matchPackagePatterns": ["^vitest", "^@vitest/"],
+			"groupName": "vitest"
+		}
+	],
+	"schedule": ["after 10pm and before 5am every weekday", "every weekend"]
+}
