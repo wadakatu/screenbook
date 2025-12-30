@@ -22,39 +22,11 @@
 </p>
 
 <p align="center">
+  <a href="https://wadakatu.github.io/screenbook">Documentation</a> •
   <a href="#quick-start">Quick Start</a> •
-  <a href="#features">Features</a> •
   <a href="#why-screenbook">Why Screenbook?</a> •
   <a href="#cli-commands">CLI</a>
 </p>
-
----
-
-## Features
-
-### Screen Catalog
-
-<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/screens.png" alt="Screen Catalog" width="700">
-
-Browse all screens in your application. **Search by name, filter by tags, find by owner.** Every screen shows its route, dependencies, and navigation connections.
-
-### Navigation Graph
-
-<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/graph.png" alt="Navigation Graph" width="700">
-
-**Visualize how users flow through your app.** See the big picture at a glance. Understand navigation paths without reading code.
-
-### Impact Analysis
-
-<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/impact.png" alt="Impact Analysis" width="700">
-
-**Changing an API? Know exactly which screens break — before you ship.** Enter an API name and instantly see all affected screens, both direct and transitive dependencies.
-
-### Coverage Dashboard
-
-<img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/screenshots/coverage.png" alt="Coverage Report" width="700">
-
-**Track documentation completeness across your app.** See coverage by owner and tag. Find gaps. Enforce coverage in CI to prevent drift.
 
 ---
 
@@ -74,6 +46,8 @@ npx screenbook dev
 ```
 
 Open http://localhost:4321 and explore your screen catalog.
+
+**For full documentation, visit [wadakatu.github.io/screenbook](https://wadakatu.github.io/screenbook).**
 
 ---
 
