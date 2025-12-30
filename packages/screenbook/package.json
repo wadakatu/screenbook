@@ -1,0 +1,52 @@
+{
+	"name": "screenbook",
+	"version": "1.0.0",
+	"description": "Screen catalog and navigation graph generator for frontend applications",
+	"type": "module",
+	"bin": {
+		"screenbook": "./dist/cli.mjs"
+	},
+	"exports": {
+		".": {
+			"import": "./dist/index.mjs",
+			"require": "./dist/index.cjs",
+			"types": "./dist/index.d.mts"
+		}
+	},
+	"main": "./dist/index.cjs",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.mts",
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsdown",
+		"dev": "tsdown --watch"
+	},
+	"dependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*",
+		"@screenbook/ui": "workspace:*"
+	},
+	"devDependencies": {
+		"tsdown": "catalog:"
+	},
+	"keywords": [
+		"screenbook",
+		"screen",
+		"catalog",
+		"navigation",
+		"documentation",
+		"frontend"
+	],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/wadakatu/screenbook.git",
+		"directory": "packages/screenbook"
+	},
+	"homepage": "https://github.com/wadakatu/screenbook#readme",
+	"bugs": {
+		"url": "https://github.com/wadakatu/screenbook/issues"
+	}
+}

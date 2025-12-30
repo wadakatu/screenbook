@@ -8,9 +8,7 @@
 		"screenbook:build": "screenbook build",
 		"screenbook:dev": "screenbook dev"
 	},
-	"dependencies": {
-		"@screenbook/core": "workspace:*",
-		"@screenbook/cli": "workspace:*",
-		"@screenbook/ui": "workspace:*"
+	"devDependencies": {
+		"screenbook": "workspace:*"
 	}
 }

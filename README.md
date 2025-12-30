@@ -62,7 +62,7 @@ Browse all screens in your application. **Search by name, filter by tags, find b
 
 ```bash
 # Install
-pnpm add -D @screenbook/core @screenbook/cli
+pnpm add -D screenbook
 
 # Initialize configuration
 npx screenbook init
@@ -80,7 +80,7 @@ Open http://localhost:4321 and explore your screen catalog.
 Create `screen.meta.ts` files alongside your routes:
 
 ```ts
-import { defineScreen } from "@screenbook/core"
+import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
   id: "billing.invoices",           // Unique identifier
