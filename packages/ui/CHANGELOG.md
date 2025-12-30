@@ -1,5 +1,14 @@
 # @screenbook/ui
 
+## 1.1.1
+
+### Patch Changes
+
+- [#53](https://github.com/wadakatu/screenbook/pull/53) [`ff5a1ca`](https://github.com/wadakatu/screenbook/commit/ff5a1cada3937557416dc8ff5c5d6f2eacf1e3b3) Thanks [@wadakatu](https://github.com/wadakatu)! - Add README.md to all packages for npm display
+
+- Updated dependencies [[`ff5a1ca`](https://github.com/wadakatu/screenbook/commit/ff5a1cada3937557416dc8ff5c5d6f2eacf1e3b3)]:
+  - @screenbook/core@1.1.1
+
 ## 1.1.0
 
 ### Patch Changes
