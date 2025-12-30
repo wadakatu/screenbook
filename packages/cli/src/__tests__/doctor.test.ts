@@ -107,6 +107,31 @@ describe("doctor checks", () => {
 			expect(result.status).toBe("warn")
 			expect(result.message).toContain("@screenbook/cli not found")
 		})
+
+		it("should warn when only cli is installed", async () => {
+			writeFileSync(
+				join(testDir, "package.json"),
+				JSON.stringify({
+					devDependencies: {
+						"@screenbook/cli": "^0.1.0",
+					},
+				}),
+			)
+
+			const result = await checkDependencies(testDir)
+
+			expect(result.status).toBe("warn")
+			expect(result.message).toContain("@screenbook/core not found")
+		})
+
+		it("should fail when package.json is invalid JSON", async () => {
+			writeFileSync(join(testDir, "package.json"), "not valid json")
+
+			const result = await checkDependencies(testDir)
+
+			expect(result.status).toBe("fail")
+			expect(result.message).toContain("Failed to read package.json")
+		})
 	})
 
 	describe("checkMetaPattern", () => {
@@ -135,6 +160,27 @@ describe("doctor checks", () => {
 			expect(result.status).toBe("warn")
 			expect(result.suggestion).toContain("screenbook generate")
 		})
+
+		it("should show plural for multiple meta files", async () => {
+			const homeDir = join(testDir, "src", "screens", "home")
+			const aboutDir = join(testDir, "src", "screens", "about")
+			mkdirSync(homeDir, { recursive: true })
+			mkdirSync(aboutDir, { recursive: true })
+			writeFileSync(join(homeDir, "screen.meta.ts"), "export const screen = {}")
+			writeFileSync(
+				join(aboutDir, "screen.meta.ts"),
+				"export const screen = {}",
+			)
+
+			const result = await checkMetaPattern(
+				testDir,
+				"src/**/screen.meta.ts",
+				[],
+			)
+
+			expect(result.status).toBe("pass")
+			expect(result.message).toContain("2 screen.meta.ts files")
+		})
 	})
 
 	describe("checkRoutesPattern", () => {
@@ -154,6 +200,29 @@ describe("doctor checks", () => {
 
 			expect(result.status).toBe("pass")
 			expect(result.message).toContain("1 route file")
+		})
+
+		it("should warn when no files match pattern", async () => {
+			const result = await checkRoutesPattern(
+				testDir,
+				"src/pages/**/*.tsx",
+				[],
+			)
+
+			expect(result.status).toBe("warn")
+			expect(result.message).toContain("No files matching")
+		})
+
+		it("should show plural for multiple route files", async () => {
+			const pagesDir = join(testDir, "src", "pages")
+			mkdirSync(pagesDir, { recursive: true })
+			writeFileSync(join(pagesDir, "index.tsx"), "export default () => {}")
+			writeFileSync(join(pagesDir, "about.tsx"), "export default () => {}")
+
+			const result = await checkRoutesPattern(testDir, "src/pages/**/*.tsx", [])
+
+			expect(result.status).toBe("pass")
+			expect(result.message).toContain("2 route files")
 		})
 	})
 
@@ -177,6 +246,21 @@ describe("doctor checks", () => {
 
 			expect(result.status).toBe("pass")
 			expect(result.message).toContain("2 screens")
+		})
+
+		it("should show singular for one screen", async () => {
+			const outDir = join(testDir, ".screenbook")
+			mkdirSync(outDir, { recursive: true })
+			writeFileSync(
+				join(outDir, "screens.json"),
+				JSON.stringify([{ id: "home" }]),
+			)
+
+			const result = await checkBuildOutput(testDir, ".screenbook")
+
+			expect(result.status).toBe("pass")
+			expect(result.message).toContain("1 screen")
+			expect(result.message).not.toContain("1 screens")
 		})
 
 		it("should fail when screens.json is corrupted", async () => {
@@ -229,6 +313,45 @@ describe("doctor checks", () => {
 
 			expect(result.status).toBe("warn")
 			expect(result.message).toContain("mismatch")
+		})
+
+		it("should warn when packages not installed", async () => {
+			writeFileSync(
+				join(testDir, "package.json"),
+				JSON.stringify({
+					devDependencies: {},
+				}),
+			)
+
+			const result = await checkVersionCompatibility(testDir)
+
+			expect(result.status).toBe("warn")
+			expect(result.message).toContain("packages not installed")
+		})
+
+		it("should fail when package.json is invalid JSON", async () => {
+			writeFileSync(join(testDir, "package.json"), "not valid json")
+
+			const result = await checkVersionCompatibility(testDir)
+
+			expect(result.status).toBe("fail")
+			expect(result.message).toContain("Failed to read package.json")
+		})
+
+		it("should handle versions with tilde prefix", async () => {
+			writeFileSync(
+				join(testDir, "package.json"),
+				JSON.stringify({
+					devDependencies: {
+						"@screenbook/core": "~1.0.0",
+						"@screenbook/cli": "~1.2.0",
+					},
+				}),
+			)
+
+			const result = await checkVersionCompatibility(testDir)
+
+			expect(result.status).toBe("pass")
 		})
 	})
 
