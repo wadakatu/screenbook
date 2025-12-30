@@ -203,11 +203,7 @@ describe("doctor checks", () => {
 		})
 
 		it("should warn when no files match pattern", async () => {
-			const result = await checkRoutesPattern(
-				testDir,
-				"src/pages/**/*.tsx",
-				[],
-			)
+			const result = await checkRoutesPattern(testDir, "src/pages/**/*.tsx", [])
 
 			expect(result.status).toBe("warn")
 			expect(result.message).toContain("No files matching")
