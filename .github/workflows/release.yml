@@ -50,7 +50,7 @@ jobs:
     needs: release
     if: needs.release.outputs.hasChangesets == 'false'
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - name: Checkout
@@ -114,3 +114,22 @@ jobs:
             npm publish --access public --provenance
           fi
         working-directory: packages/screenbook
+
+      - name: Get version for release
+        id: version
+        run: echo "version=$(node -p "require('./packages/screenbook/package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="v${{ steps.version.outputs.version }}"
+          # Check if release already exists
+          if gh release view "$VERSION" > /dev/null 2>&1; then
+            echo "Release $VERSION already exists, skipping"
+          else
+            gh release create "$VERSION" \
+              --title "$VERSION" \
+              --generate-notes \
+              --latest
+          fi
