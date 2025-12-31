@@ -1,5 +1,16 @@
 # screenbook
 
+## 1.1.3
+
+### Patch Changes
+
+- fix(cli): recognize unified screenbook package in doctor command
+
+  The doctor command now correctly detects the unified `screenbook` package in addition to `@screenbook/core` and `@screenbook/cli`.
+
+- Updated dependencies
+  - @screenbook/cli@1.1.3
+
 ## 1.1.2
 
 ### Patch Changes

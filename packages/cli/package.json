@@ -1,6 +1,6 @@
 {
 	"name": "@screenbook/cli",
-	"version": "1.1.2",
+	"version": "1.1.3",
 	"description": "CLI for Screenbook - screen catalog and navigation graph generator",
 	"type": "module",
 	"bin": {
