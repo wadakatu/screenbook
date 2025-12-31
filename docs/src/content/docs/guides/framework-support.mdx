@@ -1,0 +1,105 @@
+---
+title: Framework Support
+description: Supported frameworks and routing patterns
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+Screenbook works with any frontend framework. This page shows the current support status for auto-generating `screen.meta.ts` files from your routes.
+
+## File-based Routing
+
+Frameworks with file-based routing are fully supported. Screenbook can automatically detect routes and generate `screen.meta.ts` files.
+
+| Framework | Status | Auto-generate |
+|-----------|--------|---------------|
+| **Next.js** (App Router) | ✅ Supported | ✅ |
+| **Next.js** (Pages Router) | ✅ Supported | ✅ |
+| **Nuxt** | ✅ Supported | ✅ |
+| **Remix** | ✅ Supported | ✅ |
+| **Astro** | ✅ Supported | ✅ |
+| **SvelteKit** | ✅ Supported | ✅ |
+| **SolidStart** | 🚧 Planned | 🚧 |
+| **QwikCity** | 🚧 Planned | 🚧 |
+| **TanStack Start** | 🚧 Planned | 🚧 |
+
+### How it works
+
+For file-based routing, Screenbook uses the `routesPattern` configuration to find route files:
+
+```ts
+// screenbook.config.ts
+import { defineConfig } from "screenbook"
+
+export default defineConfig({
+  // Next.js App Router
+  routesPattern: "src/app/**/page.tsx",
+
+  // Nuxt
+  // routesPattern: "pages/**/*.vue",
+
+  // Remix
+  // routesPattern: "app/routes/**/*.tsx",
+})
+```
+
+Then run `screenbook generate` to create `screen.meta.ts` files automatically.
+
+## Config-based Routing
+
+Frameworks with config-based routing (routes defined in a single file) are planned for future releases.
+
+| Framework | Status | Auto-generate |
+|-----------|--------|---------------|
+| **React Router** | 🚧 Planned | 🚧 |
+| **Vue Router** | 🚧 Planned | 🚧 |
+| **Angular Router** | 🚧 Planned | 🚧 |
+| **TanStack Router** | 🚧 Planned | 🚧 |
+| **Solid Router** | 🚧 Planned | 🚧 |
+
+:::note[Track Progress]
+Config-based routing support is being tracked in [GitHub Issue #107](https://github.com/wadakatu/screenbook/issues/107).
+:::
+
+### Manual Setup
+
+Even without auto-generate support, you can manually create `screen.meta.ts` files for any framework:
+
+```ts
+// src/screens/dashboard/screen.meta.ts
+import { defineScreen } from "screenbook"
+
+export const screen = defineScreen({
+  id: "dashboard",
+  title: "Dashboard",
+  route: "/dashboard",
+  owner: ["platform"],
+  tags: ["analytics"],
+})
+```
+
+Configure Screenbook to find your manually created files:
+
+```ts
+// screenbook.config.ts
+import { defineConfig } from "screenbook"
+
+export default defineConfig({
+  metaPattern: "src/screens/**/screen.meta.ts",
+  // routesPattern is optional for manual setup
+})
+```
+
+## Framework Examples
+
+See working examples for supported frameworks:
+
+<LinkCard
+  title="Framework Examples"
+  description="Integration examples for Next.js, Vite + React, and more"
+  href="/screenbook/guides/framework-examples/"
+/>
+
+## Request a Framework
+
+Don't see your framework? [Open an issue](https://github.com/wadakatu/screenbook/issues/new) to request support!
