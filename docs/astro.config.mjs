@@ -65,6 +65,8 @@ export default defineConfig({
 				{
 					label: "Guides",
 					items: [
+						{ label: "Framework Support", slug: "guides/framework-support" },
+						{ label: "Framework Examples", slug: "guides/framework-examples" },
 						{ label: "Define Screens", slug: "guides/define-screen" },
 						{ label: "Navigation Graph", slug: "guides/navigation-graph" },
 						{ label: "Impact Analysis", slug: "guides/impact-analysis" },
