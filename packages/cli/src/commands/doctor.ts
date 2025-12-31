@@ -103,8 +103,18 @@ export async function checkDependencies(cwd: string): Promise<CheckResult> {
 		const pkg = JSON.parse(content) as PackageJson
 
 		const allDeps = { ...pkg.dependencies, ...pkg.devDependencies }
+		const unifiedVersion = allDeps.screenbook
 		const coreVersion = allDeps["@screenbook/core"]
 		const cliVersion = allDeps["@screenbook/cli"]
+
+		// Check for unified screenbook package first
+		if (unifiedVersion) {
+			return {
+				name: "Dependencies",
+				status: "pass",
+				message: `screenbook@${unifiedVersion}`,
+			}
+		}
 
 		if (!coreVersion && !cliVersion) {
 			return {
@@ -112,7 +122,7 @@ export async function checkDependencies(cwd: string): Promise<CheckResult> {
 				status: "fail",
 				message: "Screenbook packages not installed",
 				suggestion:
-					"Run 'pnpm add -D @screenbook/core @screenbook/cli' to install",
+					"Run 'pnpm add -D screenbook' or 'pnpm add -D @screenbook/core @screenbook/cli' to install",
 			}
 		}
 
@@ -275,8 +285,18 @@ export async function checkVersionCompatibility(
 		const pkg = JSON.parse(content) as PackageJson
 
 		const allDeps = { ...pkg.dependencies, ...pkg.devDependencies }
+		const unifiedVersion = allDeps.screenbook
 		const coreVersion = allDeps["@screenbook/core"]
 		const cliVersion = allDeps["@screenbook/cli"]
+
+		// Unified package - no compatibility check needed
+		if (unifiedVersion) {
+			return {
+				name: "Version compatibility",
+				status: "pass",
+				message: "Using unified screenbook package",
+			}
+		}
 
 		if (!coreVersion || !cliVersion) {
 			return {

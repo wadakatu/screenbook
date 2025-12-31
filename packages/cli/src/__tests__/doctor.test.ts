@@ -124,6 +124,38 @@ describe("doctor checks", () => {
 			expect(result.message).toContain("@screenbook/core not found")
 		})
 
+		it("should pass when unified screenbook package is installed", async () => {
+			writeFileSync(
+				join(testDir, "package.json"),
+				JSON.stringify({
+					devDependencies: {
+						screenbook: "^1.0.0",
+					},
+				}),
+			)
+
+			const result = await checkDependencies(testDir)
+
+			expect(result.status).toBe("pass")
+			expect(result.message).toContain("screenbook@^1.0.0")
+		})
+
+		it("should pass when unified screenbook package is in dependencies", async () => {
+			writeFileSync(
+				join(testDir, "package.json"),
+				JSON.stringify({
+					dependencies: {
+						screenbook: "workspace:*",
+					},
+				}),
+			)
+
+			const result = await checkDependencies(testDir)
+
+			expect(result.status).toBe("pass")
+			expect(result.message).toContain("screenbook@workspace:*")
+		})
+
 		it("should fail when package.json is invalid JSON", async () => {
 			writeFileSync(join(testDir, "package.json"), "not valid json")
 
@@ -348,6 +380,22 @@ describe("doctor checks", () => {
 			const result = await checkVersionCompatibility(testDir)
 
 			expect(result.status).toBe("pass")
+		})
+
+		it("should pass when unified screenbook package is installed", async () => {
+			writeFileSync(
+				join(testDir, "package.json"),
+				JSON.stringify({
+					devDependencies: {
+						screenbook: "^1.0.0",
+					},
+				}),
+			)
+
+			const result = await checkVersionCompatibility(testDir)
+
+			expect(result.status).toBe("pass")
+			expect(result.message).toContain("unified screenbook package")
 		})
 	})
 
