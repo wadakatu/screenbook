@@ -4,6 +4,10 @@ description: Supported frameworks and routing patterns
 ---
 
 import { LinkCard } from '@astrojs/starlight/components';
+import { fileBasedFrameworks, configBasedFrameworks } from '../../../data/frameworks';
+
+export const StatusIcon = ({ status }) => status === 'supported' ? '✅' : '🚧';
+export const AutoGenIcon = ({ autoGenerate }) => autoGenerate ? '✅' : '🚧';
 
 Screenbook works with any frontend framework. This page shows the current support status for auto-generating `screen.meta.ts` files from your routes.
 
@@ -11,17 +15,24 @@ Screenbook works with any frontend framework. This page shows the current suppor
 
 Frameworks with file-based routing are fully supported. Screenbook can automatically detect routes and generate `screen.meta.ts` files.
 
-| Framework | Status | Auto-generate |
-|-----------|--------|---------------|
-| **Next.js** (App Router) | ✅ Supported | ✅ |
-| **Next.js** (Pages Router) | ✅ Supported | ✅ |
-| **Nuxt** | ✅ Supported | ✅ |
-| **Remix** | ✅ Supported | ✅ |
-| **Astro** | ✅ Supported | ✅ |
-| **SvelteKit** | ✅ Supported | ✅ |
-| **SolidStart** | 🚧 Planned | 🚧 |
-| **QwikCity** | 🚧 Planned | 🚧 |
-| **TanStack Start** | 🚧 Planned | 🚧 |
+<table>
+  <thead>
+    <tr>
+      <th>Framework</th>
+      <th>Status</th>
+      <th>Auto-generate</th>
+    </tr>
+  </thead>
+  <tbody>
+    {fileBasedFrameworks.map((fw) => (
+      <tr key={fw.name}>
+        <td><strong>{fw.name}</strong></td>
+        <td>{fw.status === 'supported' ? '✅ Supported' : '🚧 Planned'}</td>
+        <td>{fw.autoGenerate ? '✅' : '🚧'}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 ### How it works
 
@@ -49,13 +60,24 @@ Then run `screenbook generate` to create `screen.meta.ts` files automatically.
 
 Frameworks with config-based routing (routes defined in a single file) are planned for future releases.
 
-| Framework | Status | Auto-generate |
-|-----------|--------|---------------|
-| **React Router** | 🚧 Planned | 🚧 |
-| **Vue Router** | 🚧 Planned | 🚧 |
-| **Angular Router** | 🚧 Planned | 🚧 |
-| **TanStack Router** | 🚧 Planned | 🚧 |
-| **Solid Router** | 🚧 Planned | 🚧 |
+<table>
+  <thead>
+    <tr>
+      <th>Framework</th>
+      <th>Status</th>
+      <th>Auto-generate</th>
+    </tr>
+  </thead>
+  <tbody>
+    {configBasedFrameworks.map((fw) => (
+      <tr key={fw.name}>
+        <td><strong>{fw.name}</strong></td>
+        <td>{fw.status === 'supported' ? '✅ Supported' : '🚧 Planned'}</td>
+        <td>{fw.autoGenerate ? '✅' : '🚧'}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
 
 :::note[Track Progress]
 Config-based routing support is being tracked in [GitHub Issue #107](https://github.com/wadakatu/screenbook/issues/107).
