@@ -93,15 +93,15 @@ export const frameworks: Framework[] = [
 		autoGenerate: true,
 		routingType: "config-based",
 	},
+	{
+		name: "TanStack Router",
+		status: "supported",
+		autoGenerate: true,
+		routingType: "config-based",
+	},
 	// Config-based routing - Planned
 	{
 		name: "Angular Router",
-		status: "planned",
-		autoGenerate: false,
-		routingType: "config-based",
-	},
-	{
-		name: "TanStack Router",
 		status: "planned",
 		autoGenerate: false,
 		routingType: "config-based",
