@@ -9,15 +9,39 @@ export const ERRORS = {
 	// ============================================
 
 	ROUTES_PATTERN_MISSING: {
-		title: "routesPattern not configured",
+		title: "Routes configuration not found",
 		suggestion:
-			"Add routesPattern to your screenbook.config.ts to specify where your route files are located.",
+			"Add routesPattern (for file-based routing) or routesFile (for config-based routing) to your screenbook.config.ts.",
+		example: `import { defineConfig } from "@screenbook/core"
+
+// Option 1: File-based routing (Next.js, Nuxt, etc.)
+export default defineConfig({
+  routesPattern: "src/pages/**/page.tsx",
+})
+
+// Option 2: Config-based routing (Vue Router, React Router, etc.)
+export default defineConfig({
+  routesFile: "src/router/routes.ts",
+})`,
+	} satisfies ErrorOptions,
+
+	ROUTES_FILE_NOT_FOUND: (filePath: string): ErrorOptions => ({
+		title: `Routes file not found: ${filePath}`,
+		suggestion:
+			"Check the routesFile path in your screenbook.config.ts. The file should export a routes array.",
 		example: `import { defineConfig } from "@screenbook/core"
 
 export default defineConfig({
-  routesPattern: "src/pages/**/page.tsx",  // Adjust for your framework
+  routesFile: "src/router/routes.ts",  // Make sure this file exists
 })`,
-	} satisfies ErrorOptions,
+	}),
+
+	ROUTES_FILE_PARSE_ERROR: (filePath: string, error: string): ErrorOptions => ({
+		title: `Failed to parse routes file: ${filePath}`,
+		message: error,
+		suggestion:
+			"Ensure the file exports a valid routes array. Check for syntax errors or unsupported patterns.",
+	}),
 
 	CONFIG_NOT_FOUND: {
 		title: "Configuration file not found",

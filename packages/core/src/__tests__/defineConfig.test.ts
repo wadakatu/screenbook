@@ -59,4 +59,21 @@ describe("defineConfig", () => {
 			ignore: ["app/api/**"],
 		})
 	})
+
+	it("should set routesFile for config-based routing", () => {
+		const config = defineConfig({
+			routesFile: "src/router/routes.ts",
+		})
+
+		expect(config.routesFile).toBe("src/router/routes.ts")
+	})
+
+	it("should throw error when both routesPattern and routesFile are set", () => {
+		expect(() =>
+			defineConfig({
+				routesPattern: "src/pages/**/*.vue",
+				routesFile: "src/router/routes.ts",
+			}),
+		).toThrow("Cannot specify both 'routesPattern' and 'routesFile'")
+	})
 })

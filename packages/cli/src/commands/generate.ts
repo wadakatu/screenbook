@@ -1,11 +1,16 @@
-import { existsSync, writeFileSync } from "node:fs"
-import { dirname, join, relative } from "node:path"
+import { existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { dirname, join, relative, resolve } from "node:path"
 import { define } from "gunshi"
 import prompts from "prompts"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
+import {
+	type FlatRoute,
+	flattenRoutes,
+	parseVueRouterConfig,
+} from "../utils/vueRouterParser.js"
 
 export const generateCommand = define({
 	name: "generate",
@@ -42,123 +47,341 @@ export const generateCommand = define({
 		const force = ctx.values.force ?? false
 		const interactive = ctx.values.interactive ?? false
 
-		if (!config.routesPattern) {
+		// Check for routes configuration
+		if (!config.routesPattern && !config.routesFile) {
 			logger.errorWithHelp(ERRORS.ROUTES_PATTERN_MISSING)
 			process.exit(1)
 		}
 
-		logger.info("Scanning for route files...")
-		logger.blank()
-
-		// Find all route files
-		const routeFiles = await glob(config.routesPattern, {
-			cwd,
-			ignore: config.ignore,
-		})
-
-		if (routeFiles.length === 0) {
-			logger.warn(`No route files found matching: ${config.routesPattern}`)
+		// Use routesFile mode (config-based routing)
+		if (config.routesFile) {
+			await generateFromRoutesFile(config.routesFile, cwd, {
+				dryRun,
+				force,
+				interactive,
+			})
 			return
 		}
 
-		logger.log(`Found ${routeFiles.length} route files`)
-		logger.blank()
+		// Use routesPattern mode (file-based routing)
+		await generateFromRoutesPattern(config.routesPattern as string, cwd, {
+			dryRun,
+			force,
+			interactive,
+			ignore: config.ignore,
+		})
+	},
+})
 
-		let created = 0
-		let skipped = 0
+interface GenerateFromRoutesFileOptions {
+	dryRun: boolean
+	force: boolean
+	interactive: boolean
+}
 
-		for (const routeFile of routeFiles) {
-			const routeDir = dirname(routeFile)
-			const metaPath = join(routeDir, "screen.meta.ts")
-			const absoluteMetaPath = join(cwd, metaPath)
+/**
+ * Generate screen.meta.ts files from a Vue Router config file
+ */
+async function generateFromRoutesFile(
+	routesFile: string,
+	cwd: string,
+	options: GenerateFromRoutesFileOptions,
+): Promise<void> {
+	const { dryRun, force, interactive } = options
+	const absoluteRoutesFile = resolve(cwd, routesFile)
 
-			if (!force && existsSync(absoluteMetaPath)) {
-				if (!interactive) {
-					skipped++
-					continue
-				}
-				logger.itemWarn(
-					`Exists: ${logger.path(metaPath)} (use --force to overwrite)`,
-				)
+	// Check if routes file exists
+	if (!existsSync(absoluteRoutesFile)) {
+		logger.errorWithHelp(ERRORS.ROUTES_FILE_NOT_FOUND(routesFile))
+		process.exit(1)
+	}
+
+	logger.info(`Parsing routes from ${logger.path(routesFile)}...`)
+	logger.blank()
+
+	// Parse the routes file
+	let parseResult: ReturnType<typeof parseVueRouterConfig>
+	try {
+		parseResult = parseVueRouterConfig(absoluteRoutesFile)
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		logger.errorWithHelp(ERRORS.ROUTES_FILE_PARSE_ERROR(routesFile, message))
+		process.exit(1)
+	}
+
+	// Show warnings
+	for (const warning of parseResult.warnings) {
+		logger.warn(warning)
+	}
+
+	// Flatten routes
+	const flatRoutes = flattenRoutes(parseResult.routes)
+
+	if (flatRoutes.length === 0) {
+		logger.warn("No routes found in the config file")
+		return
+	}
+
+	logger.log(`Found ${flatRoutes.length} routes`)
+	logger.blank()
+
+	let created = 0
+	let skipped = 0
+
+	for (const route of flatRoutes) {
+		// Determine where to place screen.meta.ts
+		const metaPath = determineMetaPath(route, cwd)
+		const absoluteMetaPath = resolve(cwd, metaPath)
+
+		if (!force && existsSync(absoluteMetaPath)) {
+			if (!interactive) {
+				skipped++
+				continue
+			}
+			logger.itemWarn(
+				`Exists: ${logger.path(metaPath)} (use --force to overwrite)`,
+			)
+			skipped++
+			continue
+		}
+
+		const screenMeta: InferredScreenMeta = {
+			id: route.screenId,
+			title: route.screenTitle,
+			route: route.fullPath,
+		}
+
+		if (interactive) {
+			const result = await promptForScreen(route.fullPath, screenMeta)
+
+			if (result.skip) {
+				logger.itemWarn(`Skipped: ${logger.path(metaPath)}`)
 				skipped++
 				continue
 			}
 
-			// Generate screen metadata from path
-			const screenMeta = inferScreenMeta(routeDir, config.routesPattern)
+			const content = generateScreenMetaContent(result.meta, {
+				owner: result.owner,
+				tags: result.tags,
+			})
 
-			if (interactive) {
-				const result = await promptForScreen(routeFile, screenMeta)
-
-				if (result.skip) {
-					logger.itemWarn(`Skipped: ${logger.path(metaPath)}`)
-					skipped++
-					continue
-				}
-
-				const content = generateScreenMetaContent(result.meta, {
-					owner: result.owner,
-					tags: result.tags,
-				})
-
-				if (dryRun) {
-					logger.step(`Would create: ${logger.path(metaPath)}`)
-					logger.log(`    ${logger.dim(`id: "${result.meta.id}"`)}`)
-					logger.log(`    ${logger.dim(`title: "${result.meta.title}"`)}`)
-					logger.log(`    ${logger.dim(`route: "${result.meta.route}"`)}`)
-					if (result.owner.length > 0) {
-						logger.log(
-							`    ${logger.dim(`owner: [${result.owner.map((o) => `"${o}"`).join(", ")}]`)}`,
-						)
-					}
-					if (result.tags.length > 0) {
-						logger.log(
-							`    ${logger.dim(`tags: [${result.tags.map((t) => `"${t}"`).join(", ")}]`)}`,
-						)
-					}
-					logger.blank()
-				} else {
-					writeFileSync(absoluteMetaPath, content)
-					logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
-				}
-			} else {
-				const content = generateScreenMetaContent(screenMeta)
-
-				if (dryRun) {
-					logger.step(`Would create: ${logger.path(metaPath)}`)
-					logger.log(`    ${logger.dim(`id: "${screenMeta.id}"`)}`)
-					logger.log(`    ${logger.dim(`title: "${screenMeta.title}"`)}`)
-					logger.log(`    ${logger.dim(`route: "${screenMeta.route}"`)}`)
-					logger.blank()
-				} else {
-					writeFileSync(absoluteMetaPath, content)
-					logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
-				}
+			if (dryRun) {
+				logDryRunOutput(metaPath, result.meta, result.owner, result.tags)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
 			}
-
-			created++
-		}
-
-		logger.blank()
-		if (dryRun) {
-			logger.info(`Would create ${created} files (${skipped} already exist)`)
-			logger.blank()
-			logger.log(`Run without ${logger.code("--dry-run")} to create files`)
 		} else {
-			logger.done(`Created ${created} files (${skipped} skipped)`)
-			if (created > 0) {
-				logger.blank()
-				logger.log(logger.bold("Next steps:"))
-				logger.log(
-					"  1. Review and customize the generated screen.meta.ts files",
-				)
-				logger.log(
-					`  2. Run ${logger.code("screenbook dev")} to view your screen catalog`,
-				)
+			const content = generateScreenMetaContent(screenMeta)
+
+			if (dryRun) {
+				logDryRunOutput(metaPath, screenMeta)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
 			}
 		}
-	},
-})
+	}
+
+	logSummary(created, skipped, dryRun)
+}
+
+interface GenerateFromRoutesPatternOptions {
+	dryRun: boolean
+	force: boolean
+	interactive: boolean
+	ignore: string[]
+}
+
+/**
+ * Generate screen.meta.ts files from route files matching a glob pattern
+ */
+async function generateFromRoutesPattern(
+	routesPattern: string,
+	cwd: string,
+	options: GenerateFromRoutesPatternOptions,
+): Promise<void> {
+	const { dryRun, force, interactive, ignore } = options
+
+	logger.info("Scanning for route files...")
+	logger.blank()
+
+	// Find all route files
+	const routeFiles = await glob(routesPattern, {
+		cwd,
+		ignore,
+	})
+
+	if (routeFiles.length === 0) {
+		logger.warn(`No route files found matching: ${routesPattern}`)
+		return
+	}
+
+	logger.log(`Found ${routeFiles.length} route files`)
+	logger.blank()
+
+	let created = 0
+	let skipped = 0
+
+	for (const routeFile of routeFiles) {
+		const routeDir = dirname(routeFile)
+		const metaPath = join(routeDir, "screen.meta.ts")
+		const absoluteMetaPath = join(cwd, metaPath)
+
+		if (!force && existsSync(absoluteMetaPath)) {
+			if (!interactive) {
+				skipped++
+				continue
+			}
+			logger.itemWarn(
+				`Exists: ${logger.path(metaPath)} (use --force to overwrite)`,
+			)
+			skipped++
+			continue
+		}
+
+		// Generate screen metadata from path
+		const screenMeta = inferScreenMeta(routeDir, routesPattern)
+
+		if (interactive) {
+			const result = await promptForScreen(routeFile, screenMeta)
+
+			if (result.skip) {
+				logger.itemWarn(`Skipped: ${logger.path(metaPath)}`)
+				skipped++
+				continue
+			}
+
+			const content = generateScreenMetaContent(result.meta, {
+				owner: result.owner,
+				tags: result.tags,
+			})
+
+			if (dryRun) {
+				logDryRunOutput(metaPath, result.meta, result.owner, result.tags)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
+			}
+		} else {
+			const content = generateScreenMetaContent(screenMeta)
+
+			if (dryRun) {
+				logDryRunOutput(metaPath, screenMeta)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
+			}
+		}
+	}
+
+	logSummary(created, skipped, dryRun)
+}
+
+/**
+ * Determine where to place screen.meta.ts for a route
+ */
+function determineMetaPath(route: FlatRoute, cwd: string): string {
+	// If component path is available, place screen.meta.ts next to it
+	if (route.componentPath) {
+		const componentDir = dirname(route.componentPath)
+		const relativePath = relative(cwd, componentDir)
+		// Ensure path doesn't escape cwd
+		if (!relativePath.startsWith("..")) {
+			return join(relativePath, "screen.meta.ts")
+		}
+	}
+
+	// Fall back to src/screens/{screenId}/screen.meta.ts
+	const screenDir = route.screenId.replace(/\./g, "/")
+	return join("src", "screens", screenDir, "screen.meta.ts")
+}
+
+/**
+ * Ensure the directory for a file exists
+ */
+function ensureDirectoryExists(filePath: string): void {
+	const dir = dirname(filePath)
+	if (!existsSync(dir)) {
+		try {
+			mkdirSync(dir, { recursive: true })
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			throw new Error(`Failed to create directory "${dir}": ${message}`)
+		}
+	}
+}
+
+/**
+ * Safely write a file with error handling
+ * Returns true if successful, false if failed
+ */
+function safeWriteFile(
+	absolutePath: string,
+	relativePath: string,
+	content: string,
+): boolean {
+	try {
+		ensureDirectoryExists(absolutePath)
+		writeFileSync(absolutePath, content)
+		logger.itemSuccess(`Created: ${logger.path(relativePath)}`)
+		return true
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		logger.itemError(
+			`Failed to create ${logger.path(relativePath)}: ${message}`,
+		)
+		return false
+	}
+}
+
+/**
+ * Log dry run output for a screen
+ */
+function logDryRunOutput(
+	metaPath: string,
+	meta: InferredScreenMeta,
+	owner?: string[],
+	tags?: string[],
+): void {
+	logger.step(`Would create: ${logger.path(metaPath)}`)
+	logger.log(`    ${logger.dim(`id: "${meta.id}"`)}`)
+	logger.log(`    ${logger.dim(`title: "${meta.title}"`)}`)
+	logger.log(`    ${logger.dim(`route: "${meta.route}"`)}`)
+	if (owner && owner.length > 0) {
+		logger.log(
+			`    ${logger.dim(`owner: [${owner.map((o) => `"${o}"`).join(", ")}]`)}`,
+		)
+	}
+	if (tags && tags.length > 0) {
+		logger.log(
+			`    ${logger.dim(`tags: [${tags.map((t) => `"${t}"`).join(", ")}]`)}`,
+		)
+	}
+	logger.blank()
+}
+
+/**
+ * Log summary after generation
+ */
+function logSummary(created: number, skipped: number, dryRun: boolean): void {
+	logger.blank()
+	if (dryRun) {
+		logger.info(`Would create ${created} files (${skipped} already exist)`)
+		logger.blank()
+		logger.log(`Run without ${logger.code("--dry-run")} to create files`)
+	} else {
+		logger.done(`Created ${created} files (${skipped} skipped)`)
+		if (created > 0) {
+			logger.blank()
+			logger.log(logger.bold("Next steps:"))
+			logger.log("  1. Review and customize the generated screen.meta.ts files")
+			logger.log(
+				`  2. Run ${logger.code("screenbook dev")} to view your screen catalog`,
+			)
+		}
+	}
+}
 
 interface InferredScreenMeta {
 	id: string

@@ -5,9 +5,30 @@ describe("ERRORS", () => {
 	describe("static error definitions", () => {
 		it("should have ROUTES_PATTERN_MISSING error", () => {
 			expect(ERRORS.ROUTES_PATTERN_MISSING).toMatchObject({
-				title: "routesPattern not configured",
+				title: "Routes configuration not found",
 				suggestion: expect.any(String),
 				example: expect.any(String),
+			})
+		})
+
+		it("should have ROUTES_FILE_NOT_FOUND error", () => {
+			const error = ERRORS.ROUTES_FILE_NOT_FOUND("src/router/routes.ts")
+			expect(error).toMatchObject({
+				title: "Routes file not found: src/router/routes.ts",
+				suggestion: expect.any(String),
+				example: expect.any(String),
+			})
+		})
+
+		it("should have ROUTES_FILE_PARSE_ERROR error", () => {
+			const error = ERRORS.ROUTES_FILE_PARSE_ERROR(
+				"src/router/routes.ts",
+				"Unexpected token",
+			)
+			expect(error).toMatchObject({
+				title: "Failed to parse routes file: src/router/routes.ts",
+				message: "Unexpected token",
+				suggestion: expect.any(String),
 			})
 		})
 

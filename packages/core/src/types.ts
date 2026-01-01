@@ -444,12 +444,23 @@ export interface Config {
 	metaPattern: string
 
 	/**
-	 * Glob pattern for route files (for generate/lint commands)
+	 * Glob pattern for route files (for generate/lint commands).
+	 * Use this for file-based routing frameworks (Next.js, Nuxt, Remix, etc.).
+	 * Cannot be used together with routesFile.
 	 * @example "src/pages/**\/page.tsx"
 	 * @example "app/**\/page.tsx"
 	 * @example "src/routes/**\/*.tsx"
 	 */
 	routesPattern?: string
+
+	/**
+	 * Path to a router configuration file (for config-based routing).
+	 * Use this for frameworks like Vue Router, React Router, etc.
+	 * Cannot be used together with routesPattern.
+	 * @example "src/router/routes.ts"
+	 * @example "src/router/index.ts"
+	 */
+	routesFile?: string
 
 	/**
 	 * Patterns to ignore when scanning (glob patterns).
@@ -492,10 +503,20 @@ export interface ConfigInput {
 	metaPattern?: string
 
 	/**
-	 * Glob pattern for route files (for generate/lint commands)
+	 * Glob pattern for route files (for generate/lint commands).
+	 * Use this for file-based routing frameworks.
+	 * Cannot be used together with routesFile.
 	 * @example "src/pages/**\/page.tsx"
 	 */
 	routesPattern?: string
+
+	/**
+	 * Path to a router configuration file (for config-based routing).
+	 * Use this for frameworks like Vue Router, React Router, etc.
+	 * Cannot be used together with routesPattern.
+	 * @example "src/router/routes.ts"
+	 */
+	routesFile?: string
 
 	/**
 	 * Patterns to ignore when scanning.
@@ -513,10 +534,17 @@ export interface ConfigInput {
  * Schema for Screenbook configuration (runtime validation)
  * @internal
  */
-export const configSchema = z.object({
-	outDir: z.string().default(".screenbook"),
-	metaPattern: z.string().default("src/**/screen.meta.ts"),
-	routesPattern: z.string().optional(),
-	ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
-	adoption: adoptionSchema.optional(),
-})
+export const configSchema = z
+	.object({
+		outDir: z.string().default(".screenbook"),
+		metaPattern: z.string().default("src/**/screen.meta.ts"),
+		routesPattern: z.string().optional(),
+		routesFile: z.string().optional(),
+		ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
+		adoption: adoptionSchema.optional(),
+	})
+	.refine((data) => !(data.routesPattern && data.routesFile), {
+		message:
+			"Cannot specify both 'routesPattern' and 'routesFile'. Use one or the other.",
+		path: ["routesFile"],
+	})
