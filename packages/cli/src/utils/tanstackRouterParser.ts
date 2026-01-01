@@ -68,6 +68,10 @@ export function parseTanStackRouterConfig(
 	// Collect all route definitions from the AST
 	const routeMap = new Map<string, RouteDefinition>()
 
+	// Two-pass AST processing is required because TanStack Router uses a function-based API
+	// where routes are defined as variables and then composed using .addChildren().
+	// Pass 1 must collect all route definitions first, so Pass 2 can resolve variable references.
+
 	// First pass: collect all createRoute/createRootRoute calls
 	for (const node of ast.program.body) {
 		collectRouteDefinitions(node, routeMap, routesFileDir, warnings)
@@ -274,6 +278,7 @@ function extractRouteFromCallExpression(
 
 /**
  * Extract component value from different patterns
+ * Returns undefined with a warning for unrecognized patterns
  */
 function extractComponentValue(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -294,7 +299,15 @@ function extractComponentValue(
 			if (importArg) {
 				return extractLazyImportPath(importArg, baseDir, warnings)
 			}
+			// lazyRouteComponent called without arguments
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`lazyRouteComponent called without arguments${loc}. Expected arrow function with import().`,
+			)
+			return undefined
 		}
+		// Other call expressions are not supported
+		return undefined
 	}
 
 	// Arrow function component: component: () => <Home />
@@ -305,6 +318,30 @@ function extractComponentValue(
 			if (openingElement?.name?.type === "JSXIdentifier") {
 				return openingElement.name.name
 			}
+			// Handle JSXMemberExpression like <Namespace.Component />
+			if (openingElement?.name?.type === "JSXMemberExpression") {
+				const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+				warnings.push(
+					`Namespaced JSX component${loc}. Component extraction not fully supported for member expressions.`,
+				)
+				return undefined
+			}
+		}
+		// Block body arrow functions: () => { return <Home /> }
+		if (node.body.type === "BlockStatement") {
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`Arrow function with block body${loc}. Only concise arrow functions returning JSX directly can be analyzed.`,
+			)
+			return undefined
+		}
+		// JSX Fragment: () => <>...</>
+		if (node.body.type === "JSXFragment") {
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`JSX Fragment detected${loc}. Cannot extract component name from fragments.`,
+			)
+			return undefined
 		}
 	}
 
@@ -483,9 +520,17 @@ function buildRouteTree(
 	const routes: ParsedRoute[] = []
 
 	for (const rootDef of rootDefs) {
-		const rootRoute = buildRouteFromDefinition(rootDef, routeMap, warnings)
+		// Use a Set to track visited routes and detect circular references
+		const visited = new Set<string>()
+		const rootRoute = buildRouteFromDefinition(
+			rootDef,
+			routeMap,
+			warnings,
+			visited,
+		)
 		if (rootRoute) {
 			// If root has children, return only the children (root is typically just a layout)
+			// because the root route in TanStack Router serves as a layout wrapper
 			if (rootRoute.children && rootRoute.children.length > 0) {
 				routes.push(...rootRoute.children)
 			} else if (rootRoute.path) {
@@ -498,7 +543,8 @@ function buildRouteTree(
 }
 
 /**
- * Build tree when there's no explicit root route (using getParentRoute references)
+ * Build tree when there's no explicit root route
+ * Falls back to finding routes that have no parent relationship defined
  */
 function buildTreeFromParentRelations(
 	routeMap: Map<string, RouteDefinition>,
@@ -512,7 +558,8 @@ function buildTreeFromParentRelations(
 	const routes: ParsedRoute[] = []
 
 	for (const def of topLevelDefs) {
-		const route = buildRouteFromDefinition(def, routeMap, warnings)
+		const visited = new Set<string>()
+		const route = buildRouteFromDefinition(def, routeMap, warnings, visited)
 		if (route) {
 			routes.push(route)
 		}
@@ -523,12 +570,23 @@ function buildTreeFromParentRelations(
 
 /**
  * Build a ParsedRoute from a RouteDefinition
+ * @param visited - Set of visited variable names for circular reference detection
  */
 function buildRouteFromDefinition(
 	def: RouteDefinition,
 	routeMap: Map<string, RouteDefinition>,
 	warnings: string[],
+	visited: Set<string>,
 ): ParsedRoute | null {
+	// Circular reference detection
+	if (visited.has(def.variableName)) {
+		warnings.push(
+			`Circular reference detected: route "${def.variableName}" references itself in the route tree.`,
+		)
+		return null
+	}
+	visited.add(def.variableName)
+
 	const route: ParsedRoute = {
 		path: def.path ?? "",
 		component: def.component,
@@ -544,14 +602,14 @@ function buildRouteFromDefinition(
 					childDef,
 					routeMap,
 					warnings,
+					visited,
 				)
 				if (childRoute) {
 					children.push(childRoute)
 				}
 			} else {
-				const loc = ""
 				warnings.push(
-					`Child route "${childName}" not found${loc}. Ensure it's defined with createRoute.`,
+					`Child route "${childName}" not found. Ensure it's defined with createRoute.`,
 				)
 			}
 		}
@@ -565,8 +623,9 @@ function buildRouteFromDefinition(
 
 /**
  * Normalize TanStack Router path syntax to standard format
- * $param -> :param
- * $ (catch-all) -> *
+ * /$ (trailing catch-all) -> /*
+ * $  (standalone splat)   -> *
+ * $param (dynamic segment) -> :param
  */
 function normalizeTanStackPath(path: string): string {
 	return (
