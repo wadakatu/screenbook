@@ -18,18 +18,27 @@ export { flattenRoutes, pathToScreenId, pathToScreenTitle }
 /**
  * Parse Vue Router configuration file and extract routes
  */
-export function parseVueRouterConfig(filePath: string): ParseResult {
+export function parseVueRouterConfig(
+	filePath: string,
+	preloadedContent?: string,
+): ParseResult {
 	const absolutePath = resolve(filePath)
 	const routesFileDir = dirname(absolutePath)
 	const warnings: string[] = []
 
-	// Read file with proper error handling
+	// Read file with proper error handling (skip if content is preloaded)
 	let content: string
-	try {
-		content = readFileSync(absolutePath, "utf-8")
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error)
-		throw new Error(`Failed to read routes file "${absolutePath}": ${message}`)
+	if (preloadedContent !== undefined) {
+		content = preloadedContent
+	} else {
+		try {
+			content = readFileSync(absolutePath, "utf-8")
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			throw new Error(
+				`Failed to read routes file "${absolutePath}": ${message}`,
+			)
+		}
 	}
 
 	// Parse with Babel - wrap for better error messages

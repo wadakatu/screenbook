@@ -256,6 +256,9 @@ export const lintCommand = define({
 				} else if (error instanceof Error) {
 					logger.warn(`Failed to analyze screens.json: ${error.message}`)
 					hasWarnings = true
+				} else {
+					logger.warn(`Failed to analyze screens.json: ${String(error)}`)
+					hasWarnings = true
 				}
 			}
 		}
@@ -298,9 +301,9 @@ async function lintRoutesFile(
 
 		let parseResult: ParseResult
 		if (routerType === "react-router") {
-			parseResult = parseReactRouterConfig(absoluteRoutesFile)
+			parseResult = parseReactRouterConfig(absoluteRoutesFile, content)
 		} else {
-			parseResult = parseVueRouterConfig(absoluteRoutesFile)
+			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
 		}
 
 		// Show warnings
@@ -372,9 +375,9 @@ async function lintRoutesFile(
 			if (!matched) {
 				// Split by uppercase letters to get parts
 				const parts = route.componentPath.split(/(?=[A-Z])/)
-				if (parts.length > 1) {
-					const lastPart = parts[parts.length - 1].toLowerCase()
-					if (metaDirsByName.has(lastPart)) {
+				const lastPart = parts[parts.length - 1]
+				if (parts.length > 1 && lastPart) {
+					if (metaDirsByName.has(lastPart.toLowerCase())) {
 						matched = true
 					}
 				}
@@ -526,6 +529,9 @@ async function lintRoutesFile(
 				hasWarnings = true
 			} else if (error instanceof Error) {
 				logger.warn(`Failed to analyze screens.json: ${error.message}`)
+				hasWarnings = true
+			} else {
+				logger.warn(`Failed to analyze screens.json: ${String(error)}`)
 				hasWarnings = true
 			}
 		}

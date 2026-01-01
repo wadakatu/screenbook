@@ -22,18 +22,27 @@ const ROUTER_FACTORY_NAMES = [
 /**
  * Parse React Router configuration file and extract routes
  */
-export function parseReactRouterConfig(filePath: string): ParseResult {
+export function parseReactRouterConfig(
+	filePath: string,
+	preloadedContent?: string,
+): ParseResult {
 	const absolutePath = resolve(filePath)
 	const routesFileDir = dirname(absolutePath)
 	const warnings: string[] = []
 
-	// Read file with proper error handling
+	// Read file with proper error handling (skip if content is preloaded)
 	let content: string
-	try {
-		content = readFileSync(absolutePath, "utf-8")
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error)
-		throw new Error(`Failed to read routes file "${absolutePath}": ${message}`)
+	if (preloadedContent !== undefined) {
+		content = preloadedContent
+	} else {
+		try {
+			content = readFileSync(absolutePath, "utf-8")
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			throw new Error(
+				`Failed to read routes file "${absolutePath}": ${message}`,
+			)
+		}
 	}
 
 	// Parse with Babel - wrap for better error messages
@@ -186,6 +195,11 @@ function parseRoutesArray(
 			if (route) {
 				routes.push(route)
 			}
+		} else {
+			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
+			warnings.push(
+				`Non-object route element (${element.type})${loc}. Only object literals can be statically analyzed.`,
+			)
 		}
 	}
 
@@ -218,6 +232,11 @@ function parseRouteObject(
 				if (prop.value.type === "StringLiteral") {
 					route.path = prop.value.value
 					hasPath = true
+				} else {
+					const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
+					warnings.push(
+						`Dynamic path value (${prop.value.type})${loc}. Only string literal paths can be statically analyzed.`,
+					)
 				}
 				break
 
@@ -237,9 +256,13 @@ function parseRouteObject(
 				}
 				break
 
-			case "lazy":
-				route.component = extractLazyImportPath(prop.value, baseDir)
+			case "lazy": {
+				const lazyPath = extractLazyImportPath(prop.value, baseDir, warnings)
+				if (lazyPath) {
+					route.component = lazyPath
+				}
 				break
+			}
 
 			case "children":
 				if (prop.value.type === "ArrayExpression") {
@@ -343,6 +366,7 @@ function extractLazyImportPath(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
+	warnings: string[],
 ): string | undefined {
 	// Arrow function: () => import('./path')
 	if (node.type === "ArrowFunctionExpression") {
@@ -352,9 +376,20 @@ function extractLazyImportPath(
 			if (body.arguments[0]?.type === "StringLiteral") {
 				return resolveImportPath(body.arguments[0].value, baseDir)
 			}
+			// Dynamic import argument
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`Lazy import with dynamic path${loc}. Only string literal imports can be statically analyzed.`,
+			)
+			return undefined
 		}
 	}
 
+	// Unrecognized lazy pattern
+	const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+	warnings.push(
+		`Unrecognized lazy pattern (${node.type})${loc}. Expected arrow function with import().`,
+	)
 	return undefined
 }
 

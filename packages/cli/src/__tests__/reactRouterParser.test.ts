@@ -43,8 +43,8 @@ export default router
 
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(2)
-				expect(result.routes[0].path).toBe("/")
-				expect(result.routes[1].path).toBe("/dashboard")
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/dashboard")
 			})
 
 			it("should parse createHashRouter([...])", () => {
@@ -62,7 +62,7 @@ const router = createHashRouter([
 
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(1)
-				expect(result.routes[0].path).toBe("/")
+				expect(result.routes[0]?.path).toBe("/")
 			})
 
 			it("should parse createMemoryRouter([...])", () => {
@@ -130,6 +130,25 @@ export default [
 				expect(result.routes).toHaveLength(1)
 			})
 
+			it("should parse const routes = [...] without export", () => {
+				const routesFile = join(TEST_DIR, "routes.tsx")
+				writeFileSync(
+					routesFile,
+					`
+const routes = [
+  { path: "/", element: <Home /> },
+  { path: "/about", element: <About /> },
+]
+
+const router = createBrowserRouter(routes)
+`,
+				)
+
+				const result = parseReactRouterConfig(routesFile)
+				// Should find routes from createBrowserRouter call
+				expect(result.routes.length).toBeGreaterThan(0)
+			})
+
 			it("should parse export const router = createBrowserRouter([...])", () => {
 				const routesFile = join(TEST_DIR, "routes.tsx")
 				writeFileSync(
@@ -148,10 +167,10 @@ export const router = createBrowserRouter([
 
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(2)
-				expect(result.routes[0].path).toBe("/")
-				expect(result.routes[0].component).toBe("Home")
-				expect(result.routes[1].path).toBe("/dashboard")
-				expect(result.routes[1].component).toBe("Dashboard")
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[0]?.component).toBe("Home")
+				expect(result.routes[1]?.path).toBe("/dashboard")
+				expect(result.routes[1]?.component).toBe("Dashboard")
 			})
 		})
 
@@ -169,8 +188,8 @@ const router = createBrowserRouter([
 				)
 
 				const result = parseReactRouterConfig(routesFile)
-				expect(result.routes[0].component).toBe("Home")
-				expect(result.routes[1].component).toBe("Dashboard")
+				expect(result.routes[0]?.component).toBe("Home")
+				expect(result.routes[1]?.component).toBe("Dashboard")
 			})
 
 			it("should extract component from Component: Name", () => {
@@ -186,8 +205,8 @@ const router = createBrowserRouter([
 				)
 
 				const result = parseReactRouterConfig(routesFile)
-				expect(result.routes[0].component).toBe("Home")
-				expect(result.routes[1].component).toBe("Dashboard")
+				expect(result.routes[0]?.component).toBe("Home")
+				expect(result.routes[1]?.component).toBe("Dashboard")
 			})
 
 			it("should extract path from lazy: () => import('./path')", () => {
@@ -203,8 +222,8 @@ const router = createBrowserRouter([
 				)
 
 				const result = parseReactRouterConfig(routesFile)
-				expect(result.routes[0].component).toContain("pages/Home")
-				expect(result.routes[1].component).toContain("pages/Dashboard")
+				expect(result.routes[0]?.component).toContain("pages/Home")
+				expect(result.routes[1]?.component).toContain("pages/Dashboard")
 			})
 
 			it("should handle JSXMemberExpression like <Layout.Page />", () => {
@@ -219,7 +238,37 @@ const router = createBrowserRouter([
 				)
 
 				const result = parseReactRouterConfig(routesFile)
-				expect(result.routes[0].component).toBe("Layout.Home")
+				expect(result.routes[0]?.component).toBe("Layout.Home")
+			})
+
+			it("should extract outermost component from wrapper elements", () => {
+				const routesFile = join(TEST_DIR, "routes.tsx")
+				writeFileSync(
+					routesFile,
+					`
+const router = createBrowserRouter([
+  { path: "/", element: <Layout><Home /></Layout> },
+])
+`,
+				)
+
+				const result = parseReactRouterConfig(routesFile)
+				expect(result.routes[0]?.component).toBe("Layout")
+			})
+
+			it("should return undefined for JSXFragment", () => {
+				const routesFile = join(TEST_DIR, "routes.tsx")
+				writeFileSync(
+					routesFile,
+					`
+const router = createBrowserRouter([
+  { path: "/", element: <><Home /></> },
+])
+`,
+				)
+
+				const result = parseReactRouterConfig(routesFile)
+				expect(result.routes[0]?.component).toBeUndefined()
 			})
 		})
 
@@ -244,9 +293,9 @@ const router = createBrowserRouter([
 
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(1)
-				expect(result.routes[0].children).toHaveLength(2)
-				expect(result.routes[0].children?.[0].path).toBe("")
-				expect(result.routes[0].children?.[1].path).toBe("dashboard")
+				expect(result.routes[0]?.children).toHaveLength(2)
+				expect(result.routes[0]?.children?.[0]?.path).toBe("")
+				expect(result.routes[0]?.children?.[1]?.path).toBe("dashboard")
 			})
 
 			it("should compute correct path for nested index routes", () => {
@@ -272,9 +321,9 @@ const router = createBrowserRouter([
 
 				// Should have: /dashboard, /dashboard (index), /dashboard/settings
 				expect(flat).toHaveLength(3)
-				expect(flat[0].fullPath).toBe("/dashboard")
-				expect(flat[1].fullPath).toBe("/dashboard")
-				expect(flat[2].fullPath).toBe("/dashboard/settings")
+				expect(flat[0]?.fullPath).toBe("/dashboard")
+				expect(flat[1]?.fullPath).toBe("/dashboard")
+				expect(flat[2]?.fullPath).toBe("/dashboard/settings")
 			})
 		})
 
@@ -299,7 +348,7 @@ const router = createBrowserRouter([
 
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(1)
-				expect(result.routes[0].children).toHaveLength(2)
+				expect(result.routes[0]?.children).toHaveLength(2)
 			})
 
 			it("should flatten nested routes with correct full paths", () => {
@@ -324,9 +373,9 @@ const router = createBrowserRouter([
 				const flat = flattenRoutes(result.routes)
 
 				expect(flat).toHaveLength(3)
-				expect(flat[0].fullPath).toBe("/user/:id")
-				expect(flat[1].fullPath).toBe("/user/:id/profile")
-				expect(flat[2].fullPath).toBe("/user/:id/settings")
+				expect(flat[0]?.fullPath).toBe("/user/:id")
+				expect(flat[1]?.fullPath).toBe("/user/:id/profile")
+				expect(flat[2]?.fullPath).toBe("/user/:id/settings")
 			})
 
 			it("should handle deeply nested routes (3+ levels)", () => {
@@ -356,9 +405,9 @@ const router = createBrowserRouter([
 				const flat = flattenRoutes(result.routes)
 
 				expect(flat).toHaveLength(3)
-				expect(flat[0].fullPath).toBe("/admin")
-				expect(flat[1].fullPath).toBe("/admin/users")
-				expect(flat[2].fullPath).toBe("/admin/users/:id")
+				expect(flat[0]?.fullPath).toBe("/admin")
+				expect(flat[1]?.fullPath).toBe("/admin/users")
+				expect(flat[2]?.fullPath).toBe("/admin/users/:id")
 			})
 		})
 
@@ -404,9 +453,9 @@ const router = createBrowserRouter([
 
 				// Layout route has empty path, children have their paths
 				expect(flat).toHaveLength(3)
-				expect(flat[0].fullPath).toBe("/")
-				expect(flat[1].fullPath).toBe("/")
-				expect(flat[2].fullPath).toBe("/about")
+				expect(flat[0]?.fullPath).toBe("/")
+				expect(flat[1]?.fullPath).toBe("/")
+				expect(flat[2]?.fullPath).toBe("/about")
 			})
 
 			it("should handle dynamic segments :id", () => {
@@ -424,8 +473,8 @@ const router = createBrowserRouter([
 				const result = parseReactRouterConfig(routesFile)
 				const flat = flattenRoutes(result.routes)
 
-				expect(flat[0].screenId).toBe("user.id")
-				expect(flat[1].screenId).toBe("post.postId.comment.commentId")
+				expect(flat[0]?.screenId).toBe("user.id")
+				expect(flat[1]?.screenId).toBe("post.postId.comment.commentId")
 			})
 
 			it("should handle wildcard paths *", () => {
@@ -442,7 +491,7 @@ const router = createBrowserRouter([
 				const result = parseReactRouterConfig(routesFile)
 				const flat = flattenRoutes(result.routes)
 
-				expect(flat[0].screenId).toBe("docs.catchall")
+				expect(flat[0]?.screenId).toBe("docs.catchall")
 			})
 
 			it("should warn if no routes found", () => {
