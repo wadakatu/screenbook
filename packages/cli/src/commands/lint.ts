@@ -18,6 +18,7 @@ import {
 } from "../utils/reactRouterParser.js"
 import type { FlatRoute, ParseResult } from "../utils/routeParserUtils.js"
 import { flattenRoutes } from "../utils/routeParserUtils.js"
+import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 
 export const lintCommand = define({
@@ -300,7 +301,9 @@ async function lintRoutesFile(
 		const routerType = detectRouterType(content)
 
 		let parseResult: ParseResult
-		if (routerType === "react-router") {
+		if (routerType === "tanstack-router") {
+			parseResult = parseTanStackRouterConfig(absoluteRoutesFile, content)
+		} else if (routerType === "react-router") {
 			parseResult = parseReactRouterConfig(absoluteRoutesFile, content)
 		} else {
 			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)

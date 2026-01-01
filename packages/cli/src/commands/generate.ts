@@ -15,6 +15,7 @@ import {
 	flattenRoutes,
 	type ParseResult,
 } from "../utils/routeParserUtils.js"
+import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 
 export const generateCommand = define({
@@ -106,11 +107,13 @@ async function generateFromRoutesFile(
 	const routerType = detectRouterType(content)
 
 	const routerTypeDisplay =
-		routerType === "react-router"
-			? "React Router"
-			: routerType === "vue-router"
-				? "Vue Router"
-				: "unknown"
+		routerType === "tanstack-router"
+			? "TanStack Router"
+			: routerType === "react-router"
+				? "React Router"
+				: routerType === "vue-router"
+					? "Vue Router"
+					: "unknown"
 
 	logger.info(
 		`Parsing routes from ${logger.path(routesFile)} (${routerTypeDisplay})...`,
@@ -120,7 +123,9 @@ async function generateFromRoutesFile(
 	// Parse the routes file with the appropriate parser
 	let parseResult: ParseResult
 	try {
-		if (routerType === "react-router") {
+		if (routerType === "tanstack-router") {
+			parseResult = parseTanStackRouterConfig(absoluteRoutesFile)
+		} else if (routerType === "react-router") {
 			parseResult = parseReactRouterConfig(absoluteRoutesFile)
 		} else {
 			// Default to Vue Router parser for vue-router or unknown
