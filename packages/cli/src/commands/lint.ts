@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
-import type { Screen } from "@screenbook/core"
+import type { AdoptionConfig, Config, Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import { minimatch } from "minimatch"
 import { glob } from "tinyglobby"
@@ -65,7 +65,7 @@ export const lintCommand = define({
 
 		// Use routesFile mode (config-based routing)
 		if (config.routesFile) {
-			hasWarnings = await lintRoutesFile(
+			await lintRoutesFile(
 				config.routesFile,
 				cwd,
 				config,
@@ -265,25 +265,13 @@ export const lintCommand = define({
 	},
 })
 
-interface LintRoutesFileConfig {
-	metaPattern: string
-	outDir: string
-	ignore: string[]
-}
-
-interface AdoptionConfig {
-	mode?: "full" | "progressive"
-	minimumCoverage?: number
-	includePatterns?: string[]
-}
-
 /**
  * Lint screen.meta.ts coverage for routesFile mode (config-based routing)
  */
 async function lintRoutesFile(
 	routesFile: string,
 	cwd: string,
-	config: LintRoutesFileConfig,
+	config: Pick<Config, "metaPattern" | "outDir" | "ignore">,
 	adoption: AdoptionConfig,
 	allowCycles: boolean,
 	strict: boolean,
@@ -497,10 +485,14 @@ function determineMetaDir(route: FlatRoute, cwd: string): string {
 	// If component path is available, check relative to component directory
 	if (route.componentPath) {
 		const componentDir = dirname(route.componentPath)
-		return relative(cwd, componentDir)
+		const relativePath = relative(cwd, componentDir)
+		// Ensure path doesn't escape cwd
+		if (!relativePath.startsWith("..")) {
+			return relativePath
+		}
 	}
 
-	// Otherwise, use src/screens/{screenId} convention
+	// Fall back to src/screens/{screenId} convention
 	const screenDir = route.screenId.replace(/\./g, "/")
 	return join("src", "screens", screenDir)
 }

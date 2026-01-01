@@ -44,15 +44,34 @@ export interface ParseResult {
  */
 export function parseVueRouterConfig(filePath: string): ParseResult {
 	const absolutePath = resolve(filePath)
-	const content = readFileSync(absolutePath, "utf-8")
 	const routesFileDir = dirname(absolutePath)
-
 	const warnings: string[] = []
 
-	const ast = parse(content, {
-		sourceType: "module",
-		plugins: ["typescript", "jsx"],
-	})
+	// Read file with proper error handling
+	let content: string
+	try {
+		content = readFileSync(absolutePath, "utf-8")
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		throw new Error(`Failed to read routes file "${absolutePath}": ${message}`)
+	}
+
+	// Parse with Babel - wrap for better error messages
+	let ast: ReturnType<typeof parse>
+	try {
+		ast = parse(content, {
+			sourceType: "module",
+			plugins: ["typescript", "jsx"],
+		})
+	} catch (error) {
+		if (error instanceof SyntaxError) {
+			throw new Error(
+				`Syntax error in routes file "${absolutePath}": ${error.message}`,
+			)
+		}
+		const message = error instanceof Error ? error.message : String(error)
+		throw new Error(`Failed to parse routes file "${absolutePath}": ${message}`)
+	}
 
 	const routes: ParsedRoute[] = []
 
@@ -113,6 +132,13 @@ export function parseVueRouterConfig(filePath: string): ParseResult {
 		}
 	}
 
+	// Warn if no routes were found
+	if (routes.length === 0) {
+		warnings.push(
+			"No routes array found. Supported patterns: 'export const routes = [...]', 'export default [...]', or 'export default [...] satisfies RouteRecordRaw[]'",
+		)
+	}
+
 	return { routes, warnings }
 }
 
@@ -132,8 +158,9 @@ function parseRoutesArray(
 
 		// Handle spread elements
 		if (element.type === "SpreadElement") {
+			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
 			warnings.push(
-				`Spread operator detected. Routes from spread cannot be statically analyzed.`,
+				`Spread operator detected${loc}. Routes from spread cannot be statically analyzed.`,
 			)
 			continue
 		}

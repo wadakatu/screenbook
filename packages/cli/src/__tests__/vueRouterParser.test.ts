@@ -200,6 +200,74 @@ export const routes = [
 
 			expect(result.routes[0]?.component).toContain("views/About.vue")
 		})
+
+		it("should throw error when file does not exist", () => {
+			const nonExistentFile = join(testDir, "non-existent.ts")
+
+			expect(() => parseVueRouterConfig(nonExistentFile)).toThrow(
+				/Failed to read routes file/,
+			)
+		})
+
+		it("should throw error on syntax errors", () => {
+			const routesFile = join(testDir, "invalid.ts")
+			writeFileSync(
+				routesFile,
+				`
+export const routes = [
+  {
+    path: '/home'
+    // Missing comma - syntax error
+    component: () => import('./Home.vue')
+  }
+]
+`,
+			)
+
+			expect(() => parseVueRouterConfig(routesFile)).toThrow(
+				/Syntax error in routes file/,
+			)
+		})
+
+		it("should warn when no routes are found", () => {
+			const routesFile = join(testDir, "empty.ts")
+			writeFileSync(
+				routesFile,
+				`
+// File with no routes
+const someOtherExport = 123
+`,
+			)
+
+			const result = parseVueRouterConfig(routesFile)
+
+			expect(result.routes).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("No routes array found")
+		})
+
+		it("should include line number in spread operator warning", () => {
+			const routesFile = join(testDir, "routes.ts")
+			writeFileSync(
+				routesFile,
+				`
+const dynamicRoutes = []
+
+export const routes = [
+  {
+    path: '/',
+    component: () => import('./views/Home.vue'),
+  },
+  ...dynamicRoutes,
+]
+`,
+			)
+
+			const result = parseVueRouterConfig(routesFile)
+
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toMatch(/at line \d+/)
+		})
 	})
 
 	describe("flattenRoutes", () => {

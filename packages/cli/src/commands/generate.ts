@@ -167,24 +167,20 @@ async function generateFromRoutesFile(
 
 			if (dryRun) {
 				logDryRunOutput(metaPath, result.meta, result.owner, result.tags)
-			} else {
-				ensureDirectoryExists(absoluteMetaPath)
-				writeFileSync(absoluteMetaPath, content)
-				logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
 			}
 		} else {
 			const content = generateScreenMetaContent(screenMeta)
 
 			if (dryRun) {
 				logDryRunOutput(metaPath, screenMeta)
-			} else {
-				ensureDirectoryExists(absoluteMetaPath)
-				writeFileSync(absoluteMetaPath, content)
-				logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
 			}
 		}
-
-		created++
 	}
 
 	logSummary(created, skipped, dryRun)
@@ -263,22 +259,20 @@ async function generateFromRoutesPattern(
 
 			if (dryRun) {
 				logDryRunOutput(metaPath, result.meta, result.owner, result.tags)
-			} else {
-				writeFileSync(absoluteMetaPath, content)
-				logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
 			}
 		} else {
 			const content = generateScreenMetaContent(screenMeta)
 
 			if (dryRun) {
 				logDryRunOutput(metaPath, screenMeta)
-			} else {
-				writeFileSync(absoluteMetaPath, content)
-				logger.itemSuccess(`Created: ${logger.path(metaPath)}`)
+				created++
+			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
+				created++
 			}
 		}
-
-		created++
 	}
 
 	logSummary(created, skipped, dryRun)
@@ -292,10 +286,13 @@ function determineMetaPath(route: FlatRoute, cwd: string): string {
 	if (route.componentPath) {
 		const componentDir = dirname(route.componentPath)
 		const relativePath = relative(cwd, componentDir)
-		return join(relativePath, "screen.meta.ts")
+		// Ensure path doesn't escape cwd
+		if (!relativePath.startsWith("..")) {
+			return join(relativePath, "screen.meta.ts")
+		}
 	}
 
-	// Otherwise, create in src/screens/{screenId}/screen.meta.ts
+	// Fall back to src/screens/{screenId}/screen.meta.ts
 	const screenDir = route.screenId.replace(/\./g, "/")
 	return join("src", "screens", screenDir, "screen.meta.ts")
 }
@@ -306,7 +303,35 @@ function determineMetaPath(route: FlatRoute, cwd: string): string {
 function ensureDirectoryExists(filePath: string): void {
 	const dir = dirname(filePath)
 	if (!existsSync(dir)) {
-		mkdirSync(dir, { recursive: true })
+		try {
+			mkdirSync(dir, { recursive: true })
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			throw new Error(`Failed to create directory "${dir}": ${message}`)
+		}
+	}
+}
+
+/**
+ * Safely write a file with error handling
+ * Returns true if successful, false if failed
+ */
+function safeWriteFile(
+	absolutePath: string,
+	relativePath: string,
+	content: string,
+): boolean {
+	try {
+		ensureDirectoryExists(absolutePath)
+		writeFileSync(absolutePath, content)
+		logger.itemSuccess(`Created: ${logger.path(relativePath)}`)
+		return true
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		logger.itemError(
+			`Failed to create ${logger.path(relativePath)}: ${message}`,
+		)
+		return false
 	}
 }
 
