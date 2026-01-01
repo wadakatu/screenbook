@@ -1,5 +1,14 @@
 # screenbook
 
+## 1.2.0
+
+### Patch Changes
+
+- Updated dependencies [331d5a5]
+  - @screenbook/cli@1.2.0
+  - @screenbook/core@1.2.0
+  - @screenbook/ui@1.2.0
+
 ## 1.1.3
 
 ### Patch Changes
