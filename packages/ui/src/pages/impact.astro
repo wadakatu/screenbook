@@ -34,181 +34,274 @@ if (apiQuery && screens.length > 0) {
 			</p>
 		</div>
 
-		{screens.length === 0 ? (
-			<div class="empty-state">
-				<svg class="empty-state-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-				</svg>
-				<h2 class="empty-state-title">No screen data</h2>
-				<p class="empty-state-description">
-					Run the build command to generate screen metadata.
-				</p>
-				<code class="empty-state-code">
-					<span class="prompt">$</span> screenbook build
-				</code>
-			</div>
-		) : (
-			<>
-				<div class="impact-search">
-					<form method="get" class="search-form" role="search">
-						<div class="search-wrapper impact-search-wrapper">
-							<svg class="search-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
-							</svg>
-							<label for="api-input" class="sr-only">API name to analyze</label>
-							<input
-								type="text"
-								id="api-input"
-								name="api"
-								class="search-input"
-								placeholder="Enter API name (e.g., InvoiceAPI.getDetail)"
-								value={apiQuery}
-								list="api-suggestions"
-							/>
-							<datalist id="api-suggestions">
-								{allApis.map((api) => (
-									<option value={api} />
-								))}
-							</datalist>
-							<button type="submit" class="search-button">
-								Analyze
-							</button>
-						</div>
-					</form>
-
-					{allApis.length > 0 && !apiQuery && (
-						<div class="api-suggestions">
-							<p class="suggestions-label">Available APIs:</p>
-							<div class="tags">
-								{allApis.slice(0, 10).map((api) => (
-									<a href={`/impact?api=${encodeURIComponent(api)}`} class="tag">
-										{api}
-									</a>
-								))}
-								{allApis.length > 10 && (
-									<span class="tag tag-more">+{allApis.length - 10} more</span>
-								)}
-							</div>
-						</div>
-					)}
+		{
+			screens.length === 0 ? (
+				<div class="empty-state">
+					<svg
+						class="empty-state-icon"
+						aria-hidden="true"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="1.5"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+						/>
+					</svg>
+					<h2 class="empty-state-title">No screen data</h2>
+					<p class="empty-state-description">
+						Run the build command to generate screen metadata.
+					</p>
+					<code class="empty-state-code">
+						<span class="prompt">$</span> screenbook build
+					</code>
 				</div>
-
-				{result && (
-					<div class="impact-results">
-						<div class="impact-summary">
-							<div class="stats">
-								<div class="stat">
-									<div class="stat-value stat-total">{result.totalCount}</div>
-									<div class="stat-label">Total Affected</div>
-								</div>
-								<div class="stat">
-									<div class="stat-value stat-direct">{result.direct.length}</div>
-									<div class="stat-label">Direct</div>
-								</div>
-								<div class="stat">
-									<div class="stat-value stat-transitive">{result.transitive.length}</div>
-									<div class="stat-label">Transitive</div>
-								</div>
-							</div>
-
-							<button
-								id="copy-markdown"
-								class="copy-button"
-								data-markdown={markdown}
-								aria-label="Copy impact analysis as Markdown"
-							>
-								<svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
+			) : (
+				<>
+					<div class="impact-search">
+						<form method="get" class="search-form" role="search">
+							<div class="search-wrapper impact-search-wrapper">
+								<svg
+									class="search-icon"
+									aria-hidden="true"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
+									/>
 								</svg>
-								Copy as Markdown
-							</button>
-						</div>
-
-						{result.totalCount === 0 ? (
-							<div class="no-impact">
-								<svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-									<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-								</svg>
-								<p>No screens depend on <code>{apiQuery}</code></p>
+								<label for="api-input" class="sr-only">
+									API name to analyze
+								</label>
+								<input
+									type="text"
+									id="api-input"
+									name="api"
+									class="search-input"
+									placeholder="Enter API name (e.g., InvoiceAPI.getDetail)"
+									value={apiQuery}
+									list="api-suggestions"
+								/>
+								<datalist id="api-suggestions">
+									{allApis.map((api) => (
+										<option value={api} />
+									))}
+								</datalist>
+								<button type="submit" class="search-button">
+									Analyze
+								</button>
 							</div>
-						) : (
-							<>
-								<div class="impact-graph" role="img" aria-label={`Impact analysis graph showing ${result.direct.length} direct and ${result.transitive.length} transitive dependencies for ${apiQuery}`}>
-									<div class="graph-container">
-										<pre class="mermaid" aria-hidden="true">{mermaidGraph}</pre>
-									</div>
-									<div class="graph-legend">
-										<div class="graph-legend-item">
-											<div class="legend-node legend-direct"></div>
-											<span>Direct dependency</span>
-										</div>
-										<div class="graph-legend-item">
-											<div class="legend-node legend-transitive"></div>
-											<span>Transitive</span>
-										</div>
-										<div class="graph-legend-item">
-											<div class="legend-node"></div>
-											<span>Not affected</span>
-										</div>
-									</div>
-								</div>
+						</form>
 
-								<div class="impact-details">
-									{result.direct.length > 0 && (
-										<div class="section">
-											<h3 class="section-title">
-												<svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-												</svg>
-												Direct Dependencies ({result.direct.length})
-											</h3>
-											<div class="screen-link-list">
-												{result.direct.map((screen) => (
-													<a href={`/screen/${screen.id}`} class="screen-link impact-screen direct">
-														<div class="screen-link-info">
-															<div class="screen-link-title">{screen.title}</div>
-															<div class="screen-link-id">{screen.route}</div>
-														</div>
-														{screen.owner && screen.owner.length > 0 && (
-															<div class="screen-link-owner">
-																{screen.owner.join(", ")}
-															</div>
-														)}
-													</a>
-												))}
-											</div>
-										</div>
-									)}
-
-									{result.transitive.length > 0 && (
-										<div class="section">
-											<h3 class="section-title">
-												<svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-													<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-												</svg>
-												Transitive Dependencies ({result.transitive.length})
-											</h3>
-											<div class="screen-link-list">
-												{result.transitive.map(({ screen, path }) => (
-													<a href={`/screen/${screen.id}`} class="screen-link impact-screen transitive">
-														<div class="screen-link-info">
-															<div class="screen-link-title">{screen.title}</div>
-															<div class="screen-link-path">
-																{path.join(" → ")}
-															</div>
-														</div>
-													</a>
-												))}
-											</div>
-										</div>
+						{allApis.length > 0 && !apiQuery && (
+							<div class="api-suggestions">
+								<p class="suggestions-label">Available APIs:</p>
+								<div class="tags">
+									{allApis.slice(0, 10).map((api) => (
+										<a
+											href={`/impact?api=${encodeURIComponent(api)}`}
+											class="tag"
+										>
+											{api}
+										</a>
+									))}
+									{allApis.length > 10 && (
+										<span class="tag tag-more">
+											+{allApis.length - 10} more
+										</span>
 									)}
 								</div>
-							</>
+							</div>
 						)}
 					</div>
-				)}
-			</>
-		)}
+
+					{result && (
+						<div class="impact-results">
+							<div class="impact-summary">
+								<div class="stats">
+									<div class="stat">
+										<div class="stat-value stat-total">{result.totalCount}</div>
+										<div class="stat-label">Total Affected</div>
+									</div>
+									<div class="stat">
+										<div class="stat-value stat-direct">
+											{result.direct.length}
+										</div>
+										<div class="stat-label">Direct</div>
+									</div>
+									<div class="stat">
+										<div class="stat-value stat-transitive">
+											{result.transitive.length}
+										</div>
+										<div class="stat-label">Transitive</div>
+									</div>
+								</div>
+
+								<button
+									id="copy-markdown"
+									class="copy-button"
+									data-markdown={markdown}
+									aria-label="Copy impact analysis as Markdown"
+								>
+									<svg
+										aria-hidden="true"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184"
+										/>
+									</svg>
+									Copy as Markdown
+								</button>
+							</div>
+
+							{result.totalCount === 0 ? (
+								<div class="no-impact">
+									<svg
+										aria-hidden="true"
+										fill="none"
+										viewBox="0 0 24 24"
+										stroke="currentColor"
+										stroke-width="1.5"
+									>
+										<path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+										/>
+									</svg>
+									<p>
+										No screens depend on <code>{apiQuery}</code>
+									</p>
+								</div>
+							) : (
+								<>
+									<div
+										class="impact-graph"
+										role="img"
+										aria-label={`Impact analysis graph showing ${result.direct.length} direct and ${result.transitive.length} transitive dependencies for ${apiQuery}`}
+									>
+										<div class="graph-container">
+											<pre class="mermaid" aria-hidden="true">
+												{mermaidGraph}
+											</pre>
+										</div>
+										<div class="graph-legend">
+											<div class="graph-legend-item">
+												<div class="legend-node legend-direct" />
+												<span>Direct dependency</span>
+											</div>
+											<div class="graph-legend-item">
+												<div class="legend-node legend-transitive" />
+												<span>Transitive</span>
+											</div>
+											<div class="graph-legend-item">
+												<div class="legend-node" />
+												<span>Not affected</span>
+											</div>
+										</div>
+									</div>
+
+									<div class="impact-details">
+										{result.direct.length > 0 && (
+											<div class="section">
+												<h3 class="section-title">
+													<svg
+														aria-hidden="true"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+														/>
+													</svg>
+													Direct Dependencies ({result.direct.length})
+												</h3>
+												<div class="screen-link-list">
+													{result.direct.map((screen) => (
+														<a
+															href={`/screen/${screen.id}`}
+															class="screen-link impact-screen direct"
+														>
+															<div class="screen-link-info">
+																<div class="screen-link-title">
+																	{screen.title}
+																</div>
+																<div class="screen-link-id">{screen.route}</div>
+															</div>
+															{screen.owner && screen.owner.length > 0 && (
+																<div class="screen-link-owner">
+																	{screen.owner.join(", ")}
+																</div>
+															)}
+														</a>
+													))}
+												</div>
+											</div>
+										)}
+
+										{result.transitive.length > 0 && (
+											<div class="section">
+												<h3 class="section-title">
+													<svg
+														aria-hidden="true"
+														fill="none"
+														viewBox="0 0 24 24"
+														stroke="currentColor"
+														stroke-width="2"
+													>
+														<path
+															stroke-linecap="round"
+															stroke-linejoin="round"
+															d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+														/>
+													</svg>
+													Transitive Dependencies ({result.transitive.length})
+												</h3>
+												<div class="screen-link-list">
+													{result.transitive.map(({ screen, path }) => (
+														<a
+															href={`/screen/${screen.id}`}
+															class="screen-link impact-screen transitive"
+														>
+															<div class="screen-link-info">
+																<div class="screen-link-title">
+																	{screen.title}
+																</div>
+																<div class="screen-link-path">
+																	{path.join(" → ")}
+																</div>
+															</div>
+														</a>
+													))}
+												</div>
+											</div>
+										)}
+									</div>
+								</>
+							)}
+						</div>
+					)}
+				</>
+			)
+		}
 	</div>
 
 	<script>
