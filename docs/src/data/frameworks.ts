@@ -89,8 +89,8 @@ export const frameworks: Framework[] = [
 	},
 	{
 		name: "Vue Router",
-		status: "planned",
-		autoGenerate: false,
+		status: "supported",
+		autoGenerate: true,
 		routingType: "config-based",
 	},
 	{
