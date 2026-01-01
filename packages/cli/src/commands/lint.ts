@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, join, relative, resolve } from "node:path"
 import type { Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import { minimatch } from "minimatch"
@@ -12,6 +12,11 @@ import {
 } from "../utils/cycleDetection.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
+import {
+	type FlatRoute,
+	flattenRoutes,
+	parseVueRouterConfig,
+} from "../utils/vueRouterParser.js"
 
 export const lintCommand = define({
 	name: "lint",
@@ -40,7 +45,8 @@ export const lintCommand = define({
 		const adoption = config.adoption ?? { mode: "full" }
 		let hasWarnings = false
 
-		if (!config.routesPattern) {
+		// Check for routes configuration
+		if (!config.routesPattern && !config.routesFile) {
 			logger.errorWithHelp(ERRORS.ROUTES_PATTERN_MISSING)
 			process.exit(1)
 		}
@@ -57,8 +63,22 @@ export const lintCommand = define({
 		}
 		logger.blank()
 
+		// Use routesFile mode (config-based routing)
+		if (config.routesFile) {
+			hasWarnings = await lintRoutesFile(
+				config.routesFile,
+				cwd,
+				config,
+				adoption,
+				ctx.values.allowCycles ?? false,
+				ctx.values.strict ?? false,
+			)
+			return
+		}
+
+		// Use routesPattern mode (file-based routing)
 		// Find all route files
-		let routeFiles = await glob(config.routesPattern, {
+		let routeFiles = await glob(config.routesPattern as string, {
 			cwd,
 			ignore: config.ignore,
 		})
@@ -244,6 +264,254 @@ export const lintCommand = define({
 		}
 	},
 })
+
+interface LintRoutesFileConfig {
+	metaPattern: string
+	outDir: string
+	ignore: string[]
+}
+
+interface AdoptionConfig {
+	mode?: "full" | "progressive"
+	minimumCoverage?: number
+	includePatterns?: string[]
+}
+
+/**
+ * Lint screen.meta.ts coverage for routesFile mode (config-based routing)
+ */
+async function lintRoutesFile(
+	routesFile: string,
+	cwd: string,
+	config: LintRoutesFileConfig,
+	adoption: AdoptionConfig,
+	allowCycles: boolean,
+	strict: boolean,
+): Promise<boolean> {
+	let hasWarnings = false
+	const absoluteRoutesFile = resolve(cwd, routesFile)
+
+	// Check if routes file exists
+	if (!existsSync(absoluteRoutesFile)) {
+		logger.errorWithHelp(ERRORS.ROUTES_FILE_NOT_FOUND(routesFile))
+		process.exit(1)
+	}
+
+	logger.log(`Parsing routes from ${logger.path(routesFile)}...`)
+	logger.blank()
+
+	// Parse the routes file
+	let flatRoutes: FlatRoute[]
+	try {
+		const parseResult = parseVueRouterConfig(absoluteRoutesFile)
+
+		// Show warnings
+		for (const warning of parseResult.warnings) {
+			logger.warn(warning)
+			hasWarnings = true
+		}
+
+		flatRoutes = flattenRoutes(parseResult.routes)
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error)
+		logger.errorWithHelp(ERRORS.ROUTES_FILE_PARSE_ERROR(routesFile, message))
+		process.exit(1)
+	}
+
+	if (flatRoutes.length === 0) {
+		logger.warn("No routes found in the config file")
+		return hasWarnings
+	}
+
+	// Find all screen.meta.ts files
+	const metaFiles = await glob(config.metaPattern, {
+		cwd,
+		ignore: config.ignore,
+	})
+
+	// Build a set of directories that have screen.meta.ts
+	const metaDirs = new Set<string>()
+	for (const metaFile of metaFiles) {
+		metaDirs.add(dirname(metaFile))
+	}
+
+	// Check each route for screen.meta.ts coverage
+	const missingMeta: FlatRoute[] = []
+	const covered: FlatRoute[] = []
+
+	for (const route of flatRoutes) {
+		// Determine where screen.meta.ts should be
+		const metaPath = determineMetaDir(route, cwd)
+
+		if (metaDirs.has(metaPath)) {
+			covered.push(route)
+		} else {
+			missingMeta.push(route)
+		}
+	}
+
+	// Report results
+	const total = flatRoutes.length
+	const coveredCount = covered.length
+	const missingCount = missingMeta.length
+	const coveragePercent = Math.round((coveredCount / total) * 100)
+
+	logger.log(`Found ${total} routes`)
+	logger.log(`Coverage: ${coveredCount}/${total} (${coveragePercent}%)`)
+	logger.blank()
+
+	// Determine if lint should fail
+	const minimumCoverage = adoption.minimumCoverage ?? 100
+	const passedCoverage = coveragePercent >= minimumCoverage
+
+	if (missingCount > 0) {
+		logger.log(`Missing screen.meta.ts (${missingCount} routes):`)
+		logger.blank()
+
+		for (const route of missingMeta) {
+			const suggestedMetaPath = determineSuggestedMetaPath(route, cwd)
+			logger.itemError(
+				`${route.fullPath}  ${logger.dim(`(${route.screenId})`)}`,
+			)
+			logger.log(`    ${logger.dim("→")} ${logger.path(suggestedMetaPath)}`)
+		}
+
+		logger.blank()
+	}
+
+	if (!passedCoverage) {
+		logger.error(
+			`Lint failed: Coverage ${coveragePercent}% is below minimum ${minimumCoverage}%`,
+		)
+		process.exit(1)
+	} else if (missingCount > 0) {
+		logger.success(
+			`Coverage ${coveragePercent}% meets minimum ${minimumCoverage}%`,
+		)
+		if (adoption.mode === "progressive") {
+			logger.log(
+				`  ${logger.dim("Tip:")} Increase minimumCoverage in config to gradually improve coverage`,
+			)
+		}
+	} else {
+		logger.done("All routes have screen.meta.ts files")
+	}
+
+	// Check for orphan screens and cycles using screens.json
+	const screensPath = join(cwd, config.outDir, "screens.json")
+	if (existsSync(screensPath)) {
+		try {
+			const content = readFileSync(screensPath, "utf-8")
+			const screens = JSON.parse(content) as Screen[]
+
+			// Check for orphan screens
+			const orphans = findOrphanScreens(screens)
+
+			if (orphans.length > 0) {
+				hasWarnings = true
+				logger.blank()
+				logger.warn(`Orphan screens detected (${orphans.length}):`)
+				logger.blank()
+				logger.log("  These screens have no entryPoints and are not")
+				logger.log("  referenced in any other screen's 'next' array.")
+				logger.blank()
+				for (const orphan of orphans) {
+					logger.itemWarn(`${orphan.id}  ${logger.dim(orphan.route)}`)
+				}
+				logger.blank()
+				logger.log(
+					`  ${logger.dim("Consider adding entryPoints or removing these screens.")}`,
+				)
+			}
+
+			// Check for circular navigation
+			if (!allowCycles) {
+				const cycleResult = detectCycles(screens)
+				if (cycleResult.hasCycles) {
+					hasWarnings = true
+					logger.blank()
+					logger.warn(getCycleSummary(cycleResult))
+					logger.log(formatCycleWarnings(cycleResult.cycles))
+					logger.blank()
+					if (cycleResult.disallowedCycles.length > 0) {
+						logger.log(
+							`  ${logger.dim("Use 'allowCycles: true' in screen.meta.ts to allow intentional cycles.")}`,
+						)
+
+						if (strict) {
+							logger.blank()
+							logger.errorWithHelp(
+								ERRORS.CYCLES_DETECTED(cycleResult.disallowedCycles.length),
+							)
+							process.exit(1)
+						}
+					}
+				}
+			}
+
+			// Check for invalid navigation references
+			const invalidNavs = findInvalidNavigations(screens)
+			if (invalidNavs.length > 0) {
+				hasWarnings = true
+				logger.blank()
+				logger.warn(`Invalid navigation targets (${invalidNavs.length}):`)
+				logger.blank()
+				logger.log(
+					"  These navigation references point to non-existent screens.",
+				)
+				logger.blank()
+				for (const inv of invalidNavs) {
+					logger.itemWarn(
+						`${inv.screenId} → ${logger.dim(inv.field)}: "${inv.target}"`,
+					)
+				}
+				logger.blank()
+				logger.log(
+					`  ${logger.dim("Check that these screen IDs exist in your codebase.")}`,
+				)
+			}
+		} catch (error) {
+			if (error instanceof SyntaxError) {
+				logger.warn("Failed to parse screens.json - file may be corrupted")
+				logger.log(`  ${logger.dim("Run 'screenbook build' to regenerate.")}`)
+				hasWarnings = true
+			} else if (error instanceof Error) {
+				logger.warn(`Failed to analyze screens.json: ${error.message}`)
+				hasWarnings = true
+			}
+		}
+	}
+
+	if (hasWarnings) {
+		logger.blank()
+		logger.warn("Lint completed with warnings.")
+	}
+
+	return hasWarnings
+}
+
+/**
+ * Determine the directory where screen.meta.ts should be for a route
+ */
+function determineMetaDir(route: FlatRoute, cwd: string): string {
+	// If component path is available, check relative to component directory
+	if (route.componentPath) {
+		const componentDir = dirname(route.componentPath)
+		return relative(cwd, componentDir)
+	}
+
+	// Otherwise, use src/screens/{screenId} convention
+	const screenDir = route.screenId.replace(/\./g, "/")
+	return join("src", "screens", screenDir)
+}
+
+/**
+ * Determine the suggested screen.meta.ts path for a route
+ */
+function determineSuggestedMetaPath(route: FlatRoute, cwd: string): string {
+	const metaDir = determineMetaDir(route, cwd)
+	return join(metaDir, "screen.meta.ts")
+}
 
 interface InvalidNavigation {
 	screenId: string
