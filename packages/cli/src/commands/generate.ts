@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
 import { define } from "gunshi"
 import prompts from "prompts"
@@ -7,10 +7,15 @@ import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
 import {
+	detectRouterType,
+	parseReactRouterConfig,
+} from "../utils/reactRouterParser.js"
+import {
 	type FlatRoute,
 	flattenRoutes,
-	parseVueRouterConfig,
-} from "../utils/vueRouterParser.js"
+	type ParseResult,
+} from "../utils/routeParserUtils.js"
+import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 
 export const generateCommand = define({
 	name: "generate",
@@ -80,7 +85,7 @@ interface GenerateFromRoutesFileOptions {
 }
 
 /**
- * Generate screen.meta.ts files from a Vue Router config file
+ * Generate screen.meta.ts files from a router config file (Vue Router or React Router)
  */
 async function generateFromRoutesFile(
 	routesFile: string,
@@ -96,13 +101,31 @@ async function generateFromRoutesFile(
 		process.exit(1)
 	}
 
-	logger.info(`Parsing routes from ${logger.path(routesFile)}...`)
+	// Detect router type
+	const content = readFileSync(absoluteRoutesFile, "utf-8")
+	const routerType = detectRouterType(content)
+
+	const routerTypeDisplay =
+		routerType === "react-router"
+			? "React Router"
+			: routerType === "vue-router"
+				? "Vue Router"
+				: "unknown"
+
+	logger.info(
+		`Parsing routes from ${logger.path(routesFile)} (${routerTypeDisplay})...`,
+	)
 	logger.blank()
 
-	// Parse the routes file
-	let parseResult: ReturnType<typeof parseVueRouterConfig>
+	// Parse the routes file with the appropriate parser
+	let parseResult: ParseResult
 	try {
-		parseResult = parseVueRouterConfig(absoluteRoutesFile)
+		if (routerType === "react-router") {
+			parseResult = parseReactRouterConfig(absoluteRoutesFile)
+		} else {
+			// Default to Vue Router parser for vue-router or unknown
+			parseResult = parseVueRouterConfig(absoluteRoutesFile)
+		}
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error)
 		logger.errorWithHelp(ERRORS.ROUTES_FILE_PARSE_ERROR(routesFile, message))
