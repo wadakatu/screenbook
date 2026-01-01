@@ -80,11 +80,11 @@ export const frameworks: Framework[] = [
 		routingType: "file-based",
 		routesPattern: "src/routes/**/*.tsx",
 	},
-	// Config-based routing - Planned
+	// Config-based routing - Supported
 	{
 		name: "React Router",
-		status: "planned",
-		autoGenerate: false,
+		status: "supported",
+		autoGenerate: true,
 		routingType: "config-based",
 	},
 	{
@@ -93,6 +93,7 @@ export const frameworks: Framework[] = [
 		autoGenerate: true,
 		routingType: "config-based",
 	},
+	// Config-based routing - Planned
 	{
 		name: "Angular Router",
 		status: "planned",

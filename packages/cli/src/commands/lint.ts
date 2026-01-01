@@ -13,10 +13,12 @@ import {
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
 import {
-	type FlatRoute,
-	flattenRoutes,
-	parseVueRouterConfig,
-} from "../utils/vueRouterParser.js"
+	detectRouterType,
+	parseReactRouterConfig,
+} from "../utils/reactRouterParser.js"
+import type { FlatRoute, ParseResult } from "../utils/routeParserUtils.js"
+import { flattenRoutes } from "../utils/routeParserUtils.js"
+import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 
 export const lintCommand = define({
 	name: "lint",
@@ -254,6 +256,9 @@ export const lintCommand = define({
 				} else if (error instanceof Error) {
 					logger.warn(`Failed to analyze screens.json: ${error.message}`)
 					hasWarnings = true
+				} else {
+					logger.warn(`Failed to analyze screens.json: ${String(error)}`)
+					hasWarnings = true
 				}
 			}
 		}
@@ -288,10 +293,18 @@ async function lintRoutesFile(
 	logger.log(`Parsing routes from ${logger.path(routesFile)}...`)
 	logger.blank()
 
-	// Parse the routes file
+	// Parse the routes file with auto-detection
 	let flatRoutes: FlatRoute[]
 	try {
-		const parseResult = parseVueRouterConfig(absoluteRoutesFile)
+		const content = readFileSync(absoluteRoutesFile, "utf-8")
+		const routerType = detectRouterType(content)
+
+		let parseResult: ParseResult
+		if (routerType === "react-router") {
+			parseResult = parseReactRouterConfig(absoluteRoutesFile, content)
+		} else {
+			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
+		}
 
 		// Show warnings
 		for (const warning of parseResult.warnings) {
@@ -319,8 +332,16 @@ async function lintRoutesFile(
 
 	// Build a set of directories that have screen.meta.ts
 	const metaDirs = new Set<string>()
+	// Also build a map from directory basename to full path for component name matching
+	const metaDirsByName = new Map<string, string>()
 	for (const metaFile of metaFiles) {
-		metaDirs.add(dirname(metaFile))
+		const dir = dirname(metaFile)
+		metaDirs.add(dir)
+		// Store lowercase basename for case-insensitive matching
+		const baseName = dir.split("/").pop()?.toLowerCase() || ""
+		if (baseName) {
+			metaDirsByName.set(baseName, dir)
+		}
 	}
 
 	// Check each route for screen.meta.ts coverage
@@ -328,10 +349,53 @@ async function lintRoutesFile(
 	const covered: FlatRoute[] = []
 
 	for (const route of flatRoutes) {
-		// Determine where screen.meta.ts should be
-		const metaPath = determineMetaDir(route, cwd)
+		// Skip layout routes (components ending with "Layout" that typically don't need screen.meta)
+		if (route.componentPath?.endsWith("Layout")) {
+			continue
+		}
 
+		// Try multiple matching strategies
+		let matched = false
+
+		// Strategy 1: Check by determineMetaDir (path-based matching)
+		const metaPath = determineMetaDir(route, cwd)
 		if (metaDirs.has(metaPath)) {
+			matched = true
+		}
+
+		// Strategy 2: Match by component name (for React Router)
+		if (!matched && route.componentPath) {
+			const componentName = route.componentPath.toLowerCase()
+			if (metaDirsByName.has(componentName)) {
+				matched = true
+			}
+
+			// Also try matching the last word of component name
+			// e.g., "UserProfile" -> check for "profile" directory
+			if (!matched) {
+				// Split by uppercase letters to get parts
+				const parts = route.componentPath.split(/(?=[A-Z])/)
+				const lastPart = parts[parts.length - 1]
+				if (parts.length > 1 && lastPart) {
+					if (metaDirsByName.has(lastPart.toLowerCase())) {
+						matched = true
+					}
+				}
+			}
+		}
+
+		// Strategy 3: Match by screenId path pattern
+		if (!matched) {
+			const screenPath = route.screenId.replace(/\./g, "/")
+			for (const dir of metaDirs) {
+				if (dir.endsWith(screenPath)) {
+					matched = true
+					break
+				}
+			}
+		}
+
+		if (matched) {
 			covered.push(route)
 		} else {
 			missingMeta.push(route)
@@ -339,7 +403,7 @@ async function lintRoutesFile(
 	}
 
 	// Report results
-	const total = flatRoutes.length
+	const total = covered.length + missingMeta.length
 	const coveredCount = covered.length
 	const missingCount = missingMeta.length
 	const coveragePercent = Math.round((coveredCount / total) * 100)
@@ -465,6 +529,9 @@ async function lintRoutesFile(
 				hasWarnings = true
 			} else if (error instanceof Error) {
 				logger.warn(`Failed to analyze screens.json: ${error.message}`)
+				hasWarnings = true
+			} else {
+				logger.warn(`Failed to analyze screens.json: ${String(error)}`)
 				hasWarnings = true
 			}
 		}

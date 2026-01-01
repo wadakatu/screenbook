@@ -130,17 +130,17 @@ Sound familiar?
 | **QwikCity** | 🚧 Planned | 🚧 |
 | **TanStack Start** | 🚧 Planned | 🚧 |
 
-### Config-based Routing 🚧
+### Config-based Routing
 
 | Framework | Status | Auto-generate |
 |-----------|--------|---------------|
-| **React Router** | 🚧 Planned | 🚧 |
-| **Vue Router** | 🚧 Planned | 🚧 |
+| **React Router** | ✅ Supported | ✅ |
+| **Vue Router** | ✅ Supported | ✅ |
 | **Angular Router** | 🚧 Planned | 🚧 |
 | **TanStack Router** | 🚧 Planned | 🚧 |
 | **Solid Router** | 🚧 Planned | 🚧 |
 
-> **Note:** Config-based routing support is coming soon! Track progress in [#107](https://github.com/wadakatu/screenbook/issues/107).
+> **Note:** For config-based routers, configure `routesFile` in your screenbook config to enable automatic screen.meta.ts generation.
 >
 > Even without auto-generate, you can manually create `screen.meta.ts` files for any framework.
 

@@ -47,7 +47,7 @@ if (screens.length > 0) {
 }
 
 // Count screens with mock
-const mockCount = screens.filter(s => s.mock).length
+const mockCount = screens.filter((s) => s.mock).length
 
 // Generate API Dependency Mermaid graph
 let apiGraph = ""
@@ -107,7 +107,9 @@ if (screens.length > 0) {
 	// Add styling for API nodes
 	lines.push("")
 	lines.push("    %% Styling")
-	lines.push(`    classDef apiNode fill:#14b8a6,stroke:#5eead4,stroke-width:2px,color:#042f2e`)
+	lines.push(
+		`    classDef apiNode fill:#14b8a6,stroke:#5eead4,stroke-width:2px,color:#042f2e`,
+	)
 	for (const api of apis) {
 		const id = api.replace(/\./g, "_")
 		lines.push(`    class ${id} apiNode`)
@@ -118,7 +120,7 @@ if (screens.length > 0) {
 
 // Count APIs for stats
 const apiCount = new Set(
-	screens.flatMap(s => (s.dependsOn || []).map(d => d.split(".")[0]))
+	screens.flatMap((s) => (s.dependsOn || []).map((d) => d.split(".")[0])),
 ).size
 ---
 
@@ -131,82 +133,135 @@ const apiCount = new Set(
 			</p>
 		</div>
 
-		{screens.length === 0 ? (
-			<div class="empty-state">
-				<svg class="empty-state-icon" aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-					<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-				</svg>
-				<h2 class="empty-state-title">No graph data</h2>
-				<p class="empty-state-description">
-					Run the build command to generate screen metadata.
-				</p>
-				<code class="empty-state-code">
-					<span class="prompt">$</span> screenbook build
-				</code>
-			</div>
-		) : (
-			<>
-				<div class="graph-controls">
-					<div class="view-toggle" role="group" aria-label="Graph view">
-						<button class="toggle-btn active" data-view="navigation" aria-pressed="true">
-							<svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
-							</svg>
-							Navigation
-						</button>
-						<button class="toggle-btn" data-view="api" aria-pressed="false">
-							<svg aria-hidden="true" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-								<path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
-							</svg>
-							API Dependencies
-						</button>
-					</div>
-					<div class="graph-stats">
-						<span class="stat">{screens.length} screens</span>
-						<span class="stat">{apiCount} APIs</span>
-						{mockCount > 0 && <span class="stat stat-mock">📱 {mockCount} with mock</span>}
-					</div>
+		{
+			screens.length === 0 ? (
+				<div class="empty-state">
+					<svg
+						class="empty-state-icon"
+						aria-hidden="true"
+						fill="none"
+						viewBox="0 0 24 24"
+						stroke="currentColor"
+						stroke-width="1.5"
+					>
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+						/>
+					</svg>
+					<h2 class="empty-state-title">No graph data</h2>
+					<p class="empty-state-description">
+						Run the build command to generate screen metadata.
+					</p>
+					<code class="empty-state-code">
+						<span class="prompt">$</span> screenbook build
+					</code>
 				</div>
+			) : (
+				<>
+					<div class="graph-controls">
+						<div class="view-toggle" role="group" aria-label="Graph view">
+							<button
+								class="toggle-btn active"
+								data-view="navigation"
+								aria-pressed="true"
+							>
+								<svg
+									aria-hidden="true"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+									/>
+								</svg>
+								Navigation
+							</button>
+							<button class="toggle-btn" data-view="api" aria-pressed="false">
+								<svg
+									aria-hidden="true"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									stroke-width="2"
+								>
+									<path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z"
+									/>
+								</svg>
+								API Dependencies
+							</button>
+						</div>
+						<div class="graph-stats">
+							<span class="stat">{screens.length} screens</span>
+							<span class="stat">{apiCount} APIs</span>
+							{mockCount > 0 && (
+								<span class="stat stat-mock">📱 {mockCount} with mock</span>
+							)}
+						</div>
+					</div>
 
-				<div class="graph-container" id="navigation-graph" role="img" aria-label={`Navigation graph showing ${screens.length} screens and their navigation relationships`}>
-					<pre class="mermaid" data-graph="navigation" aria-hidden="true">{navigationGraph}</pre>
-				</div>
+					<div
+						class="graph-container"
+						id="navigation-graph"
+						role="img"
+						aria-label={`Navigation graph showing ${screens.length} screens and their navigation relationships`}
+					>
+						<pre class="mermaid" data-graph="navigation" aria-hidden="true">
+							{navigationGraph}
+						</pre>
+					</div>
 
-				<div class="graph-container hidden" id="api-graph" role="img" aria-label={`API dependency graph showing ${screens.length} screens and ${apiCount} APIs`}>
-					<pre class="mermaid" data-graph="api" aria-hidden="true">{apiGraph}</pre>
-				</div>
+					<div
+						class="graph-container hidden"
+						id="api-graph"
+						role="img"
+						aria-label={`API dependency graph showing ${screens.length} screens and ${apiCount} APIs`}
+					>
+						<pre class="mermaid" data-graph="api" aria-hidden="true">
+							{apiGraph}
+						</pre>
+					</div>
 
-				<div class="graph-legend" id="navigation-legend">
-					<div class="graph-legend-item">
-						<div class="legend-node"></div>
-						<span>Screen</span>
+					<div class="graph-legend" id="navigation-legend">
+						<div class="graph-legend-item">
+							<div class="legend-node" />
+							<span>Screen</span>
+						</div>
+						<div class="graph-legend-item">
+							<div class="legend-node legend-mock" />
+							<span>Screen with mock 📱</span>
+						</div>
+						<div class="graph-legend-item">
+							<div class="legend-edge" />
+							<span>Navigation flow</span>
+						</div>
 					</div>
-					<div class="graph-legend-item">
-						<div class="legend-node legend-mock"></div>
-						<span>Screen with mock 📱</span>
-					</div>
-					<div class="graph-legend-item">
-						<div class="legend-edge"></div>
-						<span>Navigation flow</span>
-					</div>
-				</div>
 
-				<div class="graph-legend hidden" id="api-legend">
-					<div class="graph-legend-item">
-						<div class="legend-node legend-api"></div>
-						<span>API</span>
+					<div class="graph-legend hidden" id="api-legend">
+						<div class="graph-legend-item">
+							<div class="legend-node legend-api" />
+							<span>API</span>
+						</div>
+						<div class="graph-legend-item">
+							<div class="legend-node" />
+							<span>Screen</span>
+						</div>
+						<div class="graph-legend-item">
+							<div class="legend-edge" />
+							<span>Depends on</span>
+						</div>
 					</div>
-					<div class="graph-legend-item">
-						<div class="legend-node"></div>
-						<span>Screen</span>
-					</div>
-					<div class="graph-legend-item">
-						<div class="legend-edge"></div>
-						<span>Depends on</span>
-					</div>
-				</div>
-			</>
-		)}
+				</>
+			)
+		}
 	</div>
 
 	<script>
