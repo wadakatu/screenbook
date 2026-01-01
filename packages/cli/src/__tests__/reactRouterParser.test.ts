@@ -616,6 +616,26 @@ const router = createBrowserRouter([
 				).toBe("vue-router")
 			})
 
+			it("should detect tanstack-router", () => {
+				expect(
+					detectRouterType(
+						'import { createRoute } from "@tanstack/react-router"',
+					),
+				).toBe("tanstack-router")
+			})
+
+			it("should detect tanstack-router with createRootRoute", () => {
+				expect(detectRouterType("const rootRoute = createRootRoute({})")).toBe(
+					"tanstack-router",
+				)
+			})
+
+			it("should detect tanstack-router with addChildren", () => {
+				expect(detectRouterType("rootRoute.addChildren([indexRoute])")).toBe(
+					"tanstack-router",
+				)
+			})
+
 			it("should return unknown for ambiguous content", () => {
 				expect(detectRouterType("const routes = []")).toBe("unknown")
 			})
