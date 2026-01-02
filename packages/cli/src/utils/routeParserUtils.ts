@@ -123,8 +123,12 @@ export function pathToScreenId(path: string): string {
 			if (segment.startsWith(":")) {
 				return segment.slice(1)
 			}
-			// Convert *catchall to catchall
+			// Convert *catchall or ** to catchall
 			if (segment.startsWith("*")) {
+				// Handle ** (Angular) as catchall
+				if (segment === "**") {
+					return "catchall"
+				}
 				return segment.slice(1) || "catchall"
 			}
 			return segment

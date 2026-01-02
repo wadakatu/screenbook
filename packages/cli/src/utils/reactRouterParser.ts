@@ -1,18 +1,20 @@
 import { readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { parse } from "@babel/parser"
+import { isAngularRouterContent } from "./angularRouterParser.js"
 import {
 	type ParsedRoute,
 	type ParseResult,
+	type RouterType,
 	resolveImportPath,
 } from "./routeParserUtils.js"
 import { isSolidRouterContent } from "./solidRouterParser.js"
 import { isTanStackRouterContent } from "./tanstackRouterParser.js"
 
 // Re-export shared types
-export type { ParsedRoute, ParseResult }
+export type { ParsedRoute, ParseResult, RouterType }
 // Re-export router detection for convenience
-export { isSolidRouterContent, isTanStackRouterContent }
+export { isAngularRouterContent, isSolidRouterContent, isTanStackRouterContent }
 
 /**
  * Router factory function names to detect
@@ -356,9 +358,20 @@ function extractComponentFromJSX(
 
 	// Handle JSXFragment
 	if (node.type === "JSXFragment") {
+		const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+		warnings.push(
+			`JSX Fragment detected${loc}. Cannot extract component name from fragments. Consider wrapping in a named component.`,
+		)
 		return undefined
 	}
 
+	// Catch-all for unrecognized element patterns
+	if (node) {
+		const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+		warnings.push(
+			`Unrecognized element pattern (${node.type})${loc}. Component will not be extracted.`,
+		)
+	}
 	return undefined
 }
 
@@ -441,16 +454,11 @@ export function isVueRouterContent(content: string): boolean {
 }
 
 /**
- * Detect router type from file content
+ * Detect router type from file content.
+ * Detection order: TanStack Router -> Solid Router -> Angular Router -> React Router -> Vue Router.
+ * This order ensures more specific patterns are checked before more generic ones.
  */
-export function detectRouterType(
-	content: string,
-):
-	| "react-router"
-	| "vue-router"
-	| "tanstack-router"
-	| "solid-router"
-	| "unknown" {
+export function detectRouterType(content: string): RouterType {
 	// Check TanStack Router first (more specific patterns)
 	if (isTanStackRouterContent(content)) {
 		return "tanstack-router"
@@ -458,6 +466,10 @@ export function detectRouterType(
 	// Check Solid Router before React Router (both use similar patterns)
 	if (isSolidRouterContent(content)) {
 		return "solid-router"
+	}
+	// Check Angular Router before React Router (distinct patterns)
+	if (isAngularRouterContent(content)) {
+		return "angular-router"
 	}
 	if (isReactRouterContent(content)) {
 		return "react-router"

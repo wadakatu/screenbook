@@ -105,11 +105,10 @@ export const frameworks: Framework[] = [
 		autoGenerate: true,
 		routingType: "config-based",
 	},
-	// Config-based routing - Planned
 	{
 		name: "Angular Router",
-		status: "planned",
-		autoGenerate: false,
+		status: "supported",
+		autoGenerate: true,
 		routingType: "config-based",
 	},
 ]

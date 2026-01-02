@@ -1,0 +1,16 @@
+{
+	"name": "example-angular-router",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"screenbook": "screenbook"
+	},
+	"dependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*"
+	},
+	"devDependencies": {
+		"typescript": "^5.7.2"
+	}
+}
