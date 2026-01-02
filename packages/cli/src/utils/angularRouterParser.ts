@@ -19,9 +19,12 @@ export type { ParsedRoute, ParseResult }
  * - `const routes: Routes = [...]`
  * - `RouterModule.forRoot([...])`
  * - `RouterModule.forChild([...])`
+ * - `export default [...]`
+ * - `export default [...] satisfies Routes`
  *
  * @param filePath - Path to the router configuration file
- * @param preloadedContent - Optional pre-read file content to avoid duplicate file reads
+ * @param preloadedContent - Optional pre-read file content. When provided, the file is not read from disk,
+ *                           enabling testing with virtual content or avoiding duplicate file reads.
  * @returns ParseResult containing extracted routes and any warnings
  * @throws Error if the file cannot be read or contains syntax errors
  */

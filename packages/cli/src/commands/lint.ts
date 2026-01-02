@@ -321,6 +321,7 @@ async function lintRoutesFile(
 			logger.log(
 				`  ${logger.dim("If parsing fails, check that your router imports are explicit.")}`,
 			)
+			hasWarnings = true
 			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
 		}
 

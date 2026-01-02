@@ -72,6 +72,22 @@ export const routes: Routes = [
 				expect(result.routes[1]?.component).toContain("about/about.component")
 			})
 
+			it("should parse route with loadComponent without .then() chain", () => {
+				const content = `
+import { Routes } from "@angular/router"
+
+export const routes: Routes = [
+  {
+    path: "lazy",
+    loadComponent: () => import("./lazy/lazy.component")
+  },
+]
+`
+				const result = parseAngularRouterConfig("virtual.ts", content)
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.component).toContain("lazy/lazy.component")
+			})
+
 			it("should parse route with loadChildren", () => {
 				const routesFile = join(TEST_DIR, "routes.ts")
 				writeFileSync(
@@ -283,6 +299,28 @@ export class AppRoutingModule { }
 `
 				const result = parseAngularRouterConfig("virtual.ts", content)
 				expect(result.routes).toHaveLength(2)
+			})
+
+			it("should handle RouterModule.forChild for feature modules", () => {
+				const content = `
+import { NgModule } from "@angular/core"
+import { RouterModule, Routes } from "@angular/router"
+
+const routes: Routes = [
+  { path: "", component: FeatureHomeComponent },
+  { path: "detail", component: FeatureDetailComponent },
+]
+
+@NgModule({
+  imports: [RouterModule.forChild(routes)],
+  exports: [RouterModule]
+})
+export class FeatureRoutingModule { }
+`
+				const result = parseAngularRouterConfig("virtual.ts", content)
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("")
+				expect(result.routes[1]?.path).toBe("detail")
 			})
 		})
 

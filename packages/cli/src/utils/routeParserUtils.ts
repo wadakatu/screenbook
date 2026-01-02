@@ -1,6 +1,18 @@
 import { resolve } from "node:path"
 
 /**
+ * Supported router types for auto-detection.
+ * Detection order: TanStack Router -> Solid Router -> Angular Router -> React Router -> Vue Router.
+ */
+export type RouterType =
+	| "react-router"
+	| "vue-router"
+	| "tanstack-router"
+	| "solid-router"
+	| "angular-router"
+	| "unknown"
+
+/**
  * Parsed route from router config (Vue Router, React Router, etc.)
  */
 export interface ParsedRoute {
