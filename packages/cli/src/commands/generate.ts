@@ -15,6 +15,7 @@ import {
 	flattenRoutes,
 	type ParseResult,
 } from "../utils/routeParserUtils.js"
+import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 
@@ -109,11 +110,13 @@ async function generateFromRoutesFile(
 	const routerTypeDisplay =
 		routerType === "tanstack-router"
 			? "TanStack Router"
-			: routerType === "react-router"
-				? "React Router"
-				: routerType === "vue-router"
-					? "Vue Router"
-					: "unknown"
+			: routerType === "solid-router"
+				? "Solid Router"
+				: routerType === "react-router"
+					? "React Router"
+					: routerType === "vue-router"
+						? "Vue Router"
+						: "unknown"
 
 	logger.info(
 		`Parsing routes from ${logger.path(routesFile)} (${routerTypeDisplay})...`,
@@ -125,6 +128,8 @@ async function generateFromRoutesFile(
 	try {
 		if (routerType === "tanstack-router") {
 			parseResult = parseTanStackRouterConfig(absoluteRoutesFile)
+		} else if (routerType === "solid-router") {
+			parseResult = parseSolidRouterConfig(absoluteRoutesFile)
 		} else if (routerType === "react-router") {
 			parseResult = parseReactRouterConfig(absoluteRoutesFile)
 		} else {
