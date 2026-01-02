@@ -1,0 +1,76 @@
+{
+  "_components-5qVGEn7f.js": {
+    "file": "assets/components-5qVGEn7f.js",
+    "name": "components",
+    "imports": [
+      "_routing-BFAC7E9u.js"
+    ]
+  },
+  "_routing-BFAC7E9u.js": {
+    "file": "assets/routing-BFAC7E9u.js",
+    "name": "routing"
+  },
+  "src/routes/about.tsx?pick=default&pick=$css": {
+    "file": "about.js",
+    "name": "about",
+    "src": "src/routes/about.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_components-5qVGEn7f.js",
+      "_routing-BFAC7E9u.js"
+    ]
+  },
+  "src/routes/index.tsx?pick=default&pick=$css": {
+    "file": "index.js",
+    "name": "index",
+    "src": "src/routes/index.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_components-5qVGEn7f.js",
+      "_routing-BFAC7E9u.js"
+    ]
+  },
+  "src/routes/users/[id]/index.tsx?pick=default&pick=$css": {
+    "file": "index2.js",
+    "name": "index",
+    "src": "src/routes/users/[id]/index.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_routing-BFAC7E9u.js",
+      "_components-5qVGEn7f.js"
+    ]
+  },
+  "src/routes/users/index.tsx?pick=default&pick=$css": {
+    "file": "index3.js",
+    "name": "index",
+    "src": "src/routes/users/index.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_components-5qVGEn7f.js",
+      "_routing-BFAC7E9u.js"
+    ]
+  },
+  "virtual:$vinxi/handler/ssr": {
+    "file": "ssr.js",
+    "name": "ssr",
+    "src": "virtual:$vinxi/handler/ssr",
+    "isEntry": true,
+    "imports": [
+      "_routing-BFAC7E9u.js"
+    ],
+    "dynamicImports": [
+      "src/routes/about.tsx?pick=default&pick=$css",
+      "src/routes/about.tsx?pick=default&pick=$css",
+      "src/routes/index.tsx?pick=default&pick=$css",
+      "src/routes/index.tsx?pick=default&pick=$css",
+      "src/routes/users/[id]/index.tsx?pick=default&pick=$css",
+      "src/routes/users/[id]/index.tsx?pick=default&pick=$css",
+      "src/routes/users/index.tsx?pick=default&pick=$css",
+      "src/routes/users/index.tsx?pick=default&pick=$css"
+    ]
+  }
+}

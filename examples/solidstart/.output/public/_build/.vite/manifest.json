@@ -1,0 +1,72 @@
+{
+  "_components-f0L1Q1JN.js": {
+    "file": "assets/components-f0L1Q1JN.js",
+    "name": "components",
+    "imports": [
+      "_routing-CV6ERBqs.js"
+    ]
+  },
+  "_routing-CV6ERBqs.js": {
+    "file": "assets/routing-CV6ERBqs.js",
+    "name": "routing"
+  },
+  "src/routes/about.tsx?pick=default&pick=$css": {
+    "file": "assets/about-CwasS85l.js",
+    "name": "about",
+    "src": "src/routes/about.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_routing-CV6ERBqs.js",
+      "_components-f0L1Q1JN.js"
+    ]
+  },
+  "src/routes/index.tsx?pick=default&pick=$css": {
+    "file": "assets/index-CJh1RqRH.js",
+    "name": "index",
+    "src": "src/routes/index.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_routing-CV6ERBqs.js",
+      "_components-f0L1Q1JN.js"
+    ]
+  },
+  "src/routes/users/[id]/index.tsx?pick=default&pick=$css": {
+    "file": "assets/index-BZadFFyW.js",
+    "name": "index",
+    "src": "src/routes/users/[id]/index.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_routing-CV6ERBqs.js",
+      "_components-f0L1Q1JN.js"
+    ]
+  },
+  "src/routes/users/index.tsx?pick=default&pick=$css": {
+    "file": "assets/index-C5tafUs_.js",
+    "name": "index",
+    "src": "src/routes/users/index.tsx?pick=default&pick=$css",
+    "isEntry": true,
+    "isDynamicEntry": true,
+    "imports": [
+      "_routing-CV6ERBqs.js",
+      "_components-f0L1Q1JN.js"
+    ]
+  },
+  "virtual:$vinxi/handler/client": {
+    "file": "assets/client-4jbX3cyZ.js",
+    "name": "client",
+    "src": "virtual:$vinxi/handler/client",
+    "isEntry": true,
+    "imports": [
+      "_routing-CV6ERBqs.js"
+    ],
+    "dynamicImports": [
+      "src/routes/about.tsx?pick=default&pick=$css",
+      "src/routes/index.tsx?pick=default&pick=$css",
+      "src/routes/users/[id]/index.tsx?pick=default&pick=$css",
+      "src/routes/users/index.tsx?pick=default&pick=$css"
+    ]
+  }
+}
