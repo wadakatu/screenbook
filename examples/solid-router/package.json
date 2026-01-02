@@ -1,0 +1,26 @@
+{
+	"name": "solid-router-example",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"screenbook:build": "screenbook build",
+		"screenbook:dev": "screenbook dev",
+		"screenbook:lint": "screenbook lint",
+		"screenbook:generate": "screenbook generate"
+	},
+	"dependencies": {
+		"@solidjs/router": "^0.15.0",
+		"solid-js": "^1.9.0"
+	},
+	"devDependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*",
+		"typescript": "^5.7.2",
+		"vite": "^6.0.0",
+		"vite-plugin-solid": "^2.11.0"
+	}
+}

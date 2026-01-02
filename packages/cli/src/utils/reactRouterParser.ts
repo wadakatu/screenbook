@@ -6,12 +6,13 @@ import {
 	type ParseResult,
 	resolveImportPath,
 } from "./routeParserUtils.js"
+import { isSolidRouterContent } from "./solidRouterParser.js"
 import { isTanStackRouterContent } from "./tanstackRouterParser.js"
 
 // Re-export shared types
 export type { ParsedRoute, ParseResult }
-// Re-export TanStack Router detection for convenience
-export { isTanStackRouterContent }
+// Re-export router detection for convenience
+export { isSolidRouterContent, isTanStackRouterContent }
 
 /**
  * Router factory function names to detect
@@ -444,10 +445,19 @@ export function isVueRouterContent(content: string): boolean {
  */
 export function detectRouterType(
 	content: string,
-): "react-router" | "vue-router" | "tanstack-router" | "unknown" {
+):
+	| "react-router"
+	| "vue-router"
+	| "tanstack-router"
+	| "solid-router"
+	| "unknown" {
 	// Check TanStack Router first (more specific patterns)
 	if (isTanStackRouterContent(content)) {
 		return "tanstack-router"
+	}
+	// Check Solid Router before React Router (both use similar patterns)
+	if (isSolidRouterContent(content)) {
+		return "solid-router"
 	}
 	if (isReactRouterContent(content)) {
 		return "react-router"
