@@ -3,6 +3,7 @@ import { dirname, join, relative, resolve } from "node:path"
 import { define } from "gunshi"
 import prompts from "prompts"
 import { glob } from "tinyglobby"
+import { parseAngularRouterConfig } from "../utils/angularRouterParser.js"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
@@ -112,11 +113,13 @@ async function generateFromRoutesFile(
 			? "TanStack Router"
 			: routerType === "solid-router"
 				? "Solid Router"
-				: routerType === "react-router"
-					? "React Router"
-					: routerType === "vue-router"
-						? "Vue Router"
-						: "unknown"
+				: routerType === "angular-router"
+					? "Angular Router"
+					: routerType === "react-router"
+						? "React Router"
+						: routerType === "vue-router"
+							? "Vue Router"
+							: "unknown"
 
 	logger.info(
 		`Parsing routes from ${logger.path(routesFile)} (${routerTypeDisplay})...`,
@@ -130,10 +133,20 @@ async function generateFromRoutesFile(
 			parseResult = parseTanStackRouterConfig(absoluteRoutesFile)
 		} else if (routerType === "solid-router") {
 			parseResult = parseSolidRouterConfig(absoluteRoutesFile)
+		} else if (routerType === "angular-router") {
+			parseResult = parseAngularRouterConfig(absoluteRoutesFile)
 		} else if (routerType === "react-router") {
 			parseResult = parseReactRouterConfig(absoluteRoutesFile)
+		} else if (routerType === "vue-router") {
+			parseResult = parseVueRouterConfig(absoluteRoutesFile)
 		} else {
-			// Default to Vue Router parser for vue-router or unknown
+			// Unknown router type - warn user and attempt Vue Router parser as fallback
+			logger.warn(
+				`Could not auto-detect router type for ${logger.path(routesFile)}. Attempting to parse as Vue Router.`,
+			)
+			logger.log(
+				`  ${logger.dim("If parsing fails, check that your router imports are explicit.")}`,
+			)
 			parseResult = parseVueRouterConfig(absoluteRoutesFile)
 		}
 	} catch (error) {

@@ -4,6 +4,7 @@ import type { AdoptionConfig, Config, Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import { minimatch } from "minimatch"
 import { glob } from "tinyglobby"
+import { parseAngularRouterConfig } from "../utils/angularRouterParser.js"
 import { loadConfig } from "../utils/config.js"
 import {
 	detectCycles,
@@ -306,9 +307,21 @@ async function lintRoutesFile(
 			parseResult = parseTanStackRouterConfig(absoluteRoutesFile, content)
 		} else if (routerType === "solid-router") {
 			parseResult = parseSolidRouterConfig(absoluteRoutesFile, content)
+		} else if (routerType === "angular-router") {
+			parseResult = parseAngularRouterConfig(absoluteRoutesFile, content)
 		} else if (routerType === "react-router") {
 			parseResult = parseReactRouterConfig(absoluteRoutesFile, content)
+		} else if (routerType === "vue-router") {
+			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
 		} else {
+			// Unknown router type - warn user and attempt Vue Router parser as fallback
+			logger.warn(
+				`Could not auto-detect router type for ${logger.path(routesFile)}. Attempting to parse as Vue Router.`,
+			)
+			logger.log(
+				`  ${logger.dim("If parsing fails, check that your router imports are explicit.")}`,
+			)
+			hasWarnings = true
 			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
 		}
 

@@ -596,6 +596,29 @@ export const routes = [
 					result.warnings.some((w) => w.includes("JSX Fragment detected")),
 				).toBe(true)
 			})
+
+			it("should warn on conditional component expression", () => {
+				const routesFile = join(TEST_DIR, "routes.tsx")
+				writeFileSync(
+					routesFile,
+					`
+export const routes = [
+  { path: "/", component: () => isAdmin ? <Admin /> : <User /> },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) => w.includes("Conditional component")),
+				).toBe(true)
+				// Should include component names in the warning
+				expect(
+					result.warnings.some(
+						(w) => w.includes("Admin") && w.includes("User"),
+					),
+				).toBe(true)
+			})
 		})
 
 		describe("export patterns", () => {

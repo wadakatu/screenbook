@@ -320,7 +320,7 @@ function extractComponent(
 			if (openingElement?.name?.type === "JSXMemberExpression") {
 				const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
 				warnings.push(
-					`Namespaced JSX component${loc}. Component extraction not fully supported for member expressions.`,
+					`Namespaced JSX component (e.g., <UI.Button />)${loc}. Component extraction not supported for member expressions. Consider using a direct component reference or create a wrapper component.`,
 				)
 				return undefined
 			}
@@ -344,13 +344,38 @@ function extractComponent(
 		// Conditional expressions
 		if (node.body.type === "ConditionalExpression") {
 			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			// Try to extract component names from both branches for context
+			let componentInfo = ""
+			const consequent = node.body.consequent
+			const alternate = node.body.alternate
+			if (
+				consequent?.type === "JSXElement" &&
+				alternate?.type === "JSXElement"
+			) {
+				const consName = consequent.openingElement?.name?.name || "unknown"
+				const altName = alternate.openingElement?.name?.name || "unknown"
+				componentInfo = ` (${consName} or ${altName})`
+			}
 			warnings.push(
-				`Conditional component${loc}. Only static JSX elements can be analyzed.`,
+				`Conditional component${componentInfo}${loc}. Only static JSX elements can be analyzed. Consider extracting to a separate component.`,
 			)
 			return undefined
 		}
+		// Unrecognized arrow function body
+		const arrowLoc = node.loc ? ` at line ${node.loc.start.line}` : ""
+		warnings.push(
+			`Unrecognized arrow function body (${node.body.type})${arrowLoc}. Component will not be extracted.`,
+		)
+		return undefined
 	}
 
+	// Catch-all for unrecognized component patterns
+	if (node) {
+		const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+		warnings.push(
+			`Unrecognized component pattern (${node.type})${loc}. Component will not be extracted.`,
+		)
+	}
 	return undefined
 }
 
@@ -393,7 +418,7 @@ function extractLazyImportPath(
  * Detect if content is Solid Router based on patterns.
  * Note: Called by detectRouterType() in reactRouterParser.ts before React Router detection
  * because Solid Router and React Router share similar syntax patterns (both use `path` and `component`).
- * The detection order matters: TanStack Router -> Solid Router -> React Router -> Vue Router.
+ * The detection order matters: TanStack Router -> Solid Router -> Angular Router -> React Router -> Vue Router.
  */
 export function isSolidRouterContent(content: string): boolean {
 	// Check for Solid Router specific import

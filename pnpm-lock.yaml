@@ -70,6 +70,19 @@ importers:
         specifier: ^4.19.0
         version: 4.21.0
 
+  examples/angular-router:
+    dependencies:
+      '@screenbook/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@screenbook/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   examples/demo:
     devDependencies:
       screenbook:
