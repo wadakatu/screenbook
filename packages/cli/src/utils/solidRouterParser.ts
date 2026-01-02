@@ -11,7 +11,14 @@ import {
 export type { ParsedRoute, ParseResult }
 
 /**
- * Parse Solid Router configuration file and extract routes
+ * Parse Solid Router configuration file and extract routes.
+ * Supports various export patterns including `export const routes`, `export default`,
+ * and TypeScript's `satisfies` operator.
+ *
+ * @param filePath - Path to the router configuration file
+ * @param preloadedContent - Optional pre-read file content to avoid duplicate file reads
+ * @returns ParseResult containing extracted routes and any warnings
+ * @throws Error if the file cannot be read or contains syntax errors
  */
 export function parseSolidRouterConfig(
 	filePath: string,
@@ -187,8 +194,16 @@ function parseRouteObject(
 					hasPath = true
 				} else if (prop.value.type === "ArrayExpression") {
 					// Solid Router supports path arrays: path: ["/login", "/register"]
+					const arrayElementCount = prop.value.elements.filter(Boolean).length
 					paths = extractPathArray(prop.value, warnings)
 					hasPath = paths.length > 0
+					// Warn if path array had elements but none were extractable
+					if (arrayElementCount > 0 && paths.length === 0) {
+						const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
+						warnings.push(
+							`Path array contains only dynamic values${loc}. No static paths could be extracted.`,
+						)
+					}
 				} else {
 					const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
 					warnings.push(
@@ -285,7 +300,12 @@ function extractComponent(
 			)
 			return undefined
 		}
-		// Other call expressions not supported
+		// Other call expressions not supported - add warning
+		const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+		const calleeName = callee.type === "Identifier" ? callee.name : "unknown"
+		warnings.push(
+			`Unrecognized component pattern: ${calleeName}(...)${loc}. Only 'lazy(() => import(...))' is supported.`,
+		)
 		return undefined
 	}
 
@@ -296,6 +316,38 @@ function extractComponent(
 			if (openingElement?.name?.type === "JSXIdentifier") {
 				return openingElement.name.name
 			}
+			// JSXMemberExpression (namespaced components like <UI.Button />)
+			if (openingElement?.name?.type === "JSXMemberExpression") {
+				const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+				warnings.push(
+					`Namespaced JSX component${loc}. Component extraction not fully supported for member expressions.`,
+				)
+				return undefined
+			}
+		}
+		// Block body arrow functions
+		if (node.body.type === "BlockStatement") {
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`Arrow function with block body${loc}. Only concise arrow functions returning JSX directly can be analyzed.`,
+			)
+			return undefined
+		}
+		// JSX Fragments
+		if (node.body.type === "JSXFragment") {
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`JSX Fragment detected${loc}. Cannot extract component name from fragments.`,
+			)
+			return undefined
+		}
+		// Conditional expressions
+		if (node.body.type === "ConditionalExpression") {
+			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			warnings.push(
+				`Conditional component${loc}. Only static JSX elements can be analyzed.`,
+			)
+			return undefined
 		}
 	}
 
@@ -338,7 +390,10 @@ function extractLazyImportPath(
 }
 
 /**
- * Detect if content is Solid Router based on patterns
+ * Detect if content is Solid Router based on patterns.
+ * Note: Called by detectRouterType() in reactRouterParser.ts before React Router detection
+ * because Solid Router and React Router share similar syntax patterns (both use `path` and `component`).
+ * The detection order matters: TanStack Router -> Solid Router -> React Router -> Vue Router.
  */
 export function isSolidRouterContent(content: string): boolean {
 	// Check for Solid Router specific import

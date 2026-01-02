@@ -258,6 +258,26 @@ export const routes = [
 				expect(flat[1]?.screenId).toBe("posts.postId.comments.commentId")
 			})
 
+			it("should handle wildcard paths *", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+export const routes = [
+  { path: "/docs/*", component: Docs },
+  { path: "/*all", component: NotFound },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(result.routes).toHaveLength(2)
+
+				const flat = flattenRoutes(result.routes)
+				expect(flat[0]?.screenId).toBe("docs.catchall")
+				expect(flat[1]?.screenId).toBe("all")
+			})
+
 			it("should skip routes without path", () => {
 				const routesFile = join(TEST_DIR, "routes.ts")
 				writeFileSync(
@@ -420,6 +440,161 @@ export const routes = [
 				expect(() => {
 					parseSolidRouterConfig(routesFile)
 				}).toThrow("Syntax error")
+			})
+
+			it("should warn on non-object route elements", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+const getRoute = () => ({ path: "/dynamic", component: Dynamic })
+
+export const routes = [
+  { path: "/", component: Home },
+  getRoute(),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) => w.includes("Non-object route element")),
+				).toBe(true)
+				// Should still parse the static route
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/")
+			})
+
+			it("should warn on lazy() with dynamic import path", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const pagePath = "./pages/Dynamic"
+
+export const routes = [
+  { path: "/", component: lazy(() => import(pagePath)) },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) => w.includes("Lazy import with dynamic")),
+				).toBe(true)
+			})
+
+			it("should warn on unrecognized lazy pattern", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+function loadHome() { return import("./pages/Home") }
+
+export const routes = [
+  { path: "/", component: lazy(loadHome) },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) => w.includes("Unrecognized lazy pattern")),
+				).toBe(true)
+			})
+
+			it("should handle sparse route arrays gracefully", () => {
+				const content = `
+export const routes = [
+  { path: "/", component: Home },
+  ,
+  { path: "/about", component: About },
+]
+`
+				const result = parseSolidRouterConfig("virtual.ts", content)
+				expect(result.routes).toHaveLength(2)
+				expect(result.warnings).toHaveLength(0)
+			})
+
+			it("should warn on path array with only dynamic values", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+const path1 = "/login"
+const path2 = "/register"
+
+export const routes = [
+  { path: [path1, path2], component: Auth },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) =>
+						w.includes("Path array contains only dynamic"),
+					),
+				).toBe(true)
+			})
+
+			it("should warn on unrecognized component call expression", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+export const routes = [
+  { path: "/", component: withAuth(Home) },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) =>
+						w.includes("Unrecognized component pattern"),
+					),
+				).toBe(true)
+			})
+
+			it("should warn on arrow function with block body", () => {
+				const routesFile = join(TEST_DIR, "routes.tsx")
+				writeFileSync(
+					routesFile,
+					`
+export const routes = [
+  { path: "/", component: () => { return <Home /> } },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) =>
+						w.includes("Arrow function with block body"),
+					),
+				).toBe(true)
+			})
+
+			it("should warn on JSX fragment component", () => {
+				const routesFile = join(TEST_DIR, "routes.tsx")
+				writeFileSync(
+					routesFile,
+					`
+export const routes = [
+  { path: "/", component: () => <><Home /></> },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+				expect(
+					result.warnings.some((w) => w.includes("JSX Fragment detected")),
+				).toBe(true)
 			})
 		})
 
