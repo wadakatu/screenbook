@@ -1,0 +1,25 @@
+{
+	"name": "solidstart-example",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vinxi dev",
+		"build": "vinxi build",
+		"start": "vinxi start",
+		"screenbook:build": "screenbook build",
+		"screenbook:dev": "screenbook dev",
+		"screenbook:lint": "screenbook lint"
+	},
+	"dependencies": {
+		"@solidjs/router": "^0.15.0",
+		"@solidjs/start": "^1.1.0",
+		"solid-js": "^1.9.0",
+		"vinxi": "^0.5.0"
+	},
+	"devDependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*",
+		"typescript": "^5.9.0"
+	}
+}

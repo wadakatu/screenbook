@@ -58,14 +58,14 @@ export const frameworks: Framework[] = [
 		routingType: "file-based",
 		routesPattern: "src/routes/**/+page.svelte",
 	},
-	// File-based routing - Planned
 	{
 		name: "SolidStart",
-		status: "planned",
-		autoGenerate: false,
+		status: "supported",
+		autoGenerate: true,
 		routingType: "file-based",
 		routesPattern: "src/routes/**/*.tsx",
 	},
+	// File-based routing - Planned
 	{
 		name: "QwikCity",
 		status: "planned",

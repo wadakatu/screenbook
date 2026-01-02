@@ -78,6 +78,14 @@ const FRAMEWORKS: FrameworkDefinition[] = [
 		metaPattern: "src/pages/**/screen.meta.ts",
 	},
 	{
+		name: "SolidStart",
+		packages: ["@solidjs/start"],
+		configFiles: ["app.config.ts", "app.config.js"],
+		routesPattern: "src/routes/**/*.tsx",
+		metaPattern: "src/routes/**/screen.meta.ts",
+		check: (cwd) => existsSync(join(cwd, "src/routes")),
+	},
+	{
 		name: "Vite + Vue",
 		packages: ["vite", "vue"],
 		configFiles: ["vite.config.ts", "vite.config.js", "vite.config.mjs"],
