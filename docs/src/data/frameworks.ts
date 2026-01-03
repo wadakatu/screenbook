@@ -65,14 +65,14 @@ export const frameworks: Framework[] = [
 		routingType: "file-based",
 		routesPattern: "src/routes/**/*.tsx",
 	},
-	// File-based routing - Planned
 	{
 		name: "QwikCity",
-		status: "planned",
-		autoGenerate: false,
+		status: "supported",
+		autoGenerate: true,
 		routingType: "file-based",
 		routesPattern: "src/routes/**/index.tsx",
 	},
+	// File-based routing - Planned
 	{
 		name: "TanStack Start",
 		status: "planned",

@@ -192,6 +192,74 @@ describe("detectFramework", () => {
 		})
 	})
 
+	describe("QwikCity detection", () => {
+		it("should detect QwikCity with @builder.io/qwik-city package and vite.config.ts", () => {
+			createPackageJson({
+				"@builder.io/qwik": "^1.5.0",
+				"@builder.io/qwik-city": "^1.5.0",
+			})
+			createConfigFile("vite.config.ts")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result).not.toBeNull()
+			expect(result?.name).toBe("QwikCity")
+			expect(result?.routesPattern).toBe("src/routes/**/index.tsx")
+			expect(result?.metaPattern).toBe("src/routes/**/screen.meta.ts")
+		})
+
+		it("should detect QwikCity with vite.config.js", () => {
+			createPackageJson({ "@builder.io/qwik-city": "^1.5.0" })
+			createConfigFile("vite.config.js")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("QwikCity")
+		})
+
+		it("should not detect QwikCity without src/routes directory", () => {
+			createPackageJson({ "@builder.io/qwik-city": "^1.5.0" })
+			createConfigFile("vite.config.ts")
+			// No src/routes directory
+
+			const result = detectFramework(testDir)
+
+			expect(result).toBeNull()
+		})
+
+		it("should not detect QwikCity without @builder.io/qwik-city package", () => {
+			createPackageJson({ "@builder.io/qwik": "^1.5.0" })
+			createConfigFile("vite.config.ts")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result).toBeNull()
+		})
+
+		it("should detect QwikCity with vite.config.mjs", () => {
+			createPackageJson({ "@builder.io/qwik-city": "^1.5.0" })
+			createConfigFile("vite.config.mjs")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("QwikCity")
+		})
+
+		it("should detect QwikCity with package in devDependencies", () => {
+			createPackageJson({}, { "@builder.io/qwik-city": "^1.5.0" })
+			createConfigFile("vite.config.ts")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("QwikCity")
+		})
+	})
+
 	describe("Vite detection", () => {
 		it("should detect Vite + React", () => {
 			createPackageJson({ vite: "^5.0.0", react: "^18.0.0" })

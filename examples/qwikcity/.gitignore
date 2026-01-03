@@ -1,0 +1,10 @@
+# Build output
+dist
+server
+tmp
+
+# Dependencies
+node_modules
+
+# Screenbook
+.screenbook
