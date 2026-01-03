@@ -147,6 +147,51 @@ describe("detectFramework", () => {
 		})
 	})
 
+	describe("SolidStart detection", () => {
+		it("should detect SolidStart with @solidjs/start package and app.config.ts", () => {
+			createPackageJson({ "@solidjs/start": "^1.0.0", "solid-js": "^1.8.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result).not.toBeNull()
+			expect(result?.name).toBe("SolidStart")
+			expect(result?.routesPattern).toBe("src/routes/**/*.tsx")
+			expect(result?.metaPattern).toBe("src/routes/**/screen.meta.ts")
+		})
+
+		it("should detect SolidStart with app.config.js", () => {
+			createPackageJson({ "@solidjs/start": "^1.0.0" })
+			createConfigFile("app.config.js")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("SolidStart")
+		})
+
+		it("should not detect SolidStart without src/routes directory", () => {
+			createPackageJson({ "@solidjs/start": "^1.0.0" })
+			createConfigFile("app.config.ts")
+			// No src/routes directory
+
+			const result = detectFramework(testDir)
+
+			expect(result).toBeNull()
+		})
+
+		it("should not detect SolidStart without @solidjs/start package", () => {
+			createPackageJson({ "solid-js": "^1.8.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result).toBeNull()
+		})
+	})
+
 	describe("Vite detection", () => {
 		it("should detect Vite + React", () => {
 			createPackageJson({ vite: "^5.0.0", react: "^18.0.0" })
