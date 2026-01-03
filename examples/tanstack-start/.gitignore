@@ -1,0 +1,10 @@
+# Build output
+dist
+.vinxi
+.output
+
+# Dependencies
+node_modules
+
+# Screenbook
+.screenbook
