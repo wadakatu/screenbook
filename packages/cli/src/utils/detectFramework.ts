@@ -86,6 +86,14 @@ const FRAMEWORKS: FrameworkDefinition[] = [
 		check: (cwd) => existsSync(join(cwd, "src/routes")),
 	},
 	{
+		name: "QwikCity",
+		packages: ["@builder.io/qwik-city"],
+		configFiles: ["vite.config.ts", "vite.config.js", "vite.config.mjs"],
+		routesPattern: "src/routes/**/index.tsx",
+		metaPattern: "src/routes/**/screen.meta.ts",
+		check: (cwd) => existsSync(join(cwd, "src/routes")),
+	},
+	{
 		name: "Vite + Vue",
 		packages: ["vite", "vue"],
 		configFiles: ["vite.config.ts", "vite.config.js", "vite.config.mjs"],
