@@ -260,6 +260,77 @@ describe("detectFramework", () => {
 		})
 	})
 
+	describe("TanStack Start detection", () => {
+		it("should detect TanStack Start with @tanstack/react-start and __root.tsx", () => {
+			createPackageJson({ "@tanstack/react-start": "^1.0.0", react: "^19.0.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+			writeFileSync(join(testDir, "src/routes/__root.tsx"), "// root")
+
+			const result = detectFramework(testDir)
+
+			expect(result).not.toBeNull()
+			expect(result?.name).toBe("TanStack Start")
+			expect(result?.routesPattern).toBe("src/routes/**/*.tsx")
+			expect(result?.metaPattern).toBe("src/routes/**/screen.meta.ts")
+		})
+
+		it("should detect TanStack Start with @tanstack/start (legacy package)", () => {
+			createPackageJson({ "@tanstack/start": "^1.0.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+			writeFileSync(join(testDir, "src/routes/__root.tsx"), "// root")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("TanStack Start")
+		})
+
+		it("should detect TanStack Start with app.config.js", () => {
+			createPackageJson({ "@tanstack/react-start": "^1.0.0" })
+			createConfigFile("app.config.js")
+			createDirectory("src/routes")
+			writeFileSync(join(testDir, "src/routes/__root.tsx"), "// root")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("TanStack Start")
+		})
+
+		it("should not detect TanStack Start without __root.tsx", () => {
+			createPackageJson({ "@tanstack/react-start": "^1.0.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+			// No __root.tsx file
+
+			const result = detectFramework(testDir)
+
+			expect(result).toBeNull()
+		})
+
+		it("should not detect TanStack Start without @tanstack/react-start package", () => {
+			createPackageJson({ "@tanstack/router": "^1.0.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+			writeFileSync(join(testDir, "src/routes/__root.tsx"), "// root")
+
+			const result = detectFramework(testDir)
+
+			expect(result).toBeNull()
+		})
+
+		it("should detect TanStack Start with package in devDependencies", () => {
+			createPackageJson({}, { "@tanstack/react-start": "^1.0.0" })
+			createConfigFile("app.config.ts")
+			createDirectory("src/routes")
+			writeFileSync(join(testDir, "src/routes/__root.tsx"), "// root")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("TanStack Start")
+		})
+	})
+
 	describe("Vite detection", () => {
 		it("should detect Vite + React", () => {
 			createPackageJson({ vite: "^5.0.0", react: "^18.0.0" })

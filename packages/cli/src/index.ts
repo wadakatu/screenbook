@@ -1,5 +1,8 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { cli, define } from "gunshi"
 import { buildCommand } from "./commands/build.js"
 import { devCommand } from "./commands/dev.js"
@@ -9,6 +12,12 @@ import { impactCommand } from "./commands/impact.js"
 import { initCommand } from "./commands/init.js"
 import { lintCommand } from "./commands/lint.js"
 import { prImpactCommand } from "./commands/pr-impact.js"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const packageJson = JSON.parse(
+	readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
+)
+const version: string = packageJson.version
 
 const mainCommand = define({
 	name: "screenbook",
@@ -32,7 +41,7 @@ const mainCommand = define({
 
 await cli(process.argv.slice(2), mainCommand, {
 	name: "screenbook",
-	version: "0.0.1",
+	version,
 	subCommands: {
 		init: initCommand,
 		generate: generateCommand,

@@ -1,0 +1,28 @@
+{
+	"name": "tanstack-start-example",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "vinxi dev",
+		"build": "echo 'Skipping build - example project for Screenbook demo only'",
+		"start": "vinxi start",
+		"screenbook:build": "screenbook build",
+		"screenbook:dev": "screenbook dev",
+		"screenbook:lint": "screenbook lint"
+	},
+	"dependencies": {
+		"@tanstack/react-start": "^1.121.0",
+		"@tanstack/react-router": "^1.121.0",
+		"react": "^19.0.0",
+		"react-dom": "^19.0.0",
+		"vinxi": "^0.5.0"
+	},
+	"devDependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"typescript": "^5.9.0"
+	}
+}

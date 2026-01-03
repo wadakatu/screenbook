@@ -95,6 +95,15 @@ const FRAMEWORKS: FrameworkDefinition[] = [
 		check: (cwd) => existsSync(join(cwd, "src/routes")),
 	},
 	{
+		name: "TanStack Start",
+		packages: ["@tanstack/react-start", "@tanstack/start"],
+		configFiles: ["app.config.ts", "app.config.js"],
+		routesPattern: "src/routes/**/*.tsx",
+		metaPattern: "src/routes/**/screen.meta.ts",
+		// TanStack Start requires __root.tsx for file-based routing
+		check: (cwd) => existsSync(join(cwd, "src/routes/__root.tsx")),
+	},
+	{
 		name: "Vite + Vue",
 		packages: ["vite", "vue"],
 		configFiles: ["vite.config.ts", "vite.config.js", "vite.config.mjs"],
