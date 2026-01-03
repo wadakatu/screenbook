@@ -1,6 +1,15 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 import { cli, define } from "gunshi"
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const packageJson = JSON.parse(
+	readFileSync(join(__dirname, "..", "package.json"), "utf-8"),
+)
+const version: string = packageJson.version
 import { buildCommand } from "./commands/build.js"
 import { devCommand } from "./commands/dev.js"
 import { doctorCommand } from "./commands/doctor.js"
@@ -32,7 +41,7 @@ const mainCommand = define({
 
 await cli(process.argv.slice(2), mainCommand, {
 	name: "screenbook",
-	version: "0.0.1",
+	version,
 	subCommands: {
 		init: initCommand,
 		generate: generateCommand,
