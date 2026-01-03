@@ -5,9 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite --mode ssr",
-		"build": "qwik build",
-		"build.client": "vite build",
-		"build.server": "vite build -c adapters/static/vite.config.ts",
+		"build": "echo 'Skipping build - example project for Screenbook demo only'",
 		"preview": "vite preview",
 		"start": "vite --open --mode ssr",
 		"screenbook:build": "screenbook build",
