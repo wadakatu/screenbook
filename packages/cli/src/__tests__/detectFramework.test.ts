@@ -236,8 +236,27 @@ describe("detectFramework", () => {
 
 			const result = detectFramework(testDir)
 
-			// Should fall back to Vite + React if react is present, or null
-			expect(result?.name).not.toBe("QwikCity")
+			expect(result).toBeNull()
+		})
+
+		it("should detect QwikCity with vite.config.mjs", () => {
+			createPackageJson({ "@builder.io/qwik-city": "^1.5.0" })
+			createConfigFile("vite.config.mjs")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("QwikCity")
+		})
+
+		it("should detect QwikCity with package in devDependencies", () => {
+			createPackageJson({}, { "@builder.io/qwik-city": "^1.5.0" })
+			createConfigFile("vite.config.ts")
+			createDirectory("src/routes")
+
+			const result = detectFramework(testDir)
+
+			expect(result?.name).toBe("QwikCity")
 		})
 	})
 

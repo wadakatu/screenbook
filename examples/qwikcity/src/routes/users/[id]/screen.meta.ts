@@ -9,5 +9,5 @@ export const screen = defineScreen({
 	description: "User detail page showing individual user information",
 	entryPoints: ["users"],
 	next: [],
-	dependsOn: ["UsersAPI.getUser"],
+	dependsOn: [],
 })

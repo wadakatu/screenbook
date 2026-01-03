@@ -89,6 +89,7 @@ const FRAMEWORKS: FrameworkDefinition[] = [
 		name: "QwikCity",
 		packages: ["@builder.io/qwik-city"],
 		configFiles: ["vite.config.ts", "vite.config.js", "vite.config.mjs"],
+		// QwikCity uses index.tsx files as page components (e.g., about/index.tsx not about.tsx)
 		routesPattern: "src/routes/**/index.tsx",
 		metaPattern: "src/routes/**/screen.meta.ts",
 		check: (cwd) => existsSync(join(cwd, "src/routes")),
@@ -128,7 +129,10 @@ function readPackageJson(cwd: string): PackageJson | null {
 	try {
 		const content = readFileSync(packageJsonPath, "utf-8")
 		return JSON.parse(content)
-	} catch {
+	} catch (error) {
+		console.warn(
+			`Warning: Failed to parse package.json at ${packageJsonPath}: ${error instanceof Error ? error.message : String(error)}`,
+		)
 		return null
 	}
 }
