@@ -145,6 +145,20 @@ import { getUsers from "@api/client"  // missing closing brace
 		expect(result.warnings[0]).toContain("Syntax error")
 	})
 
+	it("should handle non-SyntaxError parse failures gracefully", () => {
+		// Babel may throw different error types for different issues
+		// Test with severely malformed content that might cause unexpected errors
+		const content = "\x00\x01\x02"
+		const result = analyzeApiImports(content, {
+			clientPackages: ["@api/client"],
+		})
+
+		// Should not throw, should return empty imports
+		expect(result.imports).toHaveLength(0)
+		// May or may not have warnings depending on how Babel handles this
+		// The important thing is it doesn't throw
+	})
+
 	it("should return empty result for file with no imports", () => {
 		const content = `
 export function hello() {

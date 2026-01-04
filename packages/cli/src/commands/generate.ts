@@ -243,8 +243,11 @@ async function generateFromRoutesFile(
 					for (const warning of result.warnings) {
 						logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
 					}
-				} catch {
-					// Silently skip if component file cannot be read/parsed
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error)
+					logger.warn(
+						`${logger.path(route.componentPath)}: Could not analyze for API imports: ${message}`,
+					)
 				}
 			}
 		}
@@ -371,8 +374,11 @@ export async function generateFromRoutesPattern(
 					for (const warning of result.warnings) {
 						logger.warn(`${logger.path(routeFile)}: ${warning}`)
 					}
-				} catch {
-					// Silently skip if route file cannot be read/parsed
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error)
+					logger.warn(
+						`${logger.path(routeFile)}: Could not analyze for API imports: ${message}`,
+					)
 				}
 			}
 		}

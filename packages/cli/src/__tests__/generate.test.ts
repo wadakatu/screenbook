@@ -367,5 +367,122 @@ export const routes = [
 			// Check that screen.meta.ts was created
 			expect(existsSync(join(viewsDir, "screen.meta.ts"))).toBe(true)
 		})
+
+		it("should fail when --detect-api used without apiIntegration config", async () => {
+			// Create routes file
+			const srcDir = join(testDir, "src/router")
+			const viewsDir = join(testDir, "src/views")
+			mkdirSync(srcDir, { recursive: true })
+			mkdirSync(viewsDir, { recursive: true })
+
+			writeFileSync(
+				join(srcDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: '/',
+    name: 'home',
+    component: () => import('../views/Home.vue'),
+  },
+]
+`,
+			)
+
+			writeFileSync(
+				join(viewsDir, "Home.vue"),
+				"<template><div>Home</div></template>",
+			)
+
+			// Config WITHOUT apiIntegration
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/screen.meta.ts", routesFile: "src/router/routes.ts", ignore: [] }`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await expect(
+				generateCommand.run({
+					values: {
+						config: undefined,
+						dryRun: false,
+						force: false,
+						interactive: false,
+						detectApi: true,
+					},
+				} as Parameters<typeof generateCommand.run>[0]),
+			).rejects.toThrow("Process exited with code 1")
+		})
+
+		it("should detect API dependencies when --detect-api is enabled", async () => {
+			// Reset modules to ensure fresh config loading
+			vi.resetModules()
+
+			// Create routes file
+			const srcDir = join(testDir, "src/router")
+			const viewsDir = join(testDir, "src/views")
+			mkdirSync(srcDir, { recursive: true })
+			mkdirSync(viewsDir, { recursive: true })
+
+			writeFileSync(
+				join(srcDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: '/users',
+    name: 'users',
+    component: () => import('../views/Users.tsx'),
+  },
+]
+`,
+			)
+
+			// Component file with API imports (use .tsx format for Babel parsing)
+			writeFileSync(
+				join(viewsDir, "Users.tsx"),
+				`import { getUsers, createUser } from "@api/client"
+
+export function Users() {
+  const users = getUsers()
+  return <div>{users.length}</div>
+}`,
+			)
+
+			// Config WITH apiIntegration - use unique filename to avoid jiti cache
+			const configPath = join(testDir, "api-detect.config.ts")
+			writeFileSync(
+				configPath,
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesFile: "src/router/routes.ts",
+  ignore: [],
+  apiIntegration: {
+    clientPackages: ["@api/client"],
+  },
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: configPath,
+					dryRun: false,
+					force: false,
+					interactive: false,
+					detectApi: true,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check that screen.meta.ts was created with dependsOn
+			const metaPath = join(viewsDir, "screen.meta.ts")
+			expect(existsSync(metaPath)).toBe(true)
+
+			const content = readFileSync(metaPath, "utf-8")
+			expect(content).toContain("dependsOn")
+			expect(content).toContain("@api/client/getUsers")
+			expect(content).toContain("@api/client/createUser")
+		})
 	})
 })
