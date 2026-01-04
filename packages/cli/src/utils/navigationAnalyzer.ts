@@ -10,7 +10,7 @@ export interface DetectedNavigation {
 	/** Converted screen ID using pathToScreenId */
 	screenId: string
 	/** Navigation method type */
-	type: "link" | "router-push" | "navigate" | "redirect"
+	type: "link" | "router-push" | "navigate" | "redirect" | "navigate-by-url"
 	/** Line number where detected */
 	line: number
 }
@@ -58,7 +58,11 @@ export interface FrameworkDetectionResult {
 /**
  * Navigation framework to detect
  */
-export type NavigationFramework = "nextjs" | "react-router" | "vue-router"
+export type NavigationFramework =
+	| "nextjs"
+	| "react-router"
+	| "vue-router"
+	| "angular"
 
 /**
  * Analyze a file's content for navigation patterns.
@@ -67,6 +71,7 @@ export type NavigationFramework = "nextjs" | "react-router" | "vue-router"
  * - Next.js: `<Link href="/path">`, `router.push("/path")`, `router.replace("/path")`, `redirect("/path")`
  * - React Router: `<Link to="/path">`, `navigate("/path")`
  * - Vue Router: `router.push("/path")`, `router.replace("/path")`, `router.push({ path: "/path" })`
+ * - Angular: `router.navigate(['/path'])`, `router.navigateByUrl('/path')`
  *
  * @param content - The file content to analyze
  * @param framework - The navigation framework to detect
@@ -278,6 +283,44 @@ function extractCallNavigation(
 		return extractPathFromCallArgs(node, "redirect", warnings)
 	}
 
+	// router.navigate() - Angular Router
+	// Matches: this.router.navigate(['/path']) or router.navigate(['/path'])
+	if (
+		framework === "angular" &&
+		callee?.type === "MemberExpression" &&
+		callee.property?.type === "Identifier" &&
+		callee.property.name === "navigate"
+	) {
+		const obj = callee.object
+		// Match: this.router.navigate() or router.navigate()
+		if (
+			(obj?.type === "MemberExpression" &&
+				obj.property?.type === "Identifier" &&
+				obj.property.name === "router") ||
+			(obj?.type === "Identifier" && obj.name === "router")
+		) {
+			return extractPathFromArrayArg(node, "navigate", warnings)
+		}
+	}
+
+	// router.navigateByUrl() - Angular Router
+	if (
+		framework === "angular" &&
+		callee?.type === "MemberExpression" &&
+		callee.property?.type === "Identifier" &&
+		callee.property.name === "navigateByUrl"
+	) {
+		const obj = callee.object
+		if (
+			(obj?.type === "MemberExpression" &&
+				obj.property?.type === "Identifier" &&
+				obj.property.name === "router") ||
+			(obj?.type === "Identifier" && obj.name === "router")
+		) {
+			return extractPathFromCallArgs(node, "navigate-by-url", warnings)
+		}
+	}
+
 	return null
 }
 
@@ -370,6 +413,75 @@ function extractPathFromCallArgs(
 }
 
 /**
+ * Extract path from array argument (Angular Router style)
+ * e.g., router.navigate(['/users', userId]) -> extracts '/users'
+ */
+function extractPathFromArrayArg(
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
+	node: any,
+	type: DetectedNavigation["type"],
+	warnings: string[],
+): DetectedNavigation | null {
+	const firstArg = node.arguments?.[0]
+
+	if (!firstArg) {
+		// No argument provided
+		const line = node.loc?.start.line ?? 0
+		warnings.push(
+			`Navigation call at line ${line} has no arguments. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
+		return null
+	}
+
+	// Array expression: ['/path', ...]
+	if (firstArg.type === "ArrayExpression") {
+		if (firstArg.elements.length === 0) {
+			// Empty array
+			const line = node.loc?.start.line ?? 0
+			warnings.push(
+				`Navigation call at line ${line} has an empty array. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+			)
+			return null
+		}
+		const firstElement = firstArg.elements[0]
+
+		// String literal as first element
+		if (firstElement?.type === "StringLiteral") {
+			const path = firstElement.value
+			if (isValidInternalPath(path)) {
+				return createDetectedNavigation(path, type, node.loc?.start.line ?? 0)
+			}
+		}
+
+		// Static template literal as first element
+		if (
+			firstElement?.type === "TemplateLiteral" &&
+			firstElement.expressions.length === 0 &&
+			firstElement.quasis.length === 1
+		) {
+			const path = firstElement.quasis[0].value.cooked
+			if (path && isValidInternalPath(path)) {
+				return createDetectedNavigation(path, type, node.loc?.start.line ?? 0)
+			}
+		}
+
+		// Dynamic first element
+		const line = node.loc?.start.line ?? 0
+		warnings.push(
+			`Dynamic navigation path at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
+		return null
+	}
+
+	// Non-array argument (dynamic)
+	const line = node.loc?.start.line ?? 0
+	warnings.push(
+		`Dynamic navigation path at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+	)
+	return null
+}
+
+/**
  * Check if a path is a valid internal path (not external URL or hash link)
  */
 function isValidInternalPath(path: string): boolean {
@@ -458,6 +570,11 @@ export function detectNavigationFramework(
 	// Check for Vue Router patterns
 	if (content.includes("vue-router")) {
 		return { framework: "vue-router", detected: true }
+	}
+
+	// Check for Angular Router patterns
+	if (content.includes("@angular/router")) {
+		return { framework: "angular", detected: true }
 	}
 
 	// Check for React Router patterns
