@@ -2,7 +2,9 @@ export { defineConfig, defineScreen } from "./defineScreen.js"
 export { extractNavigationTargets } from "./extractNavigationTargets.js"
 export {
 	type AdoptionConfig,
+	type ApiIntegrationConfig,
 	adoptionSchema,
+	apiIntegrationSchema,
 	type Config,
 	type ConfigInput,
 	configSchema,
