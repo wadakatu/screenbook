@@ -1,6 +1,6 @@
 {
 	"name": "@screenbook/core",
-	"version": "1.2.0",
+	"version": "1.4.0",
 	"description": "Define screens in code with TypeScript. Core library for screen catalog and navigation graph generation.",
 	"type": "module",
 	"exports": {

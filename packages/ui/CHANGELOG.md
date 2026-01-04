@@ -1,5 +1,12 @@
 # @screenbook/ui
 
+## 1.4.0
+
+### Patch Changes
+
+- Updated dependencies [3d94ac4]
+  - @screenbook/core@1.4.0
+
 ## 1.2.0
 
 ### Patch Changes

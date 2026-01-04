@@ -1,6 +1,6 @@
 {
 	"name": "screenbook",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"description": "Screen catalog and navigation graph generator for frontend applications",
 	"type": "module",
 	"bin": {
