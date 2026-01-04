@@ -35,6 +35,14 @@ paths: packages/**/*.{ts,tsx,js,jsx}
   - `test(scope):` Test changes
   - `chore:` Tooling/build changes
 
+## Pull Requests
+
+After creating a PR:
+
+1. Run `/pr-review-toolkit:review-pr` to perform a self-review
+2. Address any issues or improvements identified by the review
+3. Commit fixes and update the PR before requesting human review
+
 ## Design Principles
 
 - **Framework agnostic**: Core and CLI work with any frontend framework
