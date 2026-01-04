@@ -25,7 +25,9 @@ import {
 	generateFromRoutesPattern,
 } from "./generate.js"
 
-export function generateConfigTemplate(framework: FrameworkInfo | null): string {
+export function generateConfigTemplate(
+	framework: FrameworkInfo | null,
+): string {
 	if (framework) {
 		return `import { defineConfig } from "@screenbook/core"
 
