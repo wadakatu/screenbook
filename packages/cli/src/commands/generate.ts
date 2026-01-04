@@ -1,10 +1,11 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
-import type { Screen } from "@screenbook/core"
+import type { ApiIntegrationConfig, Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import prompts from "prompts"
 import { glob } from "tinyglobby"
 import { parseAngularRouterConfig } from "../utils/angularRouterParser.js"
+import { analyzeApiImports } from "../utils/apiImportAnalyzer.js"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
@@ -48,6 +49,13 @@ export const generateCommand = define({
 			description: "Interactively confirm or modify each screen",
 			default: false,
 		},
+		detectApi: {
+			type: "boolean",
+			short: "a",
+			description:
+				"Detect API dependencies from imports (requires apiIntegration config)",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
 		const config = await loadConfig(ctx.values.config)
@@ -55,10 +63,29 @@ export const generateCommand = define({
 		const dryRun = ctx.values.dryRun ?? false
 		const force = ctx.values.force ?? false
 		const interactive = ctx.values.interactive ?? false
+		const detectApi = ctx.values.detectApi ?? false
 
 		// Check for routes configuration
 		if (!config.routesPattern && !config.routesFile) {
 			logger.errorWithHelp(ERRORS.ROUTES_PATTERN_MISSING)
+			process.exit(1)
+		}
+
+		// Validate --detect-api requires apiIntegration config
+		if (detectApi && !config.apiIntegration) {
+			logger.error(
+				`${logger.bold("--detect-api")} requires ${logger.code("apiIntegration")} configuration`,
+			)
+			logger.blank()
+			logger.log("Add to your screenbook.config.ts:")
+			logger.blank()
+			logger.log(
+				logger.dim(`  export default defineConfig({
+    apiIntegration: {
+      clientPackages: ["@/api/generated"],
+    },
+  })`),
+			)
 			process.exit(1)
 		}
 
@@ -68,6 +95,8 @@ export const generateCommand = define({
 				dryRun,
 				force,
 				interactive,
+				detectApi,
+				apiIntegration: config.apiIntegration,
 			})
 			return
 		}
@@ -78,6 +107,8 @@ export const generateCommand = define({
 			force,
 			interactive,
 			ignore: config.ignore,
+			detectApi,
+			apiIntegration: config.apiIntegration,
 		})
 	},
 })
@@ -86,6 +117,8 @@ interface GenerateFromRoutesFileOptions {
 	dryRun: boolean
 	force: boolean
 	interactive: boolean
+	detectApi: boolean
+	apiIntegration?: ApiIntegrationConfig
 }
 
 /**
@@ -96,7 +129,7 @@ async function generateFromRoutesFile(
 	cwd: string,
 	options: GenerateFromRoutesFileOptions,
 ): Promise<void> {
-	const { dryRun, force, interactive } = options
+	const { dryRun, force, interactive, detectApi, apiIntegration } = options
 	const absoluteRoutesFile = resolve(cwd, routesFile)
 
 	// Check if routes file exists
@@ -198,6 +231,24 @@ async function generateFromRoutesFile(
 			route: route.fullPath,
 		}
 
+		// Detect API dependencies if enabled
+		let detectedApis: string[] = []
+		if (detectApi && apiIntegration && route.componentPath) {
+			const componentAbsPath = resolve(cwd, route.componentPath)
+			if (existsSync(componentAbsPath)) {
+				try {
+					const componentContent = readFileSync(componentAbsPath, "utf-8")
+					const result = analyzeApiImports(componentContent, apiIntegration)
+					detectedApis = result.imports.map((i) => i.dependsOnName)
+					for (const warning of result.warnings) {
+						logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
+					}
+				} catch {
+					// Silently skip if component file cannot be read/parsed
+				}
+			}
+		}
+
 		if (interactive) {
 			const result = await promptForScreen(route.fullPath, screenMeta)
 
@@ -210,19 +261,34 @@ async function generateFromRoutesFile(
 			const content = generateScreenMetaContent(result.meta, {
 				owner: result.owner,
 				tags: result.tags,
+				dependsOn: detectedApis,
 			})
 
 			if (dryRun) {
-				logDryRunOutput(metaPath, result.meta, result.owner, result.tags)
+				logDryRunOutput(
+					metaPath,
+					result.meta,
+					result.owner,
+					result.tags,
+					detectedApis,
+				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
 				created++
 			}
 		} else {
-			const content = generateScreenMetaContent(screenMeta)
+			const content = generateScreenMetaContent(screenMeta, {
+				dependsOn: detectedApis,
+			})
 
 			if (dryRun) {
-				logDryRunOutput(metaPath, screenMeta)
+				logDryRunOutput(
+					metaPath,
+					screenMeta,
+					undefined,
+					undefined,
+					detectedApis,
+				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
 				created++
@@ -238,6 +304,8 @@ export interface GenerateFromRoutesPatternOptions {
 	readonly force: boolean
 	readonly interactive: boolean
 	readonly ignore: readonly string[]
+	readonly detectApi: boolean
+	readonly apiIntegration?: ApiIntegrationConfig
 }
 
 /**
@@ -248,7 +316,8 @@ export async function generateFromRoutesPattern(
 	cwd: string,
 	options: GenerateFromRoutesPatternOptions,
 ): Promise<void> {
-	const { dryRun, force, interactive, ignore } = options
+	const { dryRun, force, interactive, ignore, detectApi, apiIntegration } =
+		options
 
 	logger.info("Scanning for route files...")
 	logger.blank()
@@ -290,6 +359,24 @@ export async function generateFromRoutesPattern(
 		// Generate screen metadata from path
 		const screenMeta = inferScreenMeta(routeDir, routesPattern)
 
+		// Detect API dependencies if enabled
+		let detectedApis: string[] = []
+		if (detectApi && apiIntegration) {
+			const absoluteRouteFile = join(cwd, routeFile)
+			if (existsSync(absoluteRouteFile)) {
+				try {
+					const routeContent = readFileSync(absoluteRouteFile, "utf-8")
+					const result = analyzeApiImports(routeContent, apiIntegration)
+					detectedApis = result.imports.map((i) => i.dependsOnName)
+					for (const warning of result.warnings) {
+						logger.warn(`${logger.path(routeFile)}: ${warning}`)
+					}
+				} catch {
+					// Silently skip if route file cannot be read/parsed
+				}
+			}
+		}
+
 		if (interactive) {
 			const result = await promptForScreen(routeFile, screenMeta)
 
@@ -302,19 +389,34 @@ export async function generateFromRoutesPattern(
 			const content = generateScreenMetaContent(result.meta, {
 				owner: result.owner,
 				tags: result.tags,
+				dependsOn: detectedApis,
 			})
 
 			if (dryRun) {
-				logDryRunOutput(metaPath, result.meta, result.owner, result.tags)
+				logDryRunOutput(
+					metaPath,
+					result.meta,
+					result.owner,
+					result.tags,
+					detectedApis,
+				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
 				created++
 			}
 		} else {
-			const content = generateScreenMetaContent(screenMeta)
+			const content = generateScreenMetaContent(screenMeta, {
+				dependsOn: detectedApis,
+			})
 
 			if (dryRun) {
-				logDryRunOutput(metaPath, screenMeta)
+				logDryRunOutput(
+					metaPath,
+					screenMeta,
+					undefined,
+					undefined,
+					detectedApis,
+				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
 				created++
@@ -390,6 +492,7 @@ function logDryRunOutput(
 	meta: InferredScreenMeta,
 	owner?: string[],
 	tags?: string[],
+	dependsOn?: string[],
 ): void {
 	logger.step(`Would create: ${logger.path(metaPath)}`)
 	logger.log(`    ${logger.dim(`id: "${meta.id}"`)}`)
@@ -403,6 +506,11 @@ function logDryRunOutput(
 	if (tags && tags.length > 0) {
 		logger.log(
 			`    ${logger.dim(`tags: [${tags.map((t) => `"${t}"`).join(", ")}]`)}`,
+		)
+	}
+	if (dependsOn && dependsOn.length > 0) {
+		logger.log(
+			`    ${logger.dim(`dependsOn: [${dependsOn.map((d) => `"${d}"`).join(", ")}]`)}`,
 		)
 	}
 	logger.blank()
@@ -586,6 +694,7 @@ function inferScreenMeta(
 interface GenerateOptions {
 	owner?: string[]
 	tags?: string[]
+	dependsOn?: string[]
 }
 
 /**
@@ -601,10 +710,22 @@ function generateScreenMetaContent(
 		options?.tags && options.tags.length > 0
 			? options.tags
 			: [meta.id.split(".")[0] || "general"]
+	const dependsOn = options?.dependsOn ?? []
 
 	const ownerStr =
 		owner.length > 0 ? `[${owner.map((o) => `"${o}"`).join(", ")}]` : "[]"
 	const tagsStr = `[${tags.map((t) => `"${t}"`).join(", ")}]`
+	const dependsOnStr =
+		dependsOn.length > 0
+			? `[${dependsOn.map((d) => `"${d}"`).join(", ")}]`
+			: "[]"
+
+	// Generate dependsOn comment based on whether APIs were detected
+	const dependsOnComment =
+		dependsOn.length > 0
+			? "// Auto-detected API dependencies (add more as needed)"
+			: `// APIs/services this screen depends on (for impact analysis)
+	// Example: ["UserAPI.getProfile", "PaymentService.checkout"]`
 
 	return `import { defineScreen } from "@screenbook/core"
 
@@ -619,9 +740,8 @@ export const screen = defineScreen({
 	// Tags for filtering in the catalog
 	tags: ${tagsStr},
 
-	// APIs/services this screen depends on (for impact analysis)
-	// Example: ["UserAPI.getProfile", "PaymentService.checkout"]
-	dependsOn: [],
+	${dependsOnComment}
+	dependsOn: ${dependsOnStr},
 
 	// Screen IDs that can navigate to this screen
 	entryPoints: [],
