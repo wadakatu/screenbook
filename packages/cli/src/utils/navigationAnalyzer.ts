@@ -63,6 +63,7 @@ export type NavigationFramework =
 	| "react-router"
 	| "vue-router"
 	| "angular"
+	| "solid-router"
 
 /**
  * Analyze a file's content for navigation patterns.
@@ -72,6 +73,7 @@ export type NavigationFramework =
  * - React Router: `<Link to="/path">`, `navigate("/path")`
  * - Vue Router: `router.push("/path")`, `router.replace("/path")`, `router.push({ path: "/path" })`
  * - Angular: `router.navigate(['/path'])`, `router.navigateByUrl('/path')`
+ * - Solid Router: `<A href="/path">`, `navigate("/path")`
  *
  * @param content - The file content to analyze
  * @param framework - The navigation framework to detect
@@ -161,12 +163,15 @@ function extractLinkNavigation(
 	}
 
 	const componentName = node.name.name
-	if (componentName !== "Link") {
+	// Solid Router uses <A> component, others use <Link>
+	if (componentName !== "Link" && componentName !== "A") {
 		return null
 	}
 
 	// Determine which attribute to look for based on framework
-	const attrName = framework === "nextjs" ? "href" : "to"
+	// Next.js and Solid Router use href, React Router uses to
+	const attrName =
+		framework === "nextjs" || framework === "solid-router" ? "href" : "to"
 
 	for (const attr of node.attributes || []) {
 		if (
@@ -221,7 +226,7 @@ function extractLinkNavigation(
 				// Dynamic expression - add warning with actionable guidance
 				const line = node.loc?.start.line ?? 0
 				warnings.push(
-					`Dynamic Link ${attrName} at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+					`Dynamic ${componentName} ${attrName} at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 				)
 			}
 		}
@@ -265,9 +270,9 @@ function extractCallNavigation(
 		return extractPathFromCallArgs(node, "router-push", warnings)
 	}
 
-	// navigate() - React Router
+	// navigate() - React Router or Solid Router
 	if (
-		framework === "react-router" &&
+		(framework === "react-router" || framework === "solid-router") &&
 		callee?.type === "Identifier" &&
 		callee.name === "navigate"
 	) {
@@ -575,6 +580,11 @@ export function detectNavigationFramework(
 	// Check for Angular Router patterns
 	if (content.includes("@angular/router")) {
 		return { framework: "angular", detected: true }
+	}
+
+	// Check for Solid Router patterns
+	if (content.includes("@solidjs/router")) {
+		return { framework: "solid-router", detected: true }
 	}
 
 	// Check for React Router patterns

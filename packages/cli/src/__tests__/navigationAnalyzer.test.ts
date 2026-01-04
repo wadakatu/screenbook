@@ -706,6 +706,288 @@ class MyComponent {
 		})
 	})
 
+	describe("Solid Router patterns", () => {
+		it("should detect A component with href", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Navigation() {
+  return <A href="/users">Users</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+			expect(result.navigations.at(0)?.type).toBe("link")
+		})
+
+		it("should detect A component with JSX expression href", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Navigation() {
+  return <A href={"/dashboard"}>Dashboard</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/dashboard")
+			expect(result.navigations.at(0)?.screenId).toBe("dashboard")
+			expect(result.navigations.at(0)?.type).toBe("link")
+		})
+
+		it("should detect A component with static template literal href", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Navigation() {
+  return <A href={\`/settings\`}>Settings</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/settings")
+			expect(result.navigations.at(0)?.screenId).toBe("settings")
+		})
+
+		it("should detect navigate() function call", () => {
+			const content = `
+import { useNavigate } from "@solidjs/router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+
+  return (
+    <button onClick={() => navigate('/profile')}>
+      Go to Profile
+    </button>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/profile")
+			expect(result.navigations.at(0)?.screenId).toBe("profile")
+			expect(result.navigations.at(0)?.type).toBe("navigate")
+		})
+
+		it("should detect navigate() with static template literal", () => {
+			const content = `
+import { useNavigate } from "@solidjs/router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  navigate(\`/login\`)
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/login")
+			expect(result.navigations.at(0)?.screenId).toBe("login")
+		})
+
+		it("should warn on dynamic navigate() argument", () => {
+			const content = `
+import { useNavigate } from "@solidjs/router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  const path = "/dynamic"
+  navigate(path)
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic navigation path")
+		})
+
+		it("should warn on dynamic A href", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Navigation(props) {
+  return <A href={props.path}>Link</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic A href")
+		})
+
+		it("should detect multiple navigation patterns", () => {
+			const content = `
+import { A, useNavigate } from "@solidjs/router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+
+  return (
+    <div>
+      <A href="/users">Users</A>
+      <A href="/settings">Settings</A>
+      <button onClick={() => navigate("/profile")}>Profile</button>
+    </div>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(3)
+			expect(result.navigations.map((n) => n.screenId).sort()).toEqual([
+				"profile",
+				"settings",
+				"users",
+			])
+		})
+
+		it("should skip external URLs in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return (
+    <>
+      <A href="https://example.com">External HTTPS</A>
+      <A href="http://example.com">External HTTP</A>
+      <A href="//example.com">Protocol-relative</A>
+      <A href="/internal">Internal</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/internal")
+		})
+
+		it("should skip hash-only links in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function HashLink() {
+  return <A href="#section">Jump to Section</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(0)
+		})
+
+		it("should skip mailto and tel links in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function ContactLinks() {
+  return (
+    <>
+      <A href="mailto:test@example.com">Email</A>
+      <A href="tel:+1234567890">Phone</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(0)
+		})
+
+		it("should strip query params from A href when generating screenId", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return <A href="/users?tab=active">Users</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users?tab=active")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+		})
+
+		it("should strip hash from A href when generating screenId", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return <A href="/docs/api#section-1">Docs</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/docs/api#section-1")
+			expect(result.navigations.at(0)?.screenId).toBe("docs.api")
+		})
+
+		it("should handle root path in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function HomeLink() {
+  return <A href="/">Home</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/")
+			expect(result.navigations.at(0)?.screenId).toBe("home")
+		})
+
+		it("should convert nested paths to screen IDs", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return (
+    <>
+      <A href="/users/profile">Profile</A>
+      <A href="/billing/invoices">Invoices</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(2)
+			expect(result.navigations.at(0)?.screenId).toBe("users.profile")
+			expect(result.navigations.at(1)?.screenId).toBe("billing.invoices")
+		})
+
+		it("should deduplicate same navigation targets", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Page() {
+  return (
+    <>
+      <A href="/users">Users 1</A>
+      <A href="/users">Users 2</A>
+      <A href="/users">Users 3</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+		})
+	})
+
 	describe("edge cases", () => {
 		it("should handle multiple navigation patterns in one file", () => {
 			const content = `
@@ -963,6 +1245,30 @@ import Link from "next/link"
 		const content = `
 import Link from "next/link"
 // This file might reference @angular/router
+`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Solid Router from @solidjs/router import", () => {
+		const content = `import { A } from "@solidjs/router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("solid-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Solid Router from @solidjs/router with useNavigate", () => {
+		const content = `import { useNavigate } from "@solidjs/router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("solid-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should prioritize Next.js over Solid Router when both present", () => {
+		const content = `
+import Link from "next/link"
+// This file might reference @solidjs/router
 `
 		const result = detectNavigationFramework(content)
 		expect(result.framework).toBe("nextjs")
