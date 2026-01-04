@@ -5,7 +5,7 @@ prev: false
 title: "MockButtonElement"
 ---
 
-Defined in: [packages/core/src/types.ts:159](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L159)
+Defined in: [packages/core/src/types.ts:159](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L159)
 
 Button element with optional navigation and styling
 
@@ -19,7 +19,7 @@ Button element with optional navigation and styling
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:153](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L153)
+Defined in: [packages/core/src/types.ts:153](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L153)
 
 Display label for the element
 
@@ -33,7 +33,7 @@ Display label for the element
 
 > `optional` **navigateTo**: `string`
 
-Defined in: [packages/core/src/types.ts:162](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L162)
+Defined in: [packages/core/src/types.ts:162](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L162)
 
 Screen ID to navigate to when clicked
 
@@ -43,7 +43,7 @@ Screen ID to navigate to when clicked
 
 > **type**: `"button"`
 
-Defined in: [packages/core/src/types.ts:160](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L160)
+Defined in: [packages/core/src/types.ts:160](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L160)
 
 Element type identifier
 
@@ -57,6 +57,6 @@ Element type identifier
 
 > `optional` **variant**: `"primary"` \| `"secondary"` \| `"danger"`
 
-Defined in: [packages/core/src/types.ts:164](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L164)
+Defined in: [packages/core/src/types.ts:164](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L164)
 
 Visual style variant

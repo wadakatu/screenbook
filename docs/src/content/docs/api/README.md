@@ -8,6 +8,7 @@ title: "@screenbook/core"
 ## Interfaces
 
 - [AdoptionConfig](/screenbook/api/interfaces/adoptionconfig/)
+- [ApiIntegrationConfig](/screenbook/api/interfaces/apiintegrationconfig/)
 - [Config](/screenbook/api/interfaces/config/)
 - [ConfigInput](/screenbook/api/interfaces/configinput/)
 - [MockButtonElement](/screenbook/api/interfaces/mockbuttonelement/)
