@@ -821,7 +821,7 @@ export function Navigation(props) {
 
 			expect(result.navigations).toHaveLength(0)
 			expect(result.warnings).toHaveLength(1)
-			expect(result.warnings[0]).toContain("Dynamic Link href")
+			expect(result.warnings[0]).toContain("Dynamic A href")
 		})
 
 		it("should detect multiple navigation patterns", () => {
@@ -848,6 +848,143 @@ export function Dashboard() {
 				"settings",
 				"users",
 			])
+		})
+
+		it("should skip external URLs in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return (
+    <>
+      <A href="https://example.com">External HTTPS</A>
+      <A href="http://example.com">External HTTP</A>
+      <A href="//example.com">Protocol-relative</A>
+      <A href="/internal">Internal</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/internal")
+		})
+
+		it("should skip hash-only links in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function HashLink() {
+  return <A href="#section">Jump to Section</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(0)
+		})
+
+		it("should skip mailto and tel links in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function ContactLinks() {
+  return (
+    <>
+      <A href="mailto:test@example.com">Email</A>
+      <A href="tel:+1234567890">Phone</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(0)
+		})
+
+		it("should strip query params from A href when generating screenId", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return <A href="/users?tab=active">Users</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users?tab=active")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+		})
+
+		it("should strip hash from A href when generating screenId", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return <A href="/docs/api#section-1">Docs</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/docs/api#section-1")
+			expect(result.navigations.at(0)?.screenId).toBe("docs.api")
+		})
+
+		it("should handle root path in A component", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function HomeLink() {
+  return <A href="/">Home</A>
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/")
+			expect(result.navigations.at(0)?.screenId).toBe("home")
+		})
+
+		it("should convert nested paths to screen IDs", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Links() {
+  return (
+    <>
+      <A href="/users/profile">Profile</A>
+      <A href="/billing/invoices">Invoices</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(2)
+			expect(result.navigations.at(0)?.screenId).toBe("users.profile")
+			expect(result.navigations.at(1)?.screenId).toBe("billing.invoices")
+		})
+
+		it("should deduplicate same navigation targets", () => {
+			const content = `
+import { A } from "@solidjs/router"
+
+export function Page() {
+  return (
+    <>
+      <A href="/users">Users 1</A>
+      <A href="/users">Users 2</A>
+      <A href="/users">Users 3</A>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "solid-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.screenId).toBe("users")
 		})
 	})
 

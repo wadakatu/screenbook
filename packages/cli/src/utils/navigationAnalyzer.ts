@@ -226,7 +226,7 @@ function extractLinkNavigation(
 				// Dynamic expression - add warning with actionable guidance
 				const line = node.loc?.start.line ?? 0
 				warnings.push(
-					`Dynamic Link ${attrName} at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+					`Dynamic ${componentName} ${attrName} at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 				)
 			}
 		}
