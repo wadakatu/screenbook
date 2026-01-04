@@ -17,6 +17,7 @@
 		"docs:build": "pnpm --filter screenbook-docs run build",
 		"docs:preview": "pnpm --filter screenbook-docs run preview",
 		"docs:generate": "pnpm --filter screenbook-docs run generate:cli",
+		"generate:readme": "tsx scripts/generate-readme-tables.ts",
 		"changeset": "changeset",
 		"version": "changeset version",
 		"release": "pnpm build && pnpm publish -r --access public"
@@ -27,6 +28,7 @@
 		"@changesets/changelog-github": "^0.5.2",
 		"@changesets/cli": "^2.29.8",
 		"@vitest/coverage-v8": "^4.0.16",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.0",
 		"vitest": "^4.0.0"
 	},
