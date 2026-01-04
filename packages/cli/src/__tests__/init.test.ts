@@ -121,6 +121,33 @@ describe("init command", () => {
 	})
 })
 
+describe("generateConfigTemplate", () => {
+	it("should generate config with framework-specific patterns", async () => {
+		const { generateConfigTemplate } = await import("../commands/init.js")
+
+		const result = generateConfigTemplate({
+			name: "Next.js (App Router)",
+			metaPattern: "app/**/screen.meta.ts",
+			routesPattern: "app/**/page.tsx",
+		})
+
+		expect(result).toContain("defineConfig")
+		expect(result).toContain("Next.js (App Router)")
+		expect(result).toContain("app/**/screen.meta.ts")
+		expect(result).toContain("app/**/page.tsx")
+	})
+
+	it("should generate fallback config when no framework detected", async () => {
+		const { generateConfigTemplate } = await import("../commands/init.js")
+
+		const result = generateConfigTemplate(null)
+
+		expect(result).toContain("defineConfig")
+		expect(result).toContain("src/**/screen.meta.ts")
+		expect(result).toContain("// routesPattern:")
+	})
+})
+
 describe("resolveOption", () => {
 	const originalEnv = { ...process.env }
 
