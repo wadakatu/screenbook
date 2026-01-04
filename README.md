@@ -40,14 +40,15 @@ npm i -D screenbook
 # or
 pnpm add -D screenbook
 
-# Initialize configuration
+# Initialize and start
 npx screenbook init
-
-# Start the UI
-npx screenbook dev
 ```
 
-Open http://localhost:4321 and explore your screen catalog.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/gifs/screenbook-init.gif" alt="Screenbook Init Demo" width="800">
+</p>
+
+That's it! `screenbook init` detects your framework, generates screen metadata, and starts the UI server at http://localhost:4321.
 
 **For full documentation, visit [wadakatu.github.io/screenbook](https://wadakatu.github.io/screenbook).**
 
@@ -116,19 +117,21 @@ Sound familiar?
 
 ## Framework Support
 
-### File-based Routing ✅
+<!-- FRAMEWORK_TABLE_START -->
+
+### File-based Routing
 
 | Framework | Status | Auto-generate |
 |-----------|--------|---------------|
-| **Next.js** (App Router) | ✅ Supported | ✅ |
-| **Next.js** (Pages Router) | ✅ Supported | ✅ |
+| **Next.js (App Router)** | ✅ Supported | ✅ |
+| **Next.js (Pages Router)** | ✅ Supported | ✅ |
 | **Nuxt** | ✅ Supported | ✅ |
 | **Remix** | ✅ Supported | ✅ |
 | **Astro** | ✅ Supported | ✅ |
 | **SvelteKit** | ✅ Supported | ✅ |
-| **SolidStart** | 🚧 Planned | 🚧 |
-| **QwikCity** | 🚧 Planned | 🚧 |
-| **TanStack Start** | 🚧 Planned | 🚧 |
+| **SolidStart** | ✅ Supported | ✅ |
+| **QwikCity** | ✅ Supported | ✅ |
+| **TanStack Start** | ✅ Supported | ✅ |
 
 ### Config-based Routing
 
@@ -136,13 +139,15 @@ Sound familiar?
 |-----------|--------|---------------|
 | **React Router** | ✅ Supported | ✅ |
 | **Vue Router** | ✅ Supported | ✅ |
-| **Angular Router** | 🚧 Planned | 🚧 |
-| **TanStack Router** | 🚧 Planned | 🚧 |
-| **Solid Router** | 🚧 Planned | 🚧 |
+| **TanStack Router** | ✅ Supported | ✅ |
+| **Solid Router** | ✅ Supported | ✅ |
+| **Angular Router** | ✅ Supported | ✅ |
 
 > **Note:** For config-based routers, configure `routesFile` in your screenbook config to enable automatic screen.meta.ts generation.
 >
 > Even without auto-generate, you can manually create `screen.meta.ts` files for any framework.
+
+<!-- FRAMEWORK_TABLE_END -->
 
 ---
 

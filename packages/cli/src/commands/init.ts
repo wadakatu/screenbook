@@ -320,11 +320,13 @@ export const initCommand = define({
 			type: "boolean",
 			description: "Auto-generate screen.meta.ts files (--no-generate to skip)",
 			default: undefined,
+			negatable: true,
 		},
 		dev: {
 			type: "boolean",
 			description: "Start development server after init (--no-dev to skip)",
 			default: undefined,
+			negatable: true,
 		},
 		yes: {
 			type: "boolean",
