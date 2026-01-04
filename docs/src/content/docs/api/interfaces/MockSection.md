@@ -5,7 +5,7 @@ prev: false
 title: "MockSection"
 ---
 
-Defined in: [packages/core/src/types.ts:244](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L244)
+Defined in: [packages/core/src/types.ts:244](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L244)
 
 Section containing grouped mock elements
 
@@ -15,7 +15,7 @@ Section containing grouped mock elements
 
 > `optional` **children**: `MockSection`[]
 
-Defined in: [packages/core/src/types.ts:252](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L252)
+Defined in: [packages/core/src/types.ts:252](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L252)
 
 Nested child sections
 
@@ -25,7 +25,7 @@ Nested child sections
 
 > **elements**: [`MockElement`](/screenbook/api/type-aliases/mockelement/)[]
 
-Defined in: [packages/core/src/types.ts:250](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L250)
+Defined in: [packages/core/src/types.ts:250](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L250)
 
 Elements within this section
 
@@ -35,7 +35,7 @@ Elements within this section
 
 > `optional` **layout**: [`MockLayout`](/screenbook/api/type-aliases/mocklayout/)
 
-Defined in: [packages/core/src/types.ts:248](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L248)
+Defined in: [packages/core/src/types.ts:248](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L248)
 
 Layout direction (default: "vertical")
 
@@ -45,6 +45,6 @@ Layout direction (default: "vertical")
 
 > `optional` **title**: `string`
 
-Defined in: [packages/core/src/types.ts:246](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L246)
+Defined in: [packages/core/src/types.ts:246](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L246)
 
 Optional section title

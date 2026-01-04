@@ -5,7 +5,7 @@ prev: false
 title: "ConfigInput"
 ---
 
-Defined in: [packages/core/src/types.ts:479](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L479)
+Defined in: [packages/core/src/types.ts:537](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L537)
 
 Input type for defineConfig function.
 All fields with defaults are optional in input.
@@ -25,9 +25,20 @@ defineConfig({
 
 > `optional` **adoption**: [`AdoptionConfig`](/screenbook/api/interfaces/adoptionconfig/)
 
-Defined in: [packages/core/src/types.ts:509](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L509)
+Defined in: [packages/core/src/types.ts:577](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L577)
 
 Progressive adoption configuration
+
+***
+
+### apiIntegration?
+
+> `optional` **apiIntegration**: [`ApiIntegrationConfig`](/screenbook/api/interfaces/apiintegrationconfig/)
+
+Defined in: [packages/core/src/types.ts:583](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L583)
+
+API integration configuration for auto-detecting dependencies
+from OpenAPI-generated clients
 
 ***
 
@@ -35,7 +46,7 @@ Progressive adoption configuration
 
 > `optional` **ignore**: `string`[]
 
-Defined in: [packages/core/src/types.ts:504](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L504)
+Defined in: [packages/core/src/types.ts:572](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L572)
 
 Patterns to ignore when scanning.
 Defaults to node_modules and .git directories.
@@ -46,7 +57,7 @@ Defaults to node_modules and .git directories.
 
 > `optional` **metaPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:492](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L492)
+Defined in: [packages/core/src/types.ts:550](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L550)
 
 Glob pattern for screen metadata files
 
@@ -68,7 +79,7 @@ Glob pattern for screen metadata files
 
 > `optional` **outDir**: `string`
 
-Defined in: [packages/core/src/types.ts:485](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L485)
+Defined in: [packages/core/src/types.ts:543](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L543)
 
 Output directory for generated files
 
@@ -86,13 +97,33 @@ Output directory for generated files
 
 ***
 
+### routesFile?
+
+> `optional` **routesFile**: `string`
+
+Defined in: [packages/core/src/types.ts:566](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L566)
+
+Path to a router configuration file (for config-based routing).
+Use this for frameworks like Vue Router, React Router, etc.
+Cannot be used together with routesPattern.
+
+#### Example
+
+```ts
+"src/router/routes.ts"
+```
+
+***
+
 ### routesPattern?
 
 > `optional` **routesPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:498](https://github.com/wadakatu/screenbook/blob/97bbcadcb1d6bfacd665bf2c8086acfbfa058a7e/packages/core/src/types.ts#L498)
+Defined in: [packages/core/src/types.ts:558](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L558)
 
-Glob pattern for route files (for generate/lint commands)
+Glob pattern for route files (for generate/lint commands).
+Use this for file-based routing frameworks.
+Cannot be used together with routesFile.
 
 #### Example
 

@@ -423,6 +423,46 @@ export const adoptionSchema = z.object({
 })
 
 /**
+ * API integration configuration for auto-detecting dependencies from
+ * OpenAPI-generated clients (Orval, openapi-typescript, etc.).
+ *
+ * @example
+ * ```ts
+ * const apiIntegration: ApiIntegrationConfig = {
+ *   clientPackages: ["@/api/generated", "@company/backend-client"],
+ *   extractApiName: (name) => name.replace(/^use/, ""),
+ * }
+ * ```
+ */
+export interface ApiIntegrationConfig {
+	/**
+	 * Package names to scan for API client imports.
+	 * These should match the import paths used in your code.
+	 * @example ["@/api/generated"]
+	 * @example ["@company/backend-client", "@company/auth-client"]
+	 */
+	clientPackages: string[]
+
+	/**
+	 * Optional transform function to convert import name to dependsOn format.
+	 * If not provided, the import name is used as-is.
+	 * @example (name) => name.replace(/^use/, "")
+	 * @example (name) => `API.${name}`
+	 */
+	extractApiName?: (importName: string) => string
+}
+
+/**
+ * Schema for API integration configuration (runtime validation)
+ * @internal
+ */
+export const apiIntegrationSchema = z.object({
+	clientPackages: z.array(z.string()).min(1),
+	// Function validation is complex in Zod v4, so we use z.any() for the optional transform function
+	extractApiName: z.any().optional(),
+})
+
+/**
  * Screenbook configuration options.
  */
 export interface Config {
@@ -473,6 +513,13 @@ export interface Config {
 	 * @example { mode: "progressive", includePatterns: ["src/pages/billing/**"], minimumCoverage: 80 }
 	 */
 	adoption?: AdoptionConfig
+
+	/**
+	 * API integration configuration for auto-detecting dependencies
+	 * from OpenAPI-generated clients (Orval, openapi-typescript, etc.)
+	 * @example { clientPackages: ["@/api/generated"] }
+	 */
+	apiIntegration?: ApiIntegrationConfig
 }
 
 /**
@@ -528,6 +575,12 @@ export interface ConfigInput {
 	 * Progressive adoption configuration
 	 */
 	adoption?: AdoptionConfig
+
+	/**
+	 * API integration configuration for auto-detecting dependencies
+	 * from OpenAPI-generated clients
+	 */
+	apiIntegration?: ApiIntegrationConfig
 }
 
 /**
@@ -542,6 +595,7 @@ export const configSchema = z
 		routesFile: z.string().optional(),
 		ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
 		adoption: adoptionSchema.optional(),
+		apiIntegration: apiIntegrationSchema.optional(),
 	})
 	.refine((data) => !(data.routesPattern && data.routesFile), {
 		message:
