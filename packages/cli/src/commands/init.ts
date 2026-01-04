@@ -166,6 +166,7 @@ async function runGenerate(routesPattern: string, cwd: string): Promise<void> {
 		interactive: false,
 		ignore: ["**/node_modules/**"],
 		detectApi: false,
+		detectNavigation: false,
 		apiIntegration: undefined,
 	}
 

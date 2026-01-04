@@ -10,6 +10,10 @@ import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger } from "../utils/logger.js"
 import {
+	analyzeNavigation,
+	detectNavigationFramework,
+} from "../utils/navigationAnalyzer.js"
+import {
 	detectRouterType,
 	parseReactRouterConfig,
 } from "../utils/reactRouterParser.js"
@@ -56,6 +60,13 @@ export const generateCommand = define({
 				"Detect API dependencies from imports (requires apiIntegration config)",
 			default: false,
 		},
+		detectNavigation: {
+			type: "boolean",
+			short: "N",
+			description:
+				"Detect navigation targets from code (Link, router.push, navigate)",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
 		const config = await loadConfig(ctx.values.config)
@@ -64,6 +75,7 @@ export const generateCommand = define({
 		const force = ctx.values.force ?? false
 		const interactive = ctx.values.interactive ?? false
 		const detectApi = ctx.values.detectApi ?? false
+		const detectNavigation = ctx.values.detectNavigation ?? false
 
 		// Check for routes configuration
 		if (!config.routesPattern && !config.routesFile) {
@@ -96,6 +108,7 @@ export const generateCommand = define({
 				force,
 				interactive,
 				detectApi,
+				detectNavigation,
 				apiIntegration: config.apiIntegration,
 			})
 			return
@@ -108,6 +121,7 @@ export const generateCommand = define({
 			interactive,
 			ignore: config.ignore,
 			detectApi,
+			detectNavigation,
 			apiIntegration: config.apiIntegration,
 		})
 	},
@@ -118,6 +132,7 @@ interface GenerateFromRoutesFileOptions {
 	force: boolean
 	interactive: boolean
 	detectApi: boolean
+	detectNavigation: boolean
 	apiIntegration?: ApiIntegrationConfig
 }
 
@@ -129,7 +144,14 @@ async function generateFromRoutesFile(
 	cwd: string,
 	options: GenerateFromRoutesFileOptions,
 ): Promise<void> {
-	const { dryRun, force, interactive, detectApi, apiIntegration } = options
+	const {
+		dryRun,
+		force,
+		interactive,
+		detectApi,
+		detectNavigation,
+		apiIntegration,
+	} = options
 	const absoluteRoutesFile = resolve(cwd, routesFile)
 
 	// Check if routes file exists
@@ -252,6 +274,28 @@ async function generateFromRoutesFile(
 			}
 		}
 
+		// Detect navigation targets if enabled
+		let detectedNext: string[] = []
+		if (detectNavigation && route.componentPath) {
+			const componentAbsPath = resolve(cwd, route.componentPath)
+			if (existsSync(componentAbsPath)) {
+				try {
+					const componentContent = readFileSync(componentAbsPath, "utf-8")
+					const framework = detectNavigationFramework(componentContent)
+					const result = analyzeNavigation(componentContent, framework)
+					detectedNext = result.navigations.map((n) => n.screenId)
+					for (const warning of result.warnings) {
+						logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
+					}
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error)
+					logger.warn(
+						`${logger.path(route.componentPath)}: Could not analyze for navigation: ${message}`,
+					)
+				}
+			}
+		}
+
 		if (interactive) {
 			const result = await promptForScreen(route.fullPath, screenMeta)
 
@@ -265,6 +309,7 @@ async function generateFromRoutesFile(
 				owner: result.owner,
 				tags: result.tags,
 				dependsOn: detectedApis,
+				next: detectedNext,
 			})
 
 			if (dryRun) {
@@ -274,6 +319,7 @@ async function generateFromRoutesFile(
 					result.owner,
 					result.tags,
 					detectedApis,
+					detectedNext,
 				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
@@ -282,6 +328,7 @@ async function generateFromRoutesFile(
 		} else {
 			const content = generateScreenMetaContent(screenMeta, {
 				dependsOn: detectedApis,
+				next: detectedNext,
 			})
 
 			if (dryRun) {
@@ -291,6 +338,7 @@ async function generateFromRoutesFile(
 					undefined,
 					undefined,
 					detectedApis,
+					detectedNext,
 				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
@@ -308,6 +356,7 @@ export interface GenerateFromRoutesPatternOptions {
 	readonly interactive: boolean
 	readonly ignore: readonly string[]
 	readonly detectApi: boolean
+	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
 }
 
@@ -319,8 +368,15 @@ export async function generateFromRoutesPattern(
 	cwd: string,
 	options: GenerateFromRoutesPatternOptions,
 ): Promise<void> {
-	const { dryRun, force, interactive, ignore, detectApi, apiIntegration } =
-		options
+	const {
+		dryRun,
+		force,
+		interactive,
+		ignore,
+		detectApi,
+		detectNavigation,
+		apiIntegration,
+	} = options
 
 	logger.info("Scanning for route files...")
 	logger.blank()
@@ -383,6 +439,28 @@ export async function generateFromRoutesPattern(
 			}
 		}
 
+		// Detect navigation targets if enabled
+		let detectedNext: string[] = []
+		if (detectNavigation) {
+			const absoluteRouteFile = join(cwd, routeFile)
+			if (existsSync(absoluteRouteFile)) {
+				try {
+					const routeContent = readFileSync(absoluteRouteFile, "utf-8")
+					const framework = detectNavigationFramework(routeContent)
+					const result = analyzeNavigation(routeContent, framework)
+					detectedNext = result.navigations.map((n) => n.screenId)
+					for (const warning of result.warnings) {
+						logger.warn(`${logger.path(routeFile)}: ${warning}`)
+					}
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error)
+					logger.warn(
+						`${logger.path(routeFile)}: Could not analyze for navigation: ${message}`,
+					)
+				}
+			}
+		}
+
 		if (interactive) {
 			const result = await promptForScreen(routeFile, screenMeta)
 
@@ -396,6 +474,7 @@ export async function generateFromRoutesPattern(
 				owner: result.owner,
 				tags: result.tags,
 				dependsOn: detectedApis,
+				next: detectedNext,
 			})
 
 			if (dryRun) {
@@ -405,6 +484,7 @@ export async function generateFromRoutesPattern(
 					result.owner,
 					result.tags,
 					detectedApis,
+					detectedNext,
 				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
@@ -413,6 +493,7 @@ export async function generateFromRoutesPattern(
 		} else {
 			const content = generateScreenMetaContent(screenMeta, {
 				dependsOn: detectedApis,
+				next: detectedNext,
 			})
 
 			if (dryRun) {
@@ -422,6 +503,7 @@ export async function generateFromRoutesPattern(
 					undefined,
 					undefined,
 					detectedApis,
+					detectedNext,
 				)
 				created++
 			} else if (safeWriteFile(absoluteMetaPath, metaPath, content)) {
@@ -499,6 +581,7 @@ function logDryRunOutput(
 	owner?: string[],
 	tags?: string[],
 	dependsOn?: string[],
+	next?: string[],
 ): void {
 	logger.step(`Would create: ${logger.path(metaPath)}`)
 	logger.log(`    ${logger.dim(`id: "${meta.id}"`)}`)
@@ -517,6 +600,11 @@ function logDryRunOutput(
 	if (dependsOn && dependsOn.length > 0) {
 		logger.log(
 			`    ${logger.dim(`dependsOn: [${dependsOn.map((d) => `"${d}"`).join(", ")}]`)}`,
+		)
+	}
+	if (next && next.length > 0) {
+		logger.log(
+			`    ${logger.dim(`next: [${next.map((n) => `"${n}"`).join(", ")}]`)}`,
 		)
 	}
 	logger.blank()
@@ -701,6 +789,7 @@ interface GenerateOptions {
 	owner?: string[]
 	tags?: string[]
 	dependsOn?: string[]
+	next?: string[]
 }
 
 /**
@@ -717,6 +806,7 @@ function generateScreenMetaContent(
 			? options.tags
 			: [meta.id.split(".")[0] || "general"]
 	const dependsOn = options?.dependsOn ?? []
+	const next = options?.next ?? []
 
 	const ownerStr =
 		owner.length > 0 ? `[${owner.map((o) => `"${o}"`).join(", ")}]` : "[]"
@@ -725,6 +815,8 @@ function generateScreenMetaContent(
 		dependsOn.length > 0
 			? `[${dependsOn.map((d) => `"${d}"`).join(", ")}]`
 			: "[]"
+	const nextStr =
+		next.length > 0 ? `[${next.map((n) => `"${n}"`).join(", ")}]` : "[]"
 
 	// Generate dependsOn comment based on whether APIs were detected
 	const dependsOnComment =
@@ -732,6 +824,12 @@ function generateScreenMetaContent(
 			? "// Auto-detected API dependencies (add more as needed)"
 			: `// APIs/services this screen depends on (for impact analysis)
 	// Example: ["UserAPI.getProfile", "PaymentService.checkout"]`
+
+	// Generate next comment based on whether navigation was detected
+	const nextComment =
+		next.length > 0
+			? "// Auto-detected navigation targets (add more as needed)"
+			: "// Screen IDs this screen can navigate to"
 
 	return `import { defineScreen } from "@screenbook/core"
 
@@ -752,8 +850,8 @@ export const screen = defineScreen({
 	// Screen IDs that can navigate to this screen
 	entryPoints: [],
 
-	// Screen IDs this screen can navigate to
-	next: [],
+	${nextComment}
+	next: ${nextStr},
 })
 `
 }
