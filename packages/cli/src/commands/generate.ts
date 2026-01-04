@@ -5,6 +5,7 @@ import { define } from "gunshi"
 import prompts from "prompts"
 import { glob } from "tinyglobby"
 import { parseAngularRouterConfig } from "../utils/angularRouterParser.js"
+import { analyzeAngularComponent } from "../utils/angularTemplateAnalyzer.js"
 import { analyzeApiImports } from "../utils/apiImportAnalyzer.js"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
@@ -295,6 +296,20 @@ async function generateFromRoutesFile(
 					// Use Vue SFC analyzer for .vue files to detect RouterLink in templates
 					if (route.componentPath.endsWith(".vue")) {
 						const result = analyzeVueSFC(componentContent, route.componentPath)
+						detectedNext = [
+							...result.templateNavigations.map((n) => n.screenId),
+							...result.scriptNavigations.map((n) => n.screenId),
+						]
+						for (const warning of result.warnings) {
+							logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
+						}
+					} else if (route.componentPath.endsWith(".component.ts")) {
+						// Use Angular component analyzer for .component.ts files
+						const result = analyzeAngularComponent(
+							componentContent,
+							route.componentPath,
+							cwd,
+						)
 						detectedNext = [
 							...result.templateNavigations.map((n) => n.screenId),
 							...result.scriptNavigations.map((n) => n.screenId),
