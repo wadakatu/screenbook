@@ -1,5 +1,31 @@
 # screenbook
 
+## 1.5.0
+
+### Minor Changes
+
+- Add comprehensive navigation detection for multiple frontend frameworks
+
+  New features:
+  - **Angular template detection**: Detect `routerLink` directives in Angular component templates (both inline and external templateUrl)
+  - **Vue SFC template detection**: Detect `<RouterLink>` components in Vue Single File Components
+  - **TanStack Router support**: Detect `<Link>` components and `navigate()` calls
+  - **Solid Router support**: Detect `<A>` components and `navigate()` calls
+  - **Angular Router support**: Detect `router.navigate()` and `router.navigateByUrl()` calls
+  - **Vue Router support**: Detect `router.push()`, `router.replace()`, and object-based navigation
+  - **`--detect-navigation` flag**: Auto-detect navigation targets in components during `screenbook generate`
+  - **`--detect-api` flag**: Auto-detect API dependencies from imports during `screenbook generate`
+
+  Improvements:
+  - Extract common `ComponentAnalysisResult` type for framework analyzers
+  - Improved error handling with actionable warning messages
+  - Comprehensive test coverage for all detection patterns
+
+### Patch Changes
+
+- Updated dependencies
+  - @screenbook/cli@1.5.0
+
 ## 1.4.0
 
 ### Patch Changes
