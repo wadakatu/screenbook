@@ -1284,6 +1284,58 @@ export function Dashboard() {
 			expect(result.warnings).toHaveLength(1)
 			expect(result.warnings[0]).toContain("Object-based navigation")
 		})
+
+		it("should warn on navigate() with non-object argument", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  const path = "/dynamic"
+  navigate(path)
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("navigate()")
+			expect(result.warnings[0]).toContain("expects an object argument")
+			expect(result.warnings[0]).toContain("'to' property")
+		})
+
+		it("should warn on navigate() with no arguments", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  navigate()
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("has no arguments")
+		})
+
+		it("should warn on navigate() with dynamic template literal in object", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  const userId = "123"
+  navigate({ to: \`/users/\${userId}\` })
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Object-based navigation")
+		})
 	})
 
 	describe("edge cases", () => {
