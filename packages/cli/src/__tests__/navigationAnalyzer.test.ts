@@ -988,6 +988,356 @@ export function Page() {
 		})
 	})
 
+	describe("TanStack Router patterns", () => {
+		it("should detect Link component with to attribute", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Navigation() {
+  return <Link to="/users">Users</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+			expect(result.navigations.at(0)?.type).toBe("link")
+		})
+
+		it("should detect Link with JSX expression to", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Navigation() {
+  return <Link to={"/dashboard"}>Dashboard</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/dashboard")
+			expect(result.navigations.at(0)?.screenId).toBe("dashboard")
+			expect(result.navigations.at(0)?.type).toBe("link")
+		})
+
+		it("should detect Link with static template literal to", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Navigation() {
+  return <Link to={\`/settings\`}>Settings</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/settings")
+			expect(result.navigations.at(0)?.screenId).toBe("settings")
+		})
+
+		it("should detect navigate() with object argument", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+
+  return (
+    <button onClick={() => navigate({ to: '/profile' })}>
+      Go to Profile
+    </button>
+  )
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/profile")
+			expect(result.navigations.at(0)?.screenId).toBe("profile")
+			expect(result.navigations.at(0)?.type).toBe("navigate")
+		})
+
+		it("should detect navigate() with static template literal in object", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  navigate({ to: \`/login\` })
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/login")
+			expect(result.navigations.at(0)?.screenId).toBe("login")
+		})
+
+		it("should warn on dynamic navigate() argument", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  const path = "/dynamic"
+  navigate({ to: path })
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Object-based navigation")
+		})
+
+		it("should warn on dynamic Link to", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Navigation(props) {
+  return <Link to={props.path}>Link</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic Link to")
+		})
+
+		it("should skip external URLs in Link component", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Links() {
+  return (
+    <>
+      <Link to="https://example.com">External HTTPS</Link>
+      <Link to="http://example.com">External HTTP</Link>
+      <Link to="//example.com">Protocol-relative</Link>
+      <Link to="/internal">Internal</Link>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/internal")
+		})
+
+		it("should skip hash-only links", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function HashLink() {
+  return <Link to="#section">Jump to Section</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+		})
+
+		it("should skip mailto and tel links", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function ContactLinks() {
+  return (
+    <>
+      <Link to="mailto:test@example.com">Email</Link>
+      <Link to="tel:+1234567890">Phone</Link>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+		})
+
+		it("should strip query params when generating screenId", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Links() {
+  return <Link to="/users?tab=active">Users</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users?tab=active")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+		})
+
+		it("should strip hash when generating screenId", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Links() {
+  return <Link to="/docs/api#section-1">Docs</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/docs/api#section-1")
+			expect(result.navigations.at(0)?.screenId).toBe("docs.api")
+		})
+
+		it("should handle root path", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function HomeLink() {
+  return <Link to="/">Home</Link>
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/")
+			expect(result.navigations.at(0)?.screenId).toBe("home")
+		})
+
+		it("should convert nested paths to screen IDs", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Links() {
+  return (
+    <>
+      <Link to="/users/profile">Profile</Link>
+      <Link to="/billing/invoices">Invoices</Link>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(2)
+			expect(result.navigations.at(0)?.screenId).toBe("users.profile")
+			expect(result.navigations.at(1)?.screenId).toBe("billing.invoices")
+		})
+
+		it("should deduplicate same navigation targets", () => {
+			const content = `
+import { Link } from "@tanstack/react-router"
+
+export function Page() {
+  return (
+    <>
+      <Link to="/users">Users 1</Link>
+      <Link to="/users">Users 2</Link>
+      <Link to="/users">Users 3</Link>
+    </>
+  )
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+		})
+
+		it("should detect multiple navigation patterns", () => {
+			const content = `
+import { Link, useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+
+  return (
+    <div>
+      <Link to="/users">Users</Link>
+      <Link to="/settings">Settings</Link>
+      <button onClick={() => navigate({ to: "/profile" })}>Profile</button>
+    </div>
+  )
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(3)
+			expect(result.navigations.map((n) => n.screenId).sort()).toEqual([
+				"profile",
+				"settings",
+				"users",
+			])
+		})
+
+		it("should warn on navigate() without to property in object", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  navigate({ search: { page: 1 } })
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Object-based navigation")
+		})
+
+		it("should warn on navigate() with non-object argument", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  const path = "/dynamic"
+  navigate(path)
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("navigate()")
+			expect(result.warnings[0]).toContain("expects an object argument")
+			expect(result.warnings[0]).toContain("'to' property")
+		})
+
+		it("should warn on navigate() with no arguments", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  navigate()
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("has no arguments")
+		})
+
+		it("should warn on navigate() with dynamic template literal in object", () => {
+			const content = `
+import { useNavigate } from "@tanstack/react-router"
+
+export function Dashboard() {
+  const navigate = useNavigate()
+  const userId = "123"
+  navigate({ to: \`/users/\${userId}\` })
+}
+`
+			const result = analyzeNavigation(content, "tanstack-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Object-based navigation")
+		})
+	})
+
 	describe("edge cases", () => {
 		it("should handle multiple navigation patterns in one file", () => {
 			const content = `
@@ -1269,6 +1619,30 @@ import Link from "next/link"
 		const content = `
 import Link from "next/link"
 // This file might reference @solidjs/router
+`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect TanStack Router from @tanstack/react-router import", () => {
+		const content = `import { Link } from "@tanstack/react-router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("tanstack-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect TanStack Router from @tanstack/react-router with useNavigate", () => {
+		const content = `import { useNavigate } from "@tanstack/react-router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("tanstack-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should prioritize Next.js over TanStack Router when both present", () => {
+		const content = `
+import Link from "next/link"
+// This file might reference @tanstack/react-router
 `
 		const result = detectNavigationFramework(content)
 		expect(result.framework).toBe("nextjs")

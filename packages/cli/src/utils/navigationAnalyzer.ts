@@ -64,6 +64,7 @@ export type NavigationFramework =
 	| "vue-router"
 	| "angular"
 	| "solid-router"
+	| "tanstack-router"
 
 /**
  * Analyze a file's content for navigation patterns.
@@ -74,6 +75,7 @@ export type NavigationFramework =
  * - Vue Router: `router.push("/path")`, `router.replace("/path")`, `router.push({ path: "/path" })`
  * - Angular: `router.navigate(['/path'])`, `router.navigateByUrl('/path')`
  * - Solid Router: `<A href="/path">`, `navigate("/path")`
+ * - TanStack Router: `<Link to="/path">`, `navigate({ to: "/path" })`
  *
  * @param content - The file content to analyze
  * @param framework - The navigation framework to detect
@@ -279,6 +281,15 @@ function extractCallNavigation(
 		return extractPathFromCallArgs(node, "navigate", warnings)
 	}
 
+	// navigate({ to: '/path' }) - TanStack Router
+	if (
+		framework === "tanstack-router" &&
+		callee?.type === "Identifier" &&
+		callee.name === "navigate"
+	) {
+		return extractPathFromObjectArg(node, "navigate", warnings, "to")
+	}
+
 	// redirect() - Next.js
 	if (
 		framework === "nextjs" &&
@@ -412,6 +423,88 @@ function extractPathFromCallArgs(
 	const line = node.loc?.start.line ?? 0
 	warnings.push(
 		`Dynamic navigation path at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+	)
+
+	return null
+}
+
+/**
+ * Extract path from object argument with a specific property.
+ *
+ * @param node - The AST CallExpression node
+ * @param type - The navigation type to assign
+ * @param warnings - Array to collect warnings
+ * @param propertyName - The property name to look for (e.g., "to" for TanStack Router)
+ * @returns DetectedNavigation if a valid path is found, null otherwise
+ *
+ * @example
+ * // TanStack Router: navigate({ to: '/users' }) -> extracts '/users'
+ */
+function extractPathFromObjectArg(
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
+	node: any,
+	type: DetectedNavigation["type"],
+	warnings: string[],
+	propertyName: string,
+): DetectedNavigation | null {
+	const firstArg = node.arguments?.[0]
+
+	if (!firstArg) {
+		const line = node.loc?.start.line ?? 0
+		warnings.push(
+			`Navigation call at line ${line} has no arguments. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
+		return null
+	}
+
+	// Object argument with specified property: { to: "/users" } or { path: "/users" }
+	if (firstArg.type === "ObjectExpression") {
+		for (const prop of firstArg.properties || []) {
+			if (
+				prop.type === "ObjectProperty" &&
+				prop.key?.type === "Identifier" &&
+				prop.key.name === propertyName
+			) {
+				// String literal value
+				if (prop.value?.type === "StringLiteral") {
+					const path = prop.value.value
+					if (isValidInternalPath(path)) {
+						return createDetectedNavigation(
+							path,
+							type,
+							node.loc?.start.line ?? 0,
+						)
+					}
+				}
+				// Static template literal value
+				if (
+					prop.value?.type === "TemplateLiteral" &&
+					prop.value.expressions.length === 0 &&
+					prop.value.quasis.length === 1
+				) {
+					const path = prop.value.quasis[0].value.cooked
+					if (path && isValidInternalPath(path)) {
+						return createDetectedNavigation(
+							path,
+							type,
+							node.loc?.start.line ?? 0,
+						)
+					}
+				}
+			}
+		}
+		// Object without static property (named route or dynamic path)
+		const line = node.loc?.start.line ?? 0
+		warnings.push(
+			`Object-based navigation at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
+		return null
+	}
+
+	// Non-object argument - add warning with actionable guidance
+	const line = node.loc?.start.line ?? 0
+	warnings.push(
+		`navigate() at line ${line} expects an object argument with a '${propertyName}' property (e.g., navigate({ ${propertyName}: '/path' })). Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 	)
 
 	return null
@@ -585,6 +678,11 @@ export function detectNavigationFramework(
 	// Check for Solid Router patterns
 	if (content.includes("@solidjs/router")) {
 		return { framework: "solid-router", detected: true }
+	}
+
+	// Check for TanStack Router patterns
+	if (content.includes("@tanstack/react-router")) {
+		return { framework: "tanstack-router", detected: true }
 	}
 
 	// Check for React Router patterns
