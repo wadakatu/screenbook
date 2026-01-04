@@ -582,7 +582,7 @@ function extractPathFromArrayArg(
 /**
  * Check if a path is a valid internal path (not external URL or hash link)
  */
-function isValidInternalPath(path: string): boolean {
+export function isValidInternalPath(path: string): boolean {
 	// Skip external URLs
 	if (
 		path.startsWith("http://") ||
