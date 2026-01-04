@@ -1,7 +1,7 @@
 {
 	"name": "@screenbook/cli",
 	"version": "1.3.0",
-	"description": "CLI for Screenbook - screen catalog and navigation graph generator",
+	"description": "Screen catalog and navigation graph generator CLI. Auto-detect frameworks, generate docs, and analyze impact.",
 	"type": "module",
 	"bin": {
 		"screenbook": "./dist/index.mjs"
@@ -39,9 +39,17 @@
 	"keywords": [
 		"screenbook",
 		"cli",
-		"screen",
-		"catalog",
-		"navigation"
+		"screen-catalog",
+		"navigation-graph",
+		"documentation",
+		"documentation-generator",
+		"frontend",
+		"developer-tools",
+		"impact-analysis",
+		"typescript",
+		"nextjs",
+		"react",
+		"vue"
 	],
 	"license": "MIT",
 	"repository": {

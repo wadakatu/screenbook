@@ -35,9 +35,10 @@ coverage/
 .screenbook/
 screens.json
 
-# Screenshots (except assets for README)
+# Screenshots (except assets for README and social)
 *.png
 !assets/screenshots/*.png
+!assets/social/*.png
 
 # Design proposals (local only)
 design-proposals/
