@@ -647,6 +647,40 @@ class MyComponent {
 			expect(result.warnings[0]).toContain("Dynamic navigation path")
 		})
 
+		it("should warn on empty array argument", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  goToPage() {
+    this.router.navigate([])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("empty array")
+		})
+
+		it("should warn on missing argument to navigate", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  goToPage() {
+    this.router.navigate()
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("no arguments")
+		})
+
 		it("should detect multiple navigation patterns", () => {
 			const content = `
 import { Router } from "@angular/router"

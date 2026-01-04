@@ -425,11 +425,24 @@ function extractPathFromArrayArg(
 	const firstArg = node.arguments?.[0]
 
 	if (!firstArg) {
+		// No argument provided
+		const line = node.loc?.start.line ?? 0
+		warnings.push(
+			`Navigation call at line ${line} has no arguments. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
 		return null
 	}
 
 	// Array expression: ['/path', ...]
-	if (firstArg.type === "ArrayExpression" && firstArg.elements.length > 0) {
+	if (firstArg.type === "ArrayExpression") {
+		if (firstArg.elements.length === 0) {
+			// Empty array
+			const line = node.loc?.start.line ?? 0
+			warnings.push(
+				`Navigation call at line ${line} has an empty array. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+			)
+			return null
+		}
 		const firstElement = firstArg.elements[0]
 
 		// String literal as first element
