@@ -97,7 +97,7 @@ export const devCommand = define({
 	},
 })
 
-async function buildScreens(
+export async function buildScreens(
 	config: { metaPattern: string; outDir: string; ignore: string[] },
 	cwd: string,
 ): Promise<void> {
@@ -148,7 +148,7 @@ async function buildScreens(
 	logger.success(`Generated ${logger.path(outputPath)}`)
 }
 
-function resolveUiPackage(): string | null {
+export function resolveUiPackage(): string | null {
 	// Try to resolve @screenbook/ui from node_modules
 	try {
 		const require = createRequire(import.meta.url)
