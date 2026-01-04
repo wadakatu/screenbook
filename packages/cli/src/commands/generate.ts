@@ -25,6 +25,7 @@ import {
 import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
+import { analyzeVueSFC } from "../utils/vueSFCTemplateAnalyzer.js"
 
 export const generateCommand = define({
 	name: "generate",
@@ -291,17 +292,30 @@ async function generateFromRoutesFile(
 				}
 
 				if (componentContent) {
-					const { framework, detected } =
-						detectNavigationFramework(componentContent)
-					if (!detected) {
-						logger.warn(
-							`${logger.path(route.componentPath)}: Could not detect navigation framework, defaulting to Next.js patterns. Navigation detection may be incomplete.`,
-						)
-					}
-					const result = analyzeNavigation(componentContent, framework)
-					detectedNext = result.navigations.map((n) => n.screenId)
-					for (const warning of result.warnings) {
-						logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
+					// Use Vue SFC analyzer for .vue files to detect RouterLink in templates
+					if (route.componentPath.endsWith(".vue")) {
+						const result = analyzeVueSFC(componentContent, route.componentPath)
+						detectedNext = [
+							...result.templateNavigations.map((n) => n.screenId),
+							...result.scriptNavigations.map((n) => n.screenId),
+						]
+						for (const warning of result.warnings) {
+							logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
+						}
+					} else {
+						// Use standard analyzer for non-Vue files
+						const { framework, detected } =
+							detectNavigationFramework(componentContent)
+						if (!detected) {
+							logger.warn(
+								`${logger.path(route.componentPath)}: Could not detect navigation framework, defaulting to Next.js patterns. Navigation detection may be incomplete.`,
+							)
+						}
+						const result = analyzeNavigation(componentContent, framework)
+						detectedNext = result.navigations.map((n) => n.screenId)
+						for (const warning of result.warnings) {
+							logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
+						}
 					}
 				}
 			}
