@@ -45,7 +45,7 @@ npx screenbook init
 ```
 
 <p align="center">
-  <img src="./assets/gifs/screenbook-init.gif" alt="Screenbook Init Demo" width="800">
+  <img src="https://raw.githubusercontent.com/wadakatu/screenbook/main/assets/gifs/screenbook-init.gif" alt="Screenbook Init Demo" width="800">
 </p>
 
 That's it! `screenbook init` detects your framework, generates screen metadata, and starts the UI server at http://localhost:4321.
