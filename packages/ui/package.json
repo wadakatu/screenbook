@@ -1,6 +1,6 @@
 {
 	"name": "@screenbook/ui",
-	"version": "1.2.0",
+	"version": "1.4.0",
 	"description": "UI for Screenbook - screen catalog and navigation graph viewer",
 	"type": "module",
 	"scripts": {

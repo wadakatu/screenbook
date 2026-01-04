@@ -1,5 +1,31 @@
 # @screenbook/cli
 
+## 1.4.0
+
+### Minor Changes
+
+- 3d94ac4: ### @screenbook/cli
+
+  #### New Features
+  - Streamlined `init` command with automatic prompts for generate and dev server
+  - New flags: `--generate`, `--no-generate`, `--dev`, `--no-dev`, `--yes/-y`, `--ci`
+
+  #### Fixes
+  - Add negatable option support for `--generate` and `--dev` flags
+
+  #### Improvements
+  - Update package metadata for better npm discoverability
+
+  ### @screenbook/core
+
+  #### Improvements
+  - Update package metadata for better npm discoverability
+
+### Patch Changes
+
+- Updated dependencies [3d94ac4]
+  - @screenbook/core@1.4.0
+
 ## 1.3.0
 
 ### Minor Changes
