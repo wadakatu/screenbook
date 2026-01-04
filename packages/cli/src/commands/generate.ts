@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, join, relative, resolve } from "node:path"
+import type { Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import prompts from "prompts"
 import { glob } from "tinyglobby"
@@ -232,17 +233,17 @@ async function generateFromRoutesFile(
 	logSummary(created, skipped, dryRun)
 }
 
-interface GenerateFromRoutesPatternOptions {
-	dryRun: boolean
-	force: boolean
-	interactive: boolean
-	ignore: string[]
+export interface GenerateFromRoutesPatternOptions {
+	readonly dryRun: boolean
+	readonly force: boolean
+	readonly interactive: boolean
+	readonly ignore: readonly string[]
 }
 
 /**
  * Generate screen.meta.ts files from route files matching a glob pattern
  */
-async function generateFromRoutesPattern(
+export async function generateFromRoutesPattern(
 	routesPattern: string,
 	cwd: string,
 	options: GenerateFromRoutesPatternOptions,
@@ -429,11 +430,11 @@ function logSummary(created: number, skipped: number, dryRun: boolean): void {
 	}
 }
 
-interface InferredScreenMeta {
-	id: string
-	title: string
-	route: string
-}
+/**
+ * Subset of Screen containing only auto-inferred fields.
+ * Uses Pick to ensure type alignment with the core Screen type.
+ */
+type InferredScreenMeta = Pick<Screen, "id" | "title" | "route">
 
 interface InteractiveResult {
 	skip: boolean
