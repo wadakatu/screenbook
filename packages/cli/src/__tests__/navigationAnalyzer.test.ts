@@ -347,6 +347,153 @@ export function Navigation() {
 		})
 	})
 
+	describe("Vue Router patterns", () => {
+		it("should detect router.push calls", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToDashboard() {
+  router.push("/dashboard")
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/dashboard")
+			expect(result.navigations.at(0)?.screenId).toBe("dashboard")
+			expect(result.navigations.at(0)?.type).toBe("router-push")
+		})
+
+		it("should detect router.replace calls", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToLogin() {
+  router.replace("/login")
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/login")
+			expect(result.navigations.at(0)?.screenId).toBe("login")
+			expect(result.navigations.at(0)?.type).toBe("router-push")
+		})
+
+		it("should detect router.push with path object", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToUsers() {
+  router.push({ path: "/users" })
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+			expect(result.navigations.at(0)?.type).toBe("router-push")
+		})
+
+		it("should detect router.push with path as template literal in object", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToSettings() {
+  router.push({ path: \`/settings\` })
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/settings")
+			expect(result.navigations.at(0)?.screenId).toBe("settings")
+		})
+
+		it("should warn on named route navigation", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToUser() {
+  router.push({ name: "user-profile" })
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Object-based navigation")
+			expect(result.warnings[0]).toContain("cannot be statically analyzed")
+		})
+
+		it("should warn on dynamic path in object", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToUser(userId) {
+  router.push({ path: \`/users/\${userId}\` })
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Object-based navigation")
+		})
+
+		it("should detect multiple navigation patterns in one file", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function navigate() {
+  router.push("/dashboard")
+  router.replace("/settings")
+  router.push({ path: "/users" })
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(3)
+			expect(result.navigations.map((n) => n.screenId).sort()).toEqual([
+				"dashboard",
+				"settings",
+				"users",
+			])
+		})
+
+		it("should warn on dynamic string argument", () => {
+			const content = `
+import { useRouter } from "vue-router"
+
+const router = useRouter()
+
+function goToPage(path) {
+  router.push(path)
+}
+`
+			const result = analyzeNavigation(content, "vue-router")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic navigation path")
+		})
+	})
+
 	describe("edge cases", () => {
 		it("should handle multiple navigation patterns in one file", () => {
 			const content = `
@@ -552,6 +699,37 @@ describe("detectNavigationFramework", () => {
 		const content = `import { Link } from "@remix-run/react"`
 		const result = detectNavigationFramework(content)
 		expect(result.framework).toBe("react-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Vue Router from vue-router import with single quotes", () => {
+		const content = `import { useRouter } from 'vue-router'`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("vue-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Vue Router from vue-router import with double quotes", () => {
+		const content = `import { useRouter } from "vue-router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("vue-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Vue Router from vue-router package name", () => {
+		const content = `// Using vue-router for navigation`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("vue-router")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should prioritize Next.js over Vue Router when both present", () => {
+		const content = `
+import Link from "next/link"
+// This file might have vue-router references
+`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
 		expect(result.detected).toBe(true)
 	})
 

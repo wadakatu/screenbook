@@ -58,7 +58,7 @@ export interface FrameworkDetectionResult {
 /**
  * Navigation framework to detect
  */
-export type NavigationFramework = "nextjs" | "react-router"
+export type NavigationFramework = "nextjs" | "react-router" | "vue-router"
 
 /**
  * Analyze a file's content for navigation patterns.
@@ -66,6 +66,7 @@ export type NavigationFramework = "nextjs" | "react-router"
  * Supports:
  * - Next.js: `<Link href="/path">`, `router.push("/path")`, `redirect("/path")`
  * - React Router: `<Link to="/path">`, `navigate("/path")`
+ * - Vue Router: `router.push("/path")`, `router.replace("/path")`, `router.push({ path: "/path" })`
  *
  * @param content - The file content to analyze
  * @param framework - The navigation framework to detect
@@ -247,6 +248,18 @@ function extractCallNavigation(
 		return extractPathFromCallArgs(node, "router-push", warnings)
 	}
 
+	// router.push() or router.replace() - Vue Router
+	if (
+		framework === "vue-router" &&
+		callee?.type === "MemberExpression" &&
+		callee.object?.type === "Identifier" &&
+		callee.object.name === "router" &&
+		callee.property?.type === "Identifier" &&
+		(callee.property.name === "push" || callee.property.name === "replace")
+	) {
+		return extractPathFromCallArgs(node, "router-push", warnings)
+	}
+
 	// navigate() - React Router
 	if (
 		framework === "react-router" &&
@@ -301,6 +314,50 @@ function extractPathFromCallArgs(
 		if (path && isValidInternalPath(path)) {
 			return createDetectedNavigation(path, type, node.loc?.start.line ?? 0)
 		}
+	}
+
+	// Object argument with path property (Vue Router style): { path: "/users" }
+	if (firstArg.type === "ObjectExpression") {
+		for (const prop of firstArg.properties || []) {
+			if (
+				prop.type === "ObjectProperty" &&
+				prop.key?.type === "Identifier" &&
+				prop.key.name === "path"
+			) {
+				// String literal value
+				if (prop.value?.type === "StringLiteral") {
+					const path = prop.value.value
+					if (isValidInternalPath(path)) {
+						return createDetectedNavigation(
+							path,
+							type,
+							node.loc?.start.line ?? 0,
+						)
+					}
+				}
+				// Static template literal value
+				if (
+					prop.value?.type === "TemplateLiteral" &&
+					prop.value.expressions.length === 0 &&
+					prop.value.quasis.length === 1
+				) {
+					const path = prop.value.quasis[0].value.cooked
+					if (path && isValidInternalPath(path)) {
+						return createDetectedNavigation(
+							path,
+							type,
+							node.loc?.start.line ?? 0,
+						)
+					}
+				}
+			}
+		}
+		// Object without static path (named route or dynamic path)
+		const line = node.loc?.start.line ?? 0
+		warnings.push(
+			`Object-based navigation at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
+		return null
 	}
 
 	// Dynamic argument - add warning with actionable guidance
@@ -396,6 +453,15 @@ export function detectNavigationFramework(
 		content.includes("next/router")
 	) {
 		return { framework: "nextjs", detected: true }
+	}
+
+	// Check for Vue Router patterns
+	if (
+		content.includes("vue-router") ||
+		content.includes("from 'vue-router'") ||
+		content.includes('from "vue-router"')
+	) {
+		return { framework: "vue-router", detected: true }
 	}
 
 	// Check for React Router patterns
