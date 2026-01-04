@@ -494,6 +494,184 @@ function goToPage(path) {
 		})
 	})
 
+	describe("Angular Router patterns", () => {
+		it("should detect router.navigate with array", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  goToUsers() {
+    router.navigate(['/users'])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+			expect(result.navigations.at(0)?.type).toBe("navigate")
+		})
+
+		it("should detect this.router.navigate with array", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  goToDashboard() {
+    this.router.navigate(['/dashboard'])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/dashboard")
+			expect(result.navigations.at(0)?.screenId).toBe("dashboard")
+			expect(result.navigations.at(0)?.type).toBe("navigate")
+		})
+
+		it("should detect router.navigateByUrl", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  goToLogin() {
+    router.navigateByUrl('/login')
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/login")
+			expect(result.navigations.at(0)?.screenId).toBe("login")
+			expect(result.navigations.at(0)?.type).toBe("navigate-by-url")
+		})
+
+		it("should detect this.router.navigateByUrl", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  goToSettings() {
+    this.router.navigateByUrl('/settings')
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/settings")
+			expect(result.navigations.at(0)?.screenId).toBe("settings")
+			expect(result.navigations.at(0)?.type).toBe("navigate-by-url")
+		})
+
+		it("should detect navigate with static template literal in array", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  goToProfile() {
+    this.router.navigate([\`/profile\`])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/profile")
+			expect(result.navigations.at(0)?.screenId).toBe("profile")
+		})
+
+		it("should warn on dynamic array element", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  goToUser(userId: string) {
+    this.router.navigate(['/users', userId])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			// First element is static, so it should be detected
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users")
+		})
+
+		it("should warn on dynamic first array element", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  goToPage(path: string) {
+    this.router.navigate([path])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic navigation path")
+		})
+
+		it("should warn on non-array argument to navigate", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  goToPage(commands: string[]) {
+    this.router.navigate(commands)
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic navigation path")
+		})
+
+		it("should detect multiple navigation patterns", () => {
+			const content = `
+import { Router } from "@angular/router"
+
+class MyComponent {
+  constructor(private router: Router) {}
+
+  navigate() {
+    this.router.navigate(['/users'])
+    this.router.navigateByUrl('/settings')
+    router.navigate(['/dashboard'])
+  }
+}
+`
+			const result = analyzeNavigation(content, "angular")
+
+			expect(result.navigations).toHaveLength(3)
+			expect(result.navigations.map((n) => n.screenId).sort()).toEqual([
+				"dashboard",
+				"settings",
+				"users",
+			])
+		})
+	})
+
 	describe("edge cases", () => {
 		it("should handle multiple navigation patterns in one file", () => {
 			const content = `
@@ -727,6 +905,30 @@ describe("detectNavigationFramework", () => {
 		const content = `
 import Link from "next/link"
 // This file might have vue-router references
+`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Angular Router from @angular/router import", () => {
+		const content = `import { Router } from "@angular/router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("angular")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should detect Angular Router from @angular/router with ActivatedRoute", () => {
+		const content = `import { ActivatedRoute, Router } from "@angular/router"`
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("angular")
+		expect(result.detected).toBe(true)
+	})
+
+	it("should prioritize Next.js over Angular Router when both present", () => {
+		const content = `
+import Link from "next/link"
+// This file might reference @angular/router
 `
 		const result = detectNavigationFramework(content)
 		expect(result.framework).toBe("nextjs")
