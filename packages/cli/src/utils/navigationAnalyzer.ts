@@ -98,7 +98,7 @@ export function analyzeNavigation(
 	try {
 		ast = parse(content, {
 			sourceType: "module",
-			plugins: ["typescript", "jsx"],
+			plugins: ["typescript", "jsx", "decorators-legacy"],
 		})
 	} catch (error) {
 		if (error instanceof SyntaxError) {
