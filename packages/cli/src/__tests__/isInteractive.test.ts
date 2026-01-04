@@ -23,6 +23,11 @@ describe("isInteractive", () => {
 		expect(isInteractive()).toBe(false)
 	})
 
+	it("should return false when CI=1 (alternative CI value)", () => {
+		process.env.CI = "1"
+		expect(isInteractive()).toBe(false)
+	})
+
 	it("should return false when CONTINUOUS_INTEGRATION is set", () => {
 		process.env.CONTINUOUS_INTEGRATION = "true"
 		expect(isInteractive()).toBe(false)
@@ -43,7 +48,7 @@ describe("isInteractive", () => {
 		expect(isInteractive()).toBe(false)
 	})
 
-	// Note: Testing TTY behavior is difficult in test environment
-	// because process.stdin.isTTY cannot be reliably mocked.
-	// The CI environment tests above cover the important cases.
+	// Note: TTY behavior is not tested here as it requires special mocking setup.
+	// Production code relies on actual TTY detection via process.stdin.isTTY.
+	// The CI environment tests above cover the critical cases for pipeline safety.
 })

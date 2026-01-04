@@ -120,3 +120,82 @@ describe("init command", () => {
 		expect(content).not.toBe("// existing config")
 	})
 })
+
+describe("resolveOption", () => {
+	const originalEnv = { ...process.env }
+
+	afterEach(() => {
+		process.env = { ...originalEnv }
+	})
+
+	it("should return explicit value when provided (true)", async () => {
+		const { resolveOption } = await import("../commands/init.js")
+
+		const result = await resolveOption({
+			explicitValue: true,
+			yesAll: false,
+			ciMode: false,
+			ciDefault: false,
+			promptMessage: "Test?",
+		})
+
+		expect(result).toBe(true)
+	})
+
+	it("should return explicit value when provided (false)", async () => {
+		const { resolveOption } = await import("../commands/init.js")
+
+		const result = await resolveOption({
+			explicitValue: false,
+			yesAll: true, // Should be ignored when explicitValue is provided
+			ciMode: false,
+			ciDefault: true,
+			promptMessage: "Test?",
+		})
+
+		expect(result).toBe(false)
+	})
+
+	it("should return true when yesAll is true and no explicit value", async () => {
+		const { resolveOption } = await import("../commands/init.js")
+
+		const result = await resolveOption({
+			explicitValue: undefined,
+			yesAll: true,
+			ciMode: false,
+			ciDefault: false,
+			promptMessage: "Test?",
+		})
+
+		expect(result).toBe(true)
+	})
+
+	it("should return ciDefault in CI mode", async () => {
+		const { resolveOption } = await import("../commands/init.js")
+
+		const result = await resolveOption({
+			explicitValue: undefined,
+			yesAll: false,
+			ciMode: true,
+			ciDefault: false,
+			promptMessage: "Test?",
+		})
+
+		expect(result).toBe(false)
+	})
+
+	it("should return ciDefault when in non-interactive environment", async () => {
+		process.env.CI = "true"
+		const { resolveOption } = await import("../commands/init.js")
+
+		const result = await resolveOption({
+			explicitValue: undefined,
+			yesAll: false,
+			ciMode: false,
+			ciDefault: true,
+			promptMessage: "Test?",
+		})
+
+		expect(result).toBe(true)
+	})
+})

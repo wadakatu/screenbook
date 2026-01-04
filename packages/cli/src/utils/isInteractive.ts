@@ -1,12 +1,14 @@
 /**
- * Check if the current environment supports interactive prompts
+ * Check if the current environment supports interactive prompts.
+ * Returns false in CI environments or when stdin is not a TTY.
  */
 export function isInteractive(): boolean {
-	// Explicit CI environment
-	if (process.env.CI === "true" || process.env.CONTINUOUS_INTEGRATION) {
+	// Standard CI environment variables (check for any truthy value)
+	if (process.env.CI || process.env.CONTINUOUS_INTEGRATION) {
 		return false
 	}
-	// Check for common CI environments
+
+	// CI-specific environment variables not covered by the generic CI flag
 	if (
 		process.env.GITHUB_ACTIONS ||
 		process.env.GITLAB_CI ||
@@ -14,6 +16,7 @@ export function isInteractive(): boolean {
 	) {
 		return false
 	}
-	// TTY check
+
+	// TTY check - false if stdin is not a terminal
 	return process.stdin.isTTY === true
 }

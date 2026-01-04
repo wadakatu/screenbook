@@ -96,7 +96,7 @@ function printNextSteps(hasRoutesPattern: boolean): void {
 	)
 }
 
-interface ResolveOptionParams {
+export interface ResolveOptionParams {
 	explicitValue: boolean | undefined
 	yesAll: boolean
 	ciMode: boolean
@@ -104,25 +104,34 @@ interface ResolveOptionParams {
 	promptMessage: string
 }
 
-async function resolveOption(params: ResolveOptionParams): Promise<boolean> {
+/**
+ * Resolve a boolean option with priority order:
+ * 1. Explicit flag (e.g., --generate or --no-generate) takes precedence
+ * 2. -y flag enables all optional features
+ * 3. Non-interactive environments (CI mode or no TTY) fall back to ciDefault
+ * 4. Otherwise, prompt the user interactively
+ */
+export async function resolveOption(
+	params: ResolveOptionParams,
+): Promise<boolean> {
 	const { explicitValue, yesAll, ciMode, ciDefault, promptMessage } = params
 
-	// Explicit flag provided
+	// Priority 1: Explicit flag takes precedence
 	if (explicitValue !== undefined) {
 		return explicitValue
 	}
 
-	// -y flag: answer yes to all
+	// Priority 2: -y flag answers yes to all
 	if (yesAll) {
 		return true
 	}
 
-	// CI mode or non-interactive environment
+	// Priority 3: Non-interactive environments use ciDefault
 	if (ciMode || !isInteractive()) {
 		return ciDefault
 	}
 
-	// Interactive prompt
+	// Priority 4: Interactive prompt
 	const response = await prompts({
 		type: "confirm",
 		name: "value",
@@ -130,7 +139,14 @@ async function resolveOption(params: ResolveOptionParams): Promise<boolean> {
 		initial: true,
 	})
 
-	return response.value ?? false
+	// Handle user cancellation (Ctrl+C)
+	if (response.value === undefined) {
+		logger.blank()
+		logger.info("Operation cancelled")
+		process.exit(0)
+	}
+
+	return response.value
 }
 
 async function countRouteFiles(
@@ -141,10 +157,7 @@ async function countRouteFiles(
 	return files.length
 }
 
-async function runGenerate(
-	routesPattern: string,
-	cwd: string,
-): Promise<{ created: number; skipped: number }> {
+async function runGenerate(routesPattern: string, cwd: string): Promise<void> {
 	const options: GenerateFromRoutesPatternOptions = {
 		dryRun: false,
 		force: false,
@@ -152,26 +165,7 @@ async function runGenerate(
 		ignore: ["**/node_modules/**"],
 	}
 
-	// Count files before generation
-	const routeFiles = await glob(routesPattern, {
-		cwd,
-		ignore: options.ignore,
-	})
-
-	// Count existing screen.meta.ts files
-	const metaPattern = routesPattern
-		.replace(/\/\*\*\/[^/]+$/, "/**/screen.meta.ts")
-		.replace(/\/[^/]+$/, "/screen.meta.ts")
-	const existingMetas = await glob(metaPattern, { cwd })
-
 	await generateFromRoutesPattern(routesPattern, cwd, options)
-
-	// Count new screen.meta.ts files
-	const newMetas = await glob(metaPattern, { cwd })
-	const created = newMetas.length - existingMetas.length
-	const skipped = routeFiles.length - created
-
-	return { created, skipped }
 }
 
 async function buildScreensForDev(
@@ -202,8 +196,12 @@ async function buildScreensForDev(
 			if (module.screen) {
 				screens.push({ ...module.screen, filePath: absolutePath })
 			}
-		} catch {
-			// Skip failed files silently during init
+		} catch (error) {
+			// Log failed files so users can diagnose issues
+			logger.itemWarn(`Failed to load ${file}`)
+			if (error instanceof Error) {
+				logger.log(`    ${logger.dim(error.message)}`)
+			}
 		}
 	}
 
@@ -286,6 +284,7 @@ async function startDevServer(
 
 	astroProcess.on("error", (error) => {
 		logger.error(`Failed to start server: ${error.message}`)
+		process.exit(1)
 	})
 
 	astroProcess.on("close", (code) => {
