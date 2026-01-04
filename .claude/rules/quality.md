@@ -1,36 +1,40 @@
 # Quality Standards
 
-## Always Use Latest Versions
+## Pre-commit Checklist
 
-Before adding any dependency or configuration:
+1. `pnpm lint` - No linting errors
+2. `pnpm test` - All tests pass
+3. `pnpm typecheck` - No type errors
+4. `pnpm build` - Build succeeds
 
-1. **Check latest version** - Search for the latest stable version of the library
-2. **Check best practices** - Research current best practices for configuration files
-3. **Verify compatibility** - Ensure compatibility with other dependencies
+## Dependency Management
 
-## Libraries to Keep Updated
+Before adding dependencies:
 
-| Library | Check Command |
-|---------|---------------|
-| TypeScript | `npm view typescript version` |
-| Zod | `npm view zod version` |
-| Biome | `npm view @biomejs/biome version` |
-| Vitest | `npm view vitest version` |
-| tsdown | `npm view tsdown version` |
-| Astro | `npm view astro version` |
+1. **Check latest version** - Use stable versions
+2. **Check bundle size** - Prefer lightweight alternatives
+3. **Verify compatibility** - Test with existing dependencies
+4. Use caret (`^`) for version ranges in package.json
+
+## Key Libraries
+
+| Library | Purpose |
+|---------|---------|
+| zod | Schema validation |
+| commander | CLI framework |
+| jiti | Runtime TypeScript loading |
+| glob | File pattern matching |
+| mermaid | Graph visualization |
 
 ## Configuration Files
 
-Always verify schema URLs and settings match the installed version:
+- `biome.json` - Linting and formatting rules
+- `tsconfig.json` - TypeScript settings (strict mode)
+- `tsdown.config.ts` - Build configuration per package
 
-- `tsconfig.json` - Check TypeScript best practices
-- `biome.json` - Use matching schema version
-- `package.json` - Use caret (^) for minor updates
+## Code Quality
 
-## Before Implementation
-
-When creating new packages or adding dependencies:
-
-1. Search: `{library name} latest version {current year}`
-2. Search: `{config file} best practices {current year}`
-3. Verify breaking changes in migration guides
+- Write self-documenting code
+- Add tests for new features and bug fixes
+- Keep functions small and focused
+- Handle errors gracefully with clear messages

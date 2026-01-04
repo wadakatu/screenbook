@@ -5,49 +5,41 @@ screenbook/
 ├── packages/
 │   ├── core/                 # @screenbook/core
 │   │   ├── src/
-│   │   │   ├── defineScreen.ts
-│   │   │   ├── types.ts
+│   │   │   ├── config.ts         # defineConfig
+│   │   │   ├── screen.ts         # defineScreen
+│   │   │   ├── types.ts          # Type definitions
 │   │   │   └── index.ts
-│   │   ├── tsdown.config.ts
 │   │   └── package.json
 │   │
 │   ├── cli/                  # @screenbook/cli
 │   │   ├── src/
-│   │   │   ├── commands/
-│   │   │   │   ├── init.ts
-│   │   │   │   ├── build.ts
-│   │   │   │   ├── dev.ts
-│   │   │   │   └── lint.ts
+│   │   │   ├── commands/         # CLI command implementations
+│   │   │   ├── utils/            # Shared utilities
 │   │   │   └── index.ts
-│   │   ├── tsdown.config.ts
 │   │   └── package.json
 │   │
-│   └── ui/                   # @screenbook/ui
-│       ├── src/
-│       │   ├── pages/
-│       │   │   ├── index.astro      # Screen list
-│       │   │   └── [id].astro       # Screen detail
-│       │   ├── components/
-│       │   │   ├── ScreenList.tsx   # React island
-│       │   │   ├── GraphView.tsx    # Mermaid display
-│       │   │   └── SearchFilter.tsx
-│       │   └── layouts/
-│       ├── astro.config.mjs
+│   ├── ui/                   # @screenbook/ui
+│   │   ├── src/
+│   │   │   ├── pages/            # Astro pages
+│   │   │   ├── components/       # React islands
+│   │   │   └── layouts/
+│   │   └── package.json
+│   │
+│   └── screenbook/           # Main package (re-exports)
 │       └── package.json
 │
-├── pnpm-workspace.yaml
-├── package.json
+├── docs/                     # Documentation site (Starlight)
+├── .github/                  # GitHub workflows
+├── .changeset/               # Changeset configuration
 ├── biome.json
-├── vitest.config.ts
-├── tsconfig.json
-├── LICENSE
-└── README.md
+└── package.json
 ```
 
 ## Package Responsibilities
 
-| Package | Role | Dependencies |
-|---------|------|--------------|
-| `@screenbook/core` | `defineScreen()`, type definitions, validation | zod |
-| `@screenbook/cli` | init/build/dev/lint commands | core, commander, glob |
-| `@screenbook/ui` | Screen list/detail/navigation graph display | core, astro, mermaid |
+| Package | Role | Key Dependencies |
+|---------|------|------------------|
+| `@screenbook/core` | Type definitions, config, validation | zod |
+| `@screenbook/cli` | CLI commands (init, build, dev, lint, etc.) | commander, glob, jiti |
+| `@screenbook/ui` | Screen catalog UI, navigation graph | astro, react, mermaid |
+| `screenbook` | User-facing package, re-exports core + cli | core, cli |
