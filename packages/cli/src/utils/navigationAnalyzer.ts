@@ -64,7 +64,7 @@ export type NavigationFramework = "nextjs" | "react-router" | "vue-router"
  * Analyze a file's content for navigation patterns.
  *
  * Supports:
- * - Next.js: `<Link href="/path">`, `router.push("/path")`, `redirect("/path")`
+ * - Next.js: `<Link href="/path">`, `router.push("/path")`, `router.replace("/path")`, `redirect("/path")`
  * - React Router: `<Link to="/path">`, `navigate("/path")`
  * - Vue Router: `router.push("/path")`, `router.replace("/path")`, `router.push({ path: "/path" })`
  *
@@ -456,11 +456,7 @@ export function detectNavigationFramework(
 	}
 
 	// Check for Vue Router patterns
-	if (
-		content.includes("vue-router") ||
-		content.includes("from 'vue-router'") ||
-		content.includes('from "vue-router"')
-	) {
+	if (content.includes("vue-router")) {
 		return { framework: "vue-router", detected: true }
 	}
 
