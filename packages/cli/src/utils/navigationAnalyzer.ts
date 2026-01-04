@@ -51,6 +51,39 @@ export interface NavigationAnalysisResult {
 }
 
 /**
+ * Result of analyzing a component for navigation.
+ * Shared interface for framework-specific analyzers (Angular, Vue SFC, etc.)
+ */
+export interface ComponentAnalysisResult {
+	/** Navigation targets detected in template */
+	readonly templateNavigations: readonly DetectedNavigation[]
+	/** Navigation targets detected in script */
+	readonly scriptNavigations: readonly DetectedNavigation[]
+	/** Any warnings during analysis */
+	readonly warnings: readonly string[]
+}
+
+/**
+ * Deduplicate navigations by screenId.
+ * Exported for use by framework-specific analyzers.
+ *
+ * @param navigations - Array of detected navigations
+ * @returns Array with duplicate screenIds removed (keeps first occurrence)
+ */
+export function deduplicateByScreenId(
+	navigations: DetectedNavigation[],
+): DetectedNavigation[] {
+	const seen = new Set<string>()
+	return navigations.filter((nav) => {
+		if (seen.has(nav.screenId)) {
+			return false
+		}
+		seen.add(nav.screenId)
+		return true
+	})
+}
+
+/**
  * Result of framework detection
  */
 export interface FrameworkDetectionResult {

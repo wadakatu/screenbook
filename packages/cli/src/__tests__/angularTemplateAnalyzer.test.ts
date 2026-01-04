@@ -581,7 +581,7 @@ export class NavComponent {}
 			])
 		})
 
-		it("should handle missing templateUrl gracefully", () => {
+		it("should warn on missing templateUrl and return empty navigations", () => {
 			const content = `
 import { Component } from "@angular/core"
 
@@ -597,8 +597,211 @@ export class NavComponent {}
 				testDir,
 			)
 
-			// Should not crash, just return empty navigations
+			// Should not crash, returns empty navigations with warning
 			expect(result.templateNavigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings.at(0)).toContain("Template file not found")
+			expect(result.warnings.at(0)).toContain("missing.component.html")
+		})
+	})
+
+	describe("edge case: array literal with double quotes", () => {
+		it("should detect [routerLink] with double-quoted path in array", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a [routerLink]='["/users"]'>Users</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.screenId).toBe("users")
+		})
+	})
+
+	describe("edge case: comma inside quoted string", () => {
+		it("should handle path with comma inside string in array", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a [routerLink]="['/path-with,comma']">Link</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.path).toBe("/path-with,comma")
+		})
+
+		it("should correctly split array with multiple elements containing commas in values", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a [routerLink]="['/users', 'param,with,commas']">Link</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.screenId).toBe("users")
+		})
+	})
+
+	describe("edge case: query params and hash", () => {
+		it("should strip query parameters from path when generating screenId", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a routerLink="/users?tab=active">Users</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.screenId).toBe("users")
+			expect(result.templateNavigations.at(0)?.path).toBe("/users?tab=active")
+		})
+
+		it("should strip hash fragment from path when generating screenId", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a routerLink="/users#section">Users</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.screenId).toBe("users")
+		})
+	})
+
+	describe("edge case: single-quoted inline template", () => {
+		it("should detect routerLink in single-quoted inline template", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: 'app-nav',
+  template: '<a routerLink="/home">Home</a>'
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.screenId).toBe("home")
+		})
+	})
+
+	describe("edge case: relative paths", () => {
+		it("should warn on relative paths without leading slash", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a routerLink="users">Users</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings.at(0)).toContain("relative path")
+			expect(result.warnings.at(0)).toContain("should start with '/'")
+		})
+
+		it("should warn on relative path in [routerLink] binding", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`<a [routerLink]="'users'">Users</a>\`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			expect(result.templateNavigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings.at(0)).toContain("relative path")
+		})
+
+		it("should skip mailto and tel links without warning", () => {
+			const content = `
+import { Component } from "@angular/core"
+
+@Component({
+  selector: "app-nav",
+  template: \`
+    <a routerLink="mailto:user@example.com">Email</a>
+    <a routerLink="tel:+1234567890">Call</a>
+    <a routerLink="/contact">Contact</a>
+  \`
+})
+export class NavComponent {}
+`
+			const result = analyzeAngularComponent(
+				content,
+				"nav.component.ts",
+				"/app",
+			)
+
+			// Only /contact should be detected, mailto/tel are external
+			expect(result.templateNavigations).toHaveLength(1)
+			expect(result.templateNavigations.at(0)?.screenId).toBe("contact")
+			// mailto/tel links are skipped without warning (they're not relative paths)
 		})
 	})
 })

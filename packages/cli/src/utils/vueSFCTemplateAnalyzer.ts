@@ -3,22 +3,18 @@ import { NodeTypes } from "@vue/compiler-core"
 import { parse } from "@vue/compiler-sfc"
 import {
 	analyzeNavigation,
+	type ComponentAnalysisResult,
 	createDetectedNavigation,
 	type DetectedNavigation,
+	deduplicateByScreenId,
 	isValidInternalPath,
 } from "./navigationAnalyzer.js"
 
 /**
- * Result of analyzing a Vue SFC for navigation
+ * Result of analyzing a Vue SFC for navigation.
+ * Type alias for the shared ComponentAnalysisResult.
  */
-export interface VueSFCAnalysisResult {
-	/** Navigation targets detected in template */
-	readonly templateNavigations: readonly DetectedNavigation[]
-	/** Navigation targets detected in script */
-	readonly scriptNavigations: readonly DetectedNavigation[]
-	/** Any warnings during analysis */
-	readonly warnings: readonly string[]
-}
+export type VueSFCAnalysisResult = ComponentAnalysisResult
 
 /**
  * Analyze a Vue Single File Component for navigation patterns.
@@ -86,25 +82,6 @@ export function analyzeVueSFC(
 		scriptNavigations: deduplicateByScreenId(scriptNavigations),
 		warnings,
 	}
-}
-
-/**
- * Deduplicate navigations by screenId.
- *
- * @param navigations - Array of detected navigations
- * @returns Array with duplicate screenIds removed (keeps first occurrence)
- */
-function deduplicateByScreenId(
-	navigations: DetectedNavigation[],
-): DetectedNavigation[] {
-	const seen = new Set<string>()
-	return navigations.filter((nav) => {
-		if (seen.has(nav.screenId)) {
-			return false
-		}
-		seen.add(nav.screenId)
-		return true
-	})
 }
 
 /**

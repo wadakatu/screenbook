@@ -3,22 +3,18 @@ import { dirname, resolve } from "node:path"
 import { Parser } from "htmlparser2"
 import {
 	analyzeNavigation,
+	type ComponentAnalysisResult,
 	createDetectedNavigation,
 	type DetectedNavigation,
+	deduplicateByScreenId,
 	isValidInternalPath,
 } from "./navigationAnalyzer.js"
 
 /**
- * Result of analyzing an Angular component for navigation
+ * Result of analyzing an Angular component for navigation.
+ * Type alias for the shared ComponentAnalysisResult.
  */
-export interface AngularComponentAnalysisResult {
-	/** Navigation targets detected in template */
-	readonly templateNavigations: readonly DetectedNavigation[]
-	/** Navigation targets detected in script */
-	readonly scriptNavigations: readonly DetectedNavigation[]
-	/** Any warnings during analysis */
-	readonly warnings: readonly string[]
-}
+export type AngularComponentAnalysisResult = ComponentAnalysisResult
 
 /**
  * Analyze an Angular component for navigation patterns.
@@ -27,15 +23,19 @@ export interface AngularComponentAnalysisResult {
  * - Template: `<a routerLink="/path">`, `<a [routerLink]="'/path'">`, `<a [routerLink]="['/path']">`
  * - Script: `router.navigate(['/path'])`, `router.navigateByUrl('/path')`
  *
+ * Results are deduplicated by screenId, keeping the first occurrence.
+ *
  * @param content - The Angular component content to analyze
  * @param filePath - The file path (used for error messages and resolving templateUrl)
- * @param cwd - The current working directory for resolving relative paths
+ * @param _cwd - The current working directory (unused, kept for API consistency with other analyzers)
  * @returns Analysis result with detected navigations and warnings
+ *
+ * @throws Never - All errors are caught and converted to warnings
  */
 export function analyzeAngularComponent(
 	content: string,
 	filePath: string,
-	cwd: string,
+	_cwd: string,
 ): AngularComponentAnalysisResult {
 	const templateNavigations: DetectedNavigation[] = []
 	const scriptNavigations: DetectedNavigation[] = []
@@ -43,11 +43,15 @@ export function analyzeAngularComponent(
 
 	try {
 		// Extract template content from @Component decorator
-		const templateContent = extractTemplateContent(content, filePath, cwd)
+		const templateResult = extractTemplateContent(content, filePath)
 
-		if (templateContent) {
-			const templateResult = analyzeTemplateHTML(templateContent, warnings)
-			templateNavigations.push(...templateResult)
+		if (templateResult.warning) {
+			warnings.push(templateResult.warning)
+		}
+
+		if (templateResult.content) {
+			const templateNavs = analyzeTemplateHTML(templateResult.content, warnings)
+			templateNavigations.push(...templateNavs)
 		}
 
 		// Analyze script with existing navigation analyzer
@@ -77,22 +81,13 @@ export function analyzeAngularComponent(
 }
 
 /**
- * Deduplicate navigations by screenId.
- *
- * @param navigations - Array of detected navigations
- * @returns Array with duplicate screenIds removed (keeps first occurrence)
+ * Result of template extraction.
  */
-function deduplicateByScreenId(
-	navigations: DetectedNavigation[],
-): DetectedNavigation[] {
-	const seen = new Set<string>()
-	return navigations.filter((nav) => {
-		if (seen.has(nav.screenId)) {
-			return false
-		}
-		seen.add(nav.screenId)
-		return true
-	})
+interface TemplateExtractionResult {
+	/** The extracted template content, or null if not found */
+	content: string | null
+	/** Warning message if extraction failed */
+	warning: string | null
 }
 
 /**
@@ -101,53 +96,76 @@ function deduplicateByScreenId(
  * Handles both inline `template` and external `templateUrl` properties.
  * Uses regex-based extraction for reliability with Angular's decorator syntax.
  *
+ * Limitations:
+ * - Does not handle templates containing unescaped backticks
+ * - Does not handle escaped quotes within template strings
+ * - Returns warning if templateUrl file cannot be read
+ *
  * @param content - The component TypeScript content
  * @param filePath - The file path for resolving relative templateUrl
- * @param _cwd - The current working directory (unused but kept for API consistency)
- * @returns The template HTML content, or null if not found
+ * @returns Extraction result with content and optional warning
  */
 function extractTemplateContent(
 	content: string,
 	filePath: string,
-	_cwd: string,
-): string | null {
+): TemplateExtractionResult {
 	// Try to extract inline template using regex
 	// Pattern 1: template: `...` (template literal)
-	// We need to find matching backticks while handling nested backticks (rare in templates)
+	// Note: This simple pattern does not handle templates containing backticks
 	const backtickPattern = /template\s*:\s*`([^`]*)`/
 	const templateLiteralMatch = content.match(backtickPattern)
 	if (templateLiteralMatch?.[1] !== undefined) {
-		return templateLiteralMatch[1]
+		return { content: templateLiteralMatch[1], warning: null }
 	}
 
 	// Pattern 2: template: '...' (single-quoted string)
 	const singleQuoteMatch = content.match(/template\s*:\s*'([^']*)'/)
 	if (singleQuoteMatch?.[1] !== undefined) {
-		return singleQuoteMatch[1]
+		return { content: singleQuoteMatch[1], warning: null }
 	}
 
 	// Pattern 3: template: "..." (double-quoted string)
 	const doubleQuoteMatch = content.match(/template\s*:\s*"([^"]*)"/)
 	if (doubleQuoteMatch?.[1] !== undefined) {
-		return doubleQuoteMatch[1]
+		return { content: doubleQuoteMatch[1], warning: null }
 	}
 
 	// Pattern 4: templateUrl: '...' or templateUrl: "..." (external file)
 	const templateUrlMatch = content.match(/templateUrl\s*:\s*['"]([^'"]+)['"]/)
 	if (templateUrlMatch?.[1]) {
+		const templatePath = resolve(dirname(filePath), templateUrlMatch[1])
 		try {
-			const templatePath = resolve(dirname(filePath), templateUrlMatch[1])
-			return readFileSync(templatePath, "utf-8")
-		} catch {
-			// Template file not found, will be handled elsewhere
+			return { content: readFileSync(templatePath, "utf-8"), warning: null }
+		} catch (error) {
+			const errorCode = (error as NodeJS.ErrnoException).code
+			let warning: string
+
+			if (errorCode === "ENOENT") {
+				warning =
+					`Template file not found: ${templatePath}. ` +
+					"Navigation in this template will not be detected. " +
+					"Add navigation targets manually to the 'next' field in screen.meta.ts."
+			} else if (errorCode === "EACCES") {
+				warning =
+					`Permission denied reading template: ${templatePath}. ` +
+					"Check file permissions to enable template analysis."
+			} else {
+				const msg = error instanceof Error ? error.message : String(error)
+				warning = `Failed to read template file ${templatePath}: ${msg}`
+			}
+
+			return { content: null, warning }
 		}
 	}
 
-	return null
+	return { content: null, warning: null }
 }
 
 /**
  * Analyze HTML template for routerLink directives.
+ *
+ * Note: Line numbers are approximate as htmlparser2 only tracks newlines in text nodes,
+ * not in tags or attributes. Line numbers may drift from actual positions.
  *
  * @param html - The HTML template content
  * @param warnings - Array to collect warnings (mutated)
@@ -159,6 +177,7 @@ function analyzeTemplateHTML(
 ): DetectedNavigation[] {
 	const navigations: DetectedNavigation[] = []
 	let currentLine = 1
+	const parserErrors: string[] = []
 
 	const parser = new Parser({
 		onopentag(_name, attribs) {
@@ -166,8 +185,20 @@ function analyzeTemplateHTML(
 			// Check for static routerLink (becomes routerlink)
 			if ("routerlink" in attribs) {
 				const value = attribs.routerlink
-				if (value && isValidInternalPath(value)) {
-					navigations.push(createDetectedNavigation(value, "link", currentLine))
+				if (value) {
+					if (isValidInternalPath(value)) {
+						navigations.push(
+							createDetectedNavigation(value, "link", currentLine),
+						)
+					} else if (!value.startsWith("/") && !value.includes("://")) {
+						// Looks like a relative path - warn user
+						warnings.push(
+							`routerLink at line ~${currentLine} has relative path "${value}". ` +
+								"Angular routerLink paths should start with '/' for absolute routing. " +
+								"Navigation will not be detected for this link.",
+						)
+					}
+					// External URLs are intentionally skipped without warning
 				}
 			}
 
@@ -181,13 +212,23 @@ function analyzeTemplateHTML(
 			}
 		},
 		ontext(text) {
-			// Track line numbers by counting newlines in text
+			// Track approximate line numbers by counting newlines in text nodes.
+			// Note: Line numbers may be approximate as newlines in tags/attributes are not counted.
 			currentLine += (text.match(/\n/g) || []).length
+		},
+		onerror(error) {
+			parserErrors.push(
+				`HTML parsing error at line ~${currentLine}: ${error.message}. ` +
+					"Some navigation targets may not be detected.",
+			)
 		},
 	})
 
 	parser.write(html)
 	parser.end()
+
+	// Add any parser errors to warnings
+	warnings.push(...parserErrors)
 
 	return navigations
 }
@@ -200,8 +241,11 @@ function analyzeTemplateHTML(
  * - Array literals: `[routerLink]="['/path']"` or `[routerLink]="['/path', param]"`
  * - Warns on dynamic expressions: `[routerLink]="dynamicPath"`
  *
+ * Note: Does not handle escaped quotes (e.g., \' or \"). This is acceptable
+ * because Angular routerLink paths should not contain quotes.
+ *
  * @param expression - The binding expression value
- * @param line - Line number for warning messages
+ * @param line - Line number for warning messages (approximate)
  * @param warnings - Array to collect warnings (mutated)
  * @returns Detected navigation or null if path cannot be extracted
  */
@@ -212,7 +256,7 @@ function extractRouterLinkPath(
 ): DetectedNavigation | null {
 	if (!expression) {
 		warnings.push(
-			`Empty [routerLink] binding at line ${line}. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+			`Empty [routerLink] binding at line ~${line}. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 		)
 		return null
 	}
@@ -227,6 +271,13 @@ function extractRouterLinkPath(
 		const path = trimmed.slice(1, -1)
 		if (isValidInternalPath(path)) {
 			return createDetectedNavigation(path, "link", line)
+		}
+		if (!path.startsWith("/") && !path.includes("://")) {
+			warnings.push(
+				`[routerLink] at line ~${line} has relative path "${path}". ` +
+					"Angular routerLink paths should start with '/' for absolute routing. " +
+					"Navigation will not be detected for this link.",
+			)
 		}
 		return null
 	}
@@ -251,18 +302,29 @@ function extractRouterLinkPath(
 			if (isValidInternalPath(path)) {
 				return createDetectedNavigation(path, "link", line)
 			}
+			if (!path.startsWith("/") && !path.includes("://")) {
+				warnings.push(
+					`[routerLink] at line ~${line} has relative path "${path}". ` +
+						"Angular routerLink paths should start with '/' for absolute routing. " +
+						"Navigation will not be detected for this link.",
+				)
+			}
 		}
+		return null
 	}
 
 	// Dynamic expression - cannot be statically analyzed
 	warnings.push(
-		`Dynamic [routerLink] binding at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		`Dynamic [routerLink] binding at line ~${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 	)
 	return null
 }
 
 /**
  * Find the index of the first comma outside of quotes.
+ *
+ * Note: Does not handle escaped quotes (e.g., \' or \"). This is acceptable
+ * because Angular routerLink paths should not contain quotes.
  *
  * @param str - The string to search
  * @returns Index of first comma, or -1 if not found
