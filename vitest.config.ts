@@ -15,7 +15,10 @@ export default defineConfig({
 				"**/*.d.ts",
 				"**/index.ts",
 				"**/__tests__/**",
-				// Thin wrapper commands - logic is tested in utils
+				// CLI orchestration - spawns processes, interactive prompts
+				// Testable logic extracted and tested separately
+				"**/commands/dev.ts",
+				"**/commands/init.ts",
 				"**/commands/impact.ts",
 				"**/commands/pr-impact.ts",
 			],
