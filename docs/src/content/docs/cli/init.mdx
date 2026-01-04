@@ -15,10 +15,15 @@ USAGE:
   screenbook <OPTIONS>
 
 OPTIONS:
-  -h, --help             Display this help message
-  -v, --version          Display this version
-  -f, --force            Overwrite existing files (default: false)
-  --skipDetect           Skip framework auto-detection (default: false)
+  -h, --help                 Display this help message
+  -v, --version              Display this version
+  -f, --force                Overwrite existing files (default: false)
+  --skipDetect               Skip framework auto-detection (default: false)
+  --generate                 Auto-generate screen.meta.ts files (--no-generate to skip)
+  --dev                      Start development server after init (--no-dev to skip)
+  -y, --yes                  Answer yes to all prompts (default: false)
+  --ci                       CI mode (no prompts, generate only) (default: false)
+  -p, --port [port]          Port for the dev server (default: 4321)
 
 ```
 
