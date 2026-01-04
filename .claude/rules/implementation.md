@@ -1,28 +1,29 @@
-# Implementation Priority (MVP Shortest Path)
+# Implementation Guidelines
 
-## Order
+## Package Architecture
 
-1. **core**: `defineScreen()` and type definitions
-2. **cli**: `build` command (aggregate meta info to JSON)
-3. **cli**: `dev` command (start UI server)
-4. **ui**: Screen list + Mermaid navigation graph
-5. **cli**: `lint` command (for CI)
-6. **cli**: `init` command
+| Package | Role | Key Exports |
+|---------|------|-------------|
+| `@screenbook/core` | Type definitions, validation | `defineScreen()`, `defineConfig()`, types |
+| `@screenbook/cli` | CLI commands | All CLI functionality |
+| `@screenbook/ui` | Astro-based UI | Screen catalog, graph, impact views |
+| `screenbook` | Main package | Re-exports core + cli |
 
-## Phase 0 + UI Deliverables
+## Adding New Features
 
-### @screenbook/core
-- [ ] `defineScreen()` function
-- [ ] TypeScript types for screen meta
-- [ ] Zod schema for validation
+1. **Core changes**: Update types in `packages/core/src/types.ts`
+2. **CLI commands**: Add to `packages/cli/src/commands/`
+3. **UI pages**: Add to `packages/ui/src/pages/`
 
-### @screenbook/cli
-- [ ] `screenbook build` - Generate screens.json from screen.meta.ts files
-- [ ] `screenbook dev` - Start Astro dev server with UI
-- [ ] `screenbook lint` - Check for missing screen.meta files
-- [ ] `screenbook init` - Scaffold initial config
+## CLI Command Structure
 
-### @screenbook/ui
-- [ ] Screen list page with search/filter
-- [ ] Screen detail page
-- [ ] Mermaid navigation graph
+Commands are built with Commander.js. Each command has:
+- Command definition in `packages/cli/src/commands/`
+- Tests in `packages/cli/src/__tests__/`
+- Docs in `docs/src/content/docs/cli/`
+
+## Testing Strategy
+
+- Unit tests for core logic
+- Integration tests for CLI commands
+- Test files: `*.test.ts` or in `__tests__/` directories

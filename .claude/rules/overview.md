@@ -4,18 +4,20 @@ Screenbook is an OSS tool that generates screen catalogs, navigation graphs, and
 
 **Concept**: "Declare screens in code, auto-generate screen catalog, navigation graph, and impact analysis"
 
-## MVP Scope
+## Core Features
 
-Phase 0 + UI:
 - `defineScreen()` with typed meta definitions
 - Screen list (search / tag / owner filter)
 - Screen detail (route, owner, tags, dependsOn, entryPoints, next)
 - Navigation graph display (Mermaid)
-- `screenbook lint` for CI (detect missing screen.meta)
+- Impact analysis for API/screen dependencies
+- CI integration with `screenbook lint`
 
 ## Screen Meta Definition Format
 
 ```ts
+import { defineScreen } from "screenbook"
+
 export const screen = defineScreen({
   id: "billing.invoice.detail",
   title: "Invoice Detail",
@@ -30,7 +32,12 @@ export const screen = defineScreen({
 
 ## CLI Commands
 
-- `screenbook init` - Initialize screenbook in a project
-- `screenbook build` - Aggregate meta info and generate JSON
-- `screenbook dev` - Start UI server for local development
-- `screenbook lint` - Detect routes without screen.meta (for CI)
+| Command | Description |
+|---------|-------------|
+| `screenbook init` | Initialize screenbook in a project |
+| `screenbook build` | Aggregate meta info and generate JSON |
+| `screenbook dev` | Start UI server for local development |
+| `screenbook lint` | Detect routes without screen.meta (for CI) |
+| `screenbook generate` | Auto-generate screen.meta.ts from routes |
+| `screenbook impact` | Analyze screen/API dependencies |
+| `screenbook pr-impact` | PR-focused impact analysis |
