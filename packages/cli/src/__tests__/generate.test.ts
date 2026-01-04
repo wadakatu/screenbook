@@ -484,5 +484,81 @@ export function Users() {
 			expect(content).toContain("@api/client/getUsers")
 			expect(content).toContain("@api/client/createUser")
 		})
+
+		it("should detect navigation targets when --detect-navigation is enabled", async () => {
+			// Reset modules to ensure fresh config loading
+			vi.resetModules()
+
+			// Create routes file
+			const srcDir = join(testDir, "src/router")
+			const viewsDir = join(testDir, "src/views")
+			mkdirSync(srcDir, { recursive: true })
+			mkdirSync(viewsDir, { recursive: true })
+
+			writeFileSync(
+				join(srcDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: () => import('../views/Dashboard.tsx'),
+  },
+]
+`,
+			)
+
+			// Component file with navigation
+			writeFileSync(
+				join(viewsDir, "Dashboard.tsx"),
+				`import Link from "next/link"
+import { useRouter } from "next/navigation"
+
+export function Dashboard() {
+  const router = useRouter()
+  return (
+    <div>
+      <Link href="/users">Users</Link>
+      <Link href="/settings">Settings</Link>
+      <button onClick={() => router.push("/profile")}>Profile</button>
+    </div>
+  )
+}`,
+			)
+
+			// Config file
+			const configPath = join(testDir, "nav-detect.config.ts")
+			writeFileSync(
+				configPath,
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesFile: "src/router/routes.ts",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: configPath,
+					dryRun: false,
+					force: false,
+					interactive: false,
+					detectNavigation: true,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check that screen.meta.ts was created with next
+			const metaPath = join(viewsDir, "screen.meta.ts")
+			expect(existsSync(metaPath)).toBe(true)
+
+			const content = readFileSync(metaPath, "utf-8")
+			expect(content).toContain("next:")
+			expect(content).toContain('"users"')
+			expect(content).toContain('"settings"')
+			expect(content).toContain('"profile"')
+		})
 	})
 })

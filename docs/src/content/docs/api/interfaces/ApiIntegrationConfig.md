@@ -5,7 +5,7 @@ prev: false
 title: "ApiIntegrationConfig"
 ---
 
-Defined in: [packages/core/src/types.ts:437](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L437)
+Defined in: [packages/core/src/types.ts:437](https://github.com/wadakatu/screenbook/blob/51f11f04e0c13fe988a91bca8f446a2b61a5c8c4/packages/core/src/types.ts#L437)
 
 API integration configuration for auto-detecting dependencies from
 OpenAPI-generated clients (Orval, openapi-typescript, etc.).
@@ -25,7 +25,7 @@ const apiIntegration: ApiIntegrationConfig = {
 
 > **clientPackages**: `string`[]
 
-Defined in: [packages/core/src/types.ts:444](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L444)
+Defined in: [packages/core/src/types.ts:444](https://github.com/wadakatu/screenbook/blob/51f11f04e0c13fe988a91bca8f446a2b61a5c8c4/packages/core/src/types.ts#L444)
 
 Package names to scan for API client imports.
 These should match the import paths used in your code.
@@ -46,7 +46,7 @@ These should match the import paths used in your code.
 
 > `optional` **extractApiName**: (`importName`) => `string`
 
-Defined in: [packages/core/src/types.ts:452](https://github.com/wadakatu/screenbook/blob/02b860b1c5e15720b050d7b1eb3383836220714f/packages/core/src/types.ts#L452)
+Defined in: [packages/core/src/types.ts:452](https://github.com/wadakatu/screenbook/blob/51f11f04e0c13fe988a91bca8f446a2b61a5c8c4/packages/core/src/types.ts#L452)
 
 Optional transform function to convert import name to dependsOn format.
 If not provided, the import name is used as-is.
