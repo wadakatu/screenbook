@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import {
 	analyzeNavigation,
+	createDetectedNavigation,
 	detectNavigationFramework,
 	mergeNext,
 } from "../utils/navigationAnalyzer.js"
@@ -65,6 +66,23 @@ export function Button() {
 			expect(result.navigations).toHaveLength(1)
 			expect(result.navigations.at(0)?.path).toBe("/dashboard")
 			expect(result.navigations.at(0)?.screenId).toBe("dashboard")
+			expect(result.navigations.at(0)?.type).toBe("router-push")
+		})
+
+		it("should detect router.replace calls", () => {
+			const content = `
+import { useRouter } from "next/navigation"
+
+export function Button() {
+  const router = useRouter()
+  return <button onClick={() => router.replace("/home")}>Go</button>
+}
+`
+			const result = analyzeNavigation(content, "nextjs")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/home")
+			expect(result.navigations.at(0)?.screenId).toBe("home")
 			expect(result.navigations.at(0)?.type).toBe("router-push")
 		})
 
@@ -172,7 +190,7 @@ export function ContactLinks() {
 			expect(result.navigations).toHaveLength(0)
 		})
 
-		it("should warn on dynamic href expressions", () => {
+		it("should warn on dynamic href expressions with actionable guidance", () => {
 			const content = `
 import Link from "next/link"
 
@@ -186,6 +204,55 @@ export function DynamicLink({ path }) {
 			expect(result.warnings).toHaveLength(1)
 			expect(result.warnings[0]).toContain("Dynamic Link href")
 			expect(result.warnings[0]).toContain("cannot be statically analyzed")
+			expect(result.warnings[0]).toContain(
+				"Add the target screen ID manually to the 'next' field",
+			)
+		})
+
+		it("should warn on dynamic template literal with expressions", () => {
+			const content = `
+import Link from "next/link"
+
+export function UserLink({ userId }) {
+  return <Link href={\`/users/\${userId}\`}>User</Link>
+}
+`
+			const result = analyzeNavigation(content, "nextjs")
+
+			expect(result.navigations).toHaveLength(0)
+			expect(result.warnings).toHaveLength(1)
+			expect(result.warnings[0]).toContain("Dynamic Link href")
+			expect(result.warnings[0]).toContain("cannot be statically analyzed")
+		})
+
+		it("should strip query params from path when generating screenId", () => {
+			const content = `
+import Link from "next/link"
+
+export function Links() {
+  return <Link href="/users?tab=active">Users</Link>
+}
+`
+			const result = analyzeNavigation(content, "nextjs")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/users?tab=active")
+			expect(result.navigations.at(0)?.screenId).toBe("users")
+		})
+
+		it("should strip hash from path when generating screenId", () => {
+			const content = `
+import Link from "next/link"
+
+export function Links() {
+  return <Link href="/docs/api#section-1">Docs</Link>
+}
+`
+			const result = analyzeNavigation(content, "nextjs")
+
+			expect(result.navigations).toHaveLength(1)
+			expect(result.navigations.at(0)?.path).toBe("/docs/api#section-1")
+			expect(result.navigations.at(0)?.screenId).toBe("docs.api")
 		})
 
 		it("should handle href with JSX expression containing string literal", () => {
@@ -448,36 +515,86 @@ describe("mergeNext", () => {
 describe("detectNavigationFramework", () => {
 	it("should detect Next.js from next/link import", () => {
 		const content = `import Link from "next/link"`
-		expect(detectNavigationFramework(content)).toBe("nextjs")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(true)
 	})
 
 	it("should detect Next.js from next/navigation import", () => {
 		const content = `import { useRouter } from "next/navigation"`
-		expect(detectNavigationFramework(content)).toBe("nextjs")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(true)
 	})
 
 	it("should detect Next.js from next/router import", () => {
 		const content = `import { useRouter } from "next/router"`
-		expect(detectNavigationFramework(content)).toBe("nextjs")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(true)
 	})
 
 	it("should detect React Router from react-router import", () => {
 		const content = `import { Link } from "react-router-dom"`
-		expect(detectNavigationFramework(content)).toBe("react-router")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("react-router")
+		expect(result.detected).toBe(true)
 	})
 
 	it("should detect React Router from useNavigate", () => {
 		const content = `const navigate = useNavigate()`
-		expect(detectNavigationFramework(content)).toBe("react-router")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("react-router")
+		expect(result.detected).toBe(true)
 	})
 
 	it("should detect React Router from @remix-run/react import", () => {
 		const content = `import { Link } from "@remix-run/react"`
-		expect(detectNavigationFramework(content)).toBe("react-router")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("react-router")
+		expect(result.detected).toBe(true)
 	})
 
-	it("should default to Next.js for unknown content", () => {
+	it("should default to Next.js for unknown content with detected=false", () => {
 		const content = `export function Component() { return <div>Hello</div> }`
-		expect(detectNavigationFramework(content)).toBe("nextjs")
+		const result = detectNavigationFramework(content)
+		expect(result.framework).toBe("nextjs")
+		expect(result.detected).toBe(false)
+	})
+})
+
+describe("createDetectedNavigation", () => {
+	it("should create DetectedNavigation with correct screenId", () => {
+		const result = createDetectedNavigation("/users/profile", "link", 10)
+
+		expect(result.path).toBe("/users/profile")
+		expect(result.screenId).toBe("users.profile")
+		expect(result.type).toBe("link")
+		expect(result.line).toBe(10)
+	})
+
+	it("should strip query params when deriving screenId", () => {
+		const result = createDetectedNavigation("/users?tab=active", "link", 5)
+
+		expect(result.path).toBe("/users?tab=active")
+		expect(result.screenId).toBe("users")
+	})
+
+	it("should strip hash when deriving screenId", () => {
+		const result = createDetectedNavigation("/docs#section-1", "link", 5)
+
+		expect(result.path).toBe("/docs#section-1")
+		expect(result.screenId).toBe("docs")
+	})
+
+	it("should strip both query params and hash", () => {
+		const result = createDetectedNavigation(
+			"/users/detail?id=123#section",
+			"router-push",
+			15,
+		)
+
+		expect(result.path).toBe("/users/detail?id=123#section")
+		expect(result.screenId).toBe("users.detail")
 	})
 })

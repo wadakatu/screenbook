@@ -128,12 +128,12 @@ export const generateCommand = define({
 })
 
 interface GenerateFromRoutesFileOptions {
-	dryRun: boolean
-	force: boolean
-	interactive: boolean
-	detectApi: boolean
-	detectNavigation: boolean
-	apiIntegration?: ApiIntegrationConfig
+	readonly dryRun: boolean
+	readonly force: boolean
+	readonly interactive: boolean
+	readonly detectApi: boolean
+	readonly detectNavigation: boolean
+	readonly apiIntegration?: ApiIntegrationConfig
 }
 
 /**
@@ -279,19 +279,30 @@ async function generateFromRoutesFile(
 		if (detectNavigation && route.componentPath) {
 			const componentAbsPath = resolve(cwd, route.componentPath)
 			if (existsSync(componentAbsPath)) {
+				let componentContent: string
 				try {
-					const componentContent = readFileSync(componentAbsPath, "utf-8")
-					const framework = detectNavigationFramework(componentContent)
+					componentContent = readFileSync(componentAbsPath, "utf-8")
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error)
+					logger.warn(
+						`${logger.path(route.componentPath)}: Could not read file for navigation analysis: ${message}`,
+					)
+					componentContent = ""
+				}
+
+				if (componentContent) {
+					const { framework, detected } =
+						detectNavigationFramework(componentContent)
+					if (!detected) {
+						logger.warn(
+							`${logger.path(route.componentPath)}: Could not detect navigation framework, defaulting to Next.js patterns. Navigation detection may be incomplete.`,
+						)
+					}
 					const result = analyzeNavigation(componentContent, framework)
 					detectedNext = result.navigations.map((n) => n.screenId)
 					for (const warning of result.warnings) {
 						logger.warn(`${logger.path(route.componentPath)}: ${warning}`)
 					}
-				} catch (error) {
-					const message = error instanceof Error ? error.message : String(error)
-					logger.warn(
-						`${logger.path(route.componentPath)}: Could not analyze for navigation: ${message}`,
-					)
 				}
 			}
 		}
@@ -444,19 +455,30 @@ export async function generateFromRoutesPattern(
 		if (detectNavigation) {
 			const absoluteRouteFile = join(cwd, routeFile)
 			if (existsSync(absoluteRouteFile)) {
+				let routeContent: string
 				try {
-					const routeContent = readFileSync(absoluteRouteFile, "utf-8")
-					const framework = detectNavigationFramework(routeContent)
+					routeContent = readFileSync(absoluteRouteFile, "utf-8")
+				} catch (error) {
+					const message = error instanceof Error ? error.message : String(error)
+					logger.warn(
+						`${logger.path(routeFile)}: Could not read file for navigation analysis: ${message}`,
+					)
+					routeContent = ""
+				}
+
+				if (routeContent) {
+					const { framework, detected } =
+						detectNavigationFramework(routeContent)
+					if (!detected) {
+						logger.warn(
+							`${logger.path(routeFile)}: Could not detect navigation framework, defaulting to Next.js patterns. Navigation detection may be incomplete.`,
+						)
+					}
 					const result = analyzeNavigation(routeContent, framework)
 					detectedNext = result.navigations.map((n) => n.screenId)
 					for (const warning of result.warnings) {
 						logger.warn(`${logger.path(routeFile)}: ${warning}`)
 					}
-				} catch (error) {
-					const message = error instanceof Error ? error.message : String(error)
-					logger.warn(
-						`${logger.path(routeFile)}: Could not analyze for navigation: ${message}`,
-					)
 				}
 			}
 		}
@@ -785,12 +807,9 @@ function inferScreenMeta(
 	return { id, title, route }
 }
 
-interface GenerateOptions {
-	owner?: string[]
-	tags?: string[]
-	dependsOn?: string[]
-	next?: string[]
-}
+type GenerateOptions = Partial<
+	Pick<Screen, "owner" | "tags" | "dependsOn" | "next">
+>
 
 /**
  * Generate screen.meta.ts file content

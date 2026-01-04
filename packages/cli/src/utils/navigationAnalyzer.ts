@@ -16,13 +16,43 @@ export interface DetectedNavigation {
 }
 
 /**
+ * Factory function to create DetectedNavigation with proper screenId derivation.
+ * Ensures the screenId is always correctly derived from the path.
+ */
+export function createDetectedNavigation(
+	path: string,
+	type: DetectedNavigation["type"],
+	line: number,
+): DetectedNavigation {
+	// Strip query params and hash from path before converting to screenId
+	const pathWithoutQuery = path.split("?")[0] ?? path
+	const cleanPath = pathWithoutQuery.split("#")[0] ?? pathWithoutQuery
+	return {
+		path,
+		screenId: pathToScreenId(cleanPath),
+		type,
+		line,
+	}
+}
+
+/**
  * Result of analyzing a file for navigation
  */
 export interface NavigationAnalysisResult {
 	/** Detected navigation targets */
-	navigations: DetectedNavigation[]
+	readonly navigations: readonly DetectedNavigation[]
 	/** Any warnings during analysis */
-	warnings: string[]
+	readonly warnings: readonly string[]
+}
+
+/**
+ * Result of framework detection
+ */
+export interface FrameworkDetectionResult {
+	/** Detected or default framework */
+	readonly framework: NavigationFramework
+	/** Whether the framework was explicitly detected (false means defaulted to Next.js) */
+	readonly detected: boolean
 }
 
 /**
@@ -65,24 +95,37 @@ export function analyzeNavigation(
 		return { navigations, warnings }
 	}
 
-	// Walk the AST
-	walkNode(ast.program, (node) => {
-		// Detect JSX Link components
-		if (node.type === "JSXOpeningElement") {
-			const linkNav = extractLinkNavigation(node, framework, warnings)
-			if (linkNav) {
-				navigations.push(linkNav)
+	// Walk the AST with error handling
+	try {
+		walkNode(ast.program, (node) => {
+			// Detect JSX Link components
+			if (node.type === "JSXOpeningElement") {
+				const linkNav = extractLinkNavigation(node, framework, warnings)
+				if (linkNav) {
+					navigations.push(linkNav)
+				}
 			}
-		}
 
-		// Detect call expressions (router.push, navigate, redirect)
-		if (node.type === "CallExpression") {
-			const callNav = extractCallNavigation(node, framework, warnings)
-			if (callNav) {
-				navigations.push(callNav)
+			// Detect call expressions (router.push, router.replace, navigate, redirect)
+			if (node.type === "CallExpression") {
+				const callNav = extractCallNavigation(node, framework, warnings)
+				if (callNav) {
+					navigations.push(callNav)
+				}
 			}
+		})
+	} catch (error) {
+		if (error instanceof RangeError) {
+			warnings.push(
+				`File too complex for navigation analysis (${error.message}). Consider simplifying the file structure.`,
+			)
+			return { navigations, warnings }
 		}
-	})
+		const message = error instanceof Error ? error.message : String(error)
+		const errorType = error?.constructor?.name ?? "Unknown"
+		warnings.push(`Unexpected ${errorType} during AST traversal: ${message}`)
+		return { navigations, warnings }
+	}
 
 	// Remove duplicates (same screenId)
 	const seen = new Set<string>()
@@ -101,6 +144,7 @@ export function analyzeNavigation(
  * Extract navigation from JSX Link component
  */
 function extractLinkNavigation(
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
 	node: any,
 	framework: NavigationFramework,
 	warnings: string[],
@@ -128,12 +172,11 @@ function extractLinkNavigation(
 			if (attr.value?.type === "StringLiteral") {
 				const path = attr.value.value
 				if (isValidInternalPath(path)) {
-					return {
+					return createDetectedNavigation(
 						path,
-						screenId: pathToScreenId(path),
-						type: "link",
-						line: node.loc?.start.line ?? 0,
-					}
+						"link",
+						node.loc?.start.line ?? 0,
+					)
 				}
 			}
 
@@ -145,12 +188,11 @@ function extractLinkNavigation(
 				if (expr.type === "StringLiteral") {
 					const path = expr.value
 					if (isValidInternalPath(path)) {
-						return {
+						return createDetectedNavigation(
 							path,
-							screenId: pathToScreenId(path),
-							type: "link",
-							line: node.loc?.start.line ?? 0,
-						}
+							"link",
+							node.loc?.start.line ?? 0,
+						)
 					}
 				}
 
@@ -162,19 +204,18 @@ function extractLinkNavigation(
 				) {
 					const path = expr.quasis[0].value.cooked
 					if (path && isValidInternalPath(path)) {
-						return {
+						return createDetectedNavigation(
 							path,
-							screenId: pathToScreenId(path),
-							type: "link",
-							line: node.loc?.start.line ?? 0,
-						}
+							"link",
+							node.loc?.start.line ?? 0,
+						)
 					}
 				}
 
-				// Dynamic expression - add warning
+				// Dynamic expression - add warning with actionable guidance
 				const line = node.loc?.start.line ?? 0
 				warnings.push(
-					`Dynamic Link ${attrName} at line ${line} cannot be statically analyzed`,
+					`Dynamic Link ${attrName} at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 				)
 			}
 		}
@@ -184,23 +225,24 @@ function extractLinkNavigation(
 }
 
 /**
- * Extract navigation from function calls (router.push, navigate, redirect)
+ * Extract navigation from function calls (router.push, router.replace, navigate, redirect)
  */
 function extractCallNavigation(
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
 	node: any,
 	framework: NavigationFramework,
 	warnings: string[],
 ): DetectedNavigation | null {
 	const callee = node.callee
 
-	// router.push() - Next.js
+	// router.push() or router.replace() - Next.js
 	if (
 		framework === "nextjs" &&
 		callee?.type === "MemberExpression" &&
 		callee.object?.type === "Identifier" &&
 		callee.object.name === "router" &&
 		callee.property?.type === "Identifier" &&
-		callee.property.name === "push"
+		(callee.property.name === "push" || callee.property.name === "replace")
 	) {
 		return extractPathFromCallArgs(node, "router-push", warnings)
 	}
@@ -230,6 +272,7 @@ function extractCallNavigation(
  * Extract path from function call arguments
  */
 function extractPathFromCallArgs(
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
 	node: any,
 	type: DetectedNavigation["type"],
 	warnings: string[],
@@ -244,12 +287,7 @@ function extractPathFromCallArgs(
 	if (firstArg.type === "StringLiteral") {
 		const path = firstArg.value
 		if (isValidInternalPath(path)) {
-			return {
-				path,
-				screenId: pathToScreenId(path),
-				type,
-				line: node.loc?.start.line ?? 0,
-			}
+			return createDetectedNavigation(path, type, node.loc?.start.line ?? 0)
 		}
 	}
 
@@ -261,19 +299,14 @@ function extractPathFromCallArgs(
 	) {
 		const path = firstArg.quasis[0].value.cooked
 		if (path && isValidInternalPath(path)) {
-			return {
-				path,
-				screenId: pathToScreenId(path),
-				type,
-				line: node.loc?.start.line ?? 0,
-			}
+			return createDetectedNavigation(path, type, node.loc?.start.line ?? 0)
 		}
 	}
 
-	// Dynamic argument - add warning
+	// Dynamic argument - add warning with actionable guidance
 	const line = node.loc?.start.line ?? 0
 	warnings.push(
-		`Dynamic navigation path at line ${line} cannot be statically analyzed`,
+		`Dynamic navigation path at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 	)
 
 	return null
@@ -306,7 +339,12 @@ function isValidInternalPath(path: string): boolean {
 /**
  * Walk AST node recursively
  */
-function walkNode(node: any, callback: (node: any) => void): void {
+function walkNode(
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
+	node: any,
+	// biome-ignore lint/suspicious/noExplicitAny: Babel AST nodes have complex union types that are impractical to fully type
+	callback: (node: any) => void,
+): void {
 	if (!node || typeof node !== "object") return
 
 	callback(node)
@@ -345,18 +383,19 @@ export function mergeNext(
 }
 
 /**
- * Detect navigation framework from file content
+ * Detect navigation framework from file content.
+ * Returns both the framework and whether it was explicitly detected.
  */
 export function detectNavigationFramework(
 	content: string,
-): NavigationFramework {
+): FrameworkDetectionResult {
 	// Check for Next.js patterns
 	if (
 		content.includes("next/link") ||
 		content.includes("next/navigation") ||
 		content.includes("next/router")
 	) {
-		return "nextjs"
+		return { framework: "nextjs", detected: true }
 	}
 
 	// Check for React Router patterns
@@ -364,14 +403,14 @@ export function detectNavigationFramework(
 		content.includes("react-router") ||
 		content.includes("@remix-run/react")
 	) {
-		return "react-router"
+		return { framework: "react-router", detected: true }
 	}
 
 	// Check for useNavigate (React Router)
 	if (content.includes("useNavigate")) {
-		return "react-router"
+		return { framework: "react-router", detected: true }
 	}
 
 	// Default to Next.js (more common in file-based routing projects)
-	return "nextjs"
+	return { framework: "nextjs", detected: false }
 }
