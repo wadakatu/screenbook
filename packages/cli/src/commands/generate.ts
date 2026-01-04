@@ -232,7 +232,7 @@ async function generateFromRoutesFile(
 	logSummary(created, skipped, dryRun)
 }
 
-interface GenerateFromRoutesPatternOptions {
+export interface GenerateFromRoutesPatternOptions {
 	dryRun: boolean
 	force: boolean
 	interactive: boolean
@@ -242,7 +242,7 @@ interface GenerateFromRoutesPatternOptions {
 /**
  * Generate screen.meta.ts files from route files matching a glob pattern
  */
-async function generateFromRoutesPattern(
+export async function generateFromRoutesPattern(
 	routesPattern: string,
 	cwd: string,
 	options: GenerateFromRoutesPatternOptions,

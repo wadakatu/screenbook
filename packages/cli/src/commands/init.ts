@@ -1,12 +1,29 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { spawn } from "node:child_process"
+import {
+	copyFileSync,
+	existsSync,
+	mkdirSync,
+	readFileSync,
+	writeFileSync,
+} from "node:fs"
+import { createRequire } from "node:module"
+import { dirname, join, resolve } from "node:path"
+import type { Screen } from "@screenbook/core"
 import { define } from "gunshi"
+import { createJiti } from "jiti"
+import prompts from "prompts"
+import { glob } from "tinyglobby"
 import {
 	detectFramework,
 	type FrameworkInfo,
 	promptFrameworkSelection,
 } from "../utils/detectFramework.js"
+import { isInteractive } from "../utils/isInteractive.js"
 import { logger } from "../utils/logger.js"
+import {
+	type GenerateFromRoutesPatternOptions,
+	generateFromRoutesPattern,
+} from "./generate.js"
 
 function generateConfigTemplate(framework: FrameworkInfo | null): string {
 	if (framework) {
@@ -79,6 +96,212 @@ function printNextSteps(hasRoutesPattern: boolean): void {
 	)
 }
 
+interface ResolveOptionParams {
+	explicitValue: boolean | undefined
+	yesAll: boolean
+	ciMode: boolean
+	ciDefault: boolean
+	promptMessage: string
+}
+
+async function resolveOption(params: ResolveOptionParams): Promise<boolean> {
+	const { explicitValue, yesAll, ciMode, ciDefault, promptMessage } = params
+
+	// Explicit flag provided
+	if (explicitValue !== undefined) {
+		return explicitValue
+	}
+
+	// -y flag: answer yes to all
+	if (yesAll) {
+		return true
+	}
+
+	// CI mode or non-interactive environment
+	if (ciMode || !isInteractive()) {
+		return ciDefault
+	}
+
+	// Interactive prompt
+	const response = await prompts({
+		type: "confirm",
+		name: "value",
+		message: promptMessage,
+		initial: true,
+	})
+
+	return response.value ?? false
+}
+
+async function countRouteFiles(
+	routesPattern: string,
+	cwd: string,
+): Promise<number> {
+	const files = await glob(routesPattern, { cwd })
+	return files.length
+}
+
+async function runGenerate(
+	routesPattern: string,
+	cwd: string,
+): Promise<{ created: number; skipped: number }> {
+	const options: GenerateFromRoutesPatternOptions = {
+		dryRun: false,
+		force: false,
+		interactive: false,
+		ignore: ["**/node_modules/**"],
+	}
+
+	// Count files before generation
+	const routeFiles = await glob(routesPattern, {
+		cwd,
+		ignore: options.ignore,
+	})
+
+	// Count existing screen.meta.ts files
+	const metaPattern = routesPattern
+		.replace(/\/\*\*\/[^/]+$/, "/**/screen.meta.ts")
+		.replace(/\/[^/]+$/, "/screen.meta.ts")
+	const existingMetas = await glob(metaPattern, { cwd })
+
+	await generateFromRoutesPattern(routesPattern, cwd, options)
+
+	// Count new screen.meta.ts files
+	const newMetas = await glob(metaPattern, { cwd })
+	const created = newMetas.length - existingMetas.length
+	const skipped = routeFiles.length - created
+
+	return { created, skipped }
+}
+
+async function buildScreensForDev(
+	metaPattern: string,
+	outDir: string,
+	cwd: string,
+): Promise<void> {
+	const files = await glob(metaPattern, {
+		cwd,
+		ignore: ["**/node_modules/**"],
+	})
+
+	if (files.length === 0) {
+		logger.warn(`No screen.meta.ts files found matching: ${metaPattern}`)
+		return
+	}
+
+	type ScreenWithFilePath = Screen & { filePath: string }
+
+	const jiti = createJiti(cwd)
+	const screens: ScreenWithFilePath[] = []
+
+	for (const file of files) {
+		const absolutePath = resolve(cwd, file)
+
+		try {
+			const module = (await jiti.import(absolutePath)) as { screen?: Screen }
+			if (module.screen) {
+				screens.push({ ...module.screen, filePath: absolutePath })
+			}
+		} catch {
+			// Skip failed files silently during init
+		}
+	}
+
+	const outputPath = join(cwd, outDir, "screens.json")
+	const outputDir = dirname(outputPath)
+
+	if (!existsSync(outputDir)) {
+		mkdirSync(outputDir, { recursive: true })
+	}
+
+	writeFileSync(outputPath, JSON.stringify(screens, null, 2))
+}
+
+function resolveUiPackage(): string | null {
+	try {
+		const require = createRequire(import.meta.url)
+		const uiPackageJson = require.resolve("@screenbook/ui/package.json")
+		return dirname(uiPackageJson)
+	} catch {
+		const possiblePaths = [
+			join(process.cwd(), "node_modules", "@screenbook", "ui"),
+			join(process.cwd(), "..", "ui"),
+			join(process.cwd(), "packages", "ui"),
+		]
+
+		for (const p of possiblePaths) {
+			if (existsSync(join(p, "package.json"))) {
+				return p
+			}
+		}
+
+		return null
+	}
+}
+
+async function startDevServer(
+	metaPattern: string,
+	outDir: string,
+	cwd: string,
+	port: string,
+): Promise<void> {
+	// Build screens first
+	await buildScreensForDev(metaPattern, outDir, cwd)
+
+	// Find the UI package
+	const uiPackagePath = resolveUiPackage()
+
+	if (!uiPackagePath) {
+		logger.warn("Could not find @screenbook/ui package")
+		logger.log(
+			`  Run ${logger.code("npm install @screenbook/ui")} to install it`,
+		)
+		return
+	}
+
+	// Copy screens.json to UI package
+	const screensJsonPath = join(cwd, outDir, "screens.json")
+	const uiScreensDir = join(uiPackagePath, ".screenbook")
+
+	if (!existsSync(uiScreensDir)) {
+		mkdirSync(uiScreensDir, { recursive: true })
+	}
+
+	if (existsSync(screensJsonPath)) {
+		copyFileSync(screensJsonPath, join(uiScreensDir, "screens.json"))
+	}
+
+	// Start Astro dev server
+	logger.blank()
+	logger.info(
+		`Starting UI server on ${logger.highlight(`http://localhost:${port}`)}`,
+	)
+	logger.blank()
+
+	const astroProcess = spawn("npx", ["astro", "dev", "--port", port], {
+		cwd: uiPackagePath,
+		stdio: "inherit",
+		shell: true,
+	})
+
+	astroProcess.on("error", (error) => {
+		logger.error(`Failed to start server: ${error.message}`)
+	})
+
+	astroProcess.on("close", (code) => {
+		process.exit(code ?? 0)
+	})
+
+	// Handle graceful shutdown
+	process.on("SIGINT", () => {
+		astroProcess.kill("SIGINT")
+	})
+
+	process.on("SIGTERM", () => {
+		astroProcess.kill("SIGTERM")
+	})
+}
+
 export const initCommand = define({
 	name: "init",
 	description: "Initialize Screenbook in a project",
@@ -94,11 +317,43 @@ export const initCommand = define({
 			description: "Skip framework auto-detection",
 			default: false,
 		},
+		generate: {
+			type: "boolean",
+			description: "Auto-generate screen.meta.ts files (--no-generate to skip)",
+			default: undefined,
+		},
+		dev: {
+			type: "boolean",
+			description: "Start development server after init (--no-dev to skip)",
+			default: undefined,
+		},
+		yes: {
+			type: "boolean",
+			short: "y",
+			description: "Answer yes to all prompts",
+			default: false,
+		},
+		ci: {
+			type: "boolean",
+			description: "CI mode (no prompts, generate only)",
+			default: false,
+		},
+		port: {
+			type: "string",
+			short: "p",
+			description: "Port for the dev server",
+			default: "4321",
+		},
 	},
 	run: async (ctx) => {
 		const cwd = process.cwd()
 		const force = ctx.values.force ?? false
 		const skipDetect = ctx.values.skipDetect ?? false
+		const generateFlag = ctx.values.generate
+		const devFlag = ctx.values.dev
+		const yesAll = ctx.values.yes ?? false
+		const ciMode = ctx.values.ci ?? false
+		const port = ctx.values.port ?? "4321"
 
 		logger.info("Initializing Screenbook...")
 		logger.blank()
@@ -113,12 +368,16 @@ export const initCommand = define({
 				logger.itemSuccess(`Detected: ${framework.name}`)
 			} else {
 				logger.log("  Could not auto-detect framework")
-				logger.blank()
-				framework = await promptFrameworkSelection()
 
-				if (framework) {
+				// Only prompt for framework selection in interactive mode
+				if (!ciMode && isInteractive()) {
 					logger.blank()
-					logger.itemSuccess(`Selected: ${framework.name}`)
+					framework = await promptFrameworkSelection()
+
+					if (framework) {
+						logger.blank()
+						logger.itemSuccess(`Selected: ${framework.name}`)
+					}
 				}
 			}
 		}
@@ -158,7 +417,75 @@ export const initCommand = define({
 		logger.blank()
 		logger.done("Screenbook initialized successfully!")
 
-		printValueProposition()
-		printNextSteps(framework !== null)
+		// If no framework detected or no routesPattern, show traditional next steps
+		if (!framework?.routesPattern) {
+			printValueProposition()
+			printNextSteps(false)
+			return
+		}
+
+		// Count route files
+		const routeFileCount = await countRouteFiles(framework.routesPattern, cwd)
+
+		if (routeFileCount === 0) {
+			printValueProposition()
+			printNextSteps(true)
+			return
+		}
+
+		// Prompt for generate
+		logger.blank()
+		const shouldGenerate = await resolveOption({
+			explicitValue: generateFlag,
+			yesAll,
+			ciMode,
+			ciDefault: true,
+			promptMessage: `Found ${routeFileCount} route files. Generate screen.meta.ts files?`,
+		})
+
+		if (!shouldGenerate) {
+			printValueProposition()
+			printNextSteps(true)
+			return
+		}
+
+		// Run generate
+		logger.blank()
+		logger.info("Generating screen metadata...")
+		logger.blank()
+
+		await runGenerate(framework.routesPattern, cwd)
+
+		// In CI mode, skip dev server
+		if (ciMode) {
+			logger.blank()
+			logger.done("Initialization complete!")
+			return
+		}
+
+		// Prompt for dev server
+		logger.blank()
+		const shouldDev = await resolveOption({
+			explicitValue: devFlag,
+			yesAll,
+			ciMode,
+			ciDefault: false,
+			promptMessage: "Start the development server?",
+		})
+
+		if (!shouldDev) {
+			logger.blank()
+			logger.log(logger.bold("Next step:"))
+			logger.log(
+				`  Run ${logger.code("screenbook dev")} to start the UI server`,
+			)
+			return
+		}
+
+		// Start dev server
+		logger.blank()
+		logger.info("Starting development server...")
+
+		await startDevServer(framework.metaPattern, ".screenbook", cwd, port)
 	},
 })
