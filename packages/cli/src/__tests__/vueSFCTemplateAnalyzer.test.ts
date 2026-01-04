@@ -242,7 +242,9 @@ describe("analyzeVueSFC", () => {
 			const result = analyzeVueSFC(content, "test.vue")
 
 			expect(result.templateNavigations).toHaveLength(1)
-			expect(result.templateNavigations.at(0)?.screenId).toBe("billing.invoices")
+			expect(result.templateNavigations.at(0)?.screenId).toBe(
+				"billing.invoices",
+			)
 		})
 
 		it("should handle paths with parameters", () => {
@@ -399,6 +401,21 @@ function goToSettings() {
 
 			expect(result.templateNavigations).toHaveLength(0)
 			expect(result.scriptNavigations).toHaveLength(0)
+		})
+
+		it("should report SFC parse errors as warnings", () => {
+			const content = `
+<template>
+  <div
+  <!-- unclosed tag triggers parse error -->
+</template>
+`
+			const result = analyzeVueSFC(content, "test.vue")
+
+			expect(result.warnings.length).toBeGreaterThan(0)
+			expect(result.warnings.some((w) => w.includes("SFC parse error"))).toBe(
+				true,
+			)
 		})
 
 		it("should handle SFC without template section", () => {

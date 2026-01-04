@@ -27,6 +27,7 @@ export interface VueSFCAnalysisResult {
  * - Template: `<RouterLink to="/path">`, `<router-link to="/path">`
  * - Template: `:to="'/path'"` (static string binding)
  * - Script: `router.push("/path")`, `router.replace("/path")`
+ * - Script: `router.push({ path: "/path" })` (object-based navigation)
  *
  * @param content - The Vue SFC content to analyze
  * @param filePath - The file path (used for error messages)
@@ -41,18 +42,15 @@ export function analyzeVueSFC(
 	const warnings: string[] = []
 
 	try {
-		// Parse the SFC
 		const { descriptor, errors } = parse(content, {
 			filename: filePath,
 			sourceMap: false,
 		})
 
-		// Report parse errors
 		for (const error of errors) {
 			warnings.push(`SFC parse error: ${error.message}`)
 		}
 
-		// Analyze template section
 		if (descriptor.template?.ast) {
 			const templateResult = analyzeTemplateAST(
 				descriptor.template.ast.children,
@@ -61,7 +59,6 @@ export function analyzeVueSFC(
 			templateNavigations.push(...templateResult)
 		}
 
-		// Analyze script section using existing analyzer
 		const scriptContent =
 			descriptor.scriptSetup?.content || descriptor.script?.content
 		if (scriptContent) {
@@ -70,38 +67,52 @@ export function analyzeVueSFC(
 			warnings.push(...scriptResult.warnings)
 		}
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error)
-		warnings.push(`Failed to analyze Vue SFC: ${message}`)
+		if (error instanceof SyntaxError) {
+			warnings.push(`SFC syntax error in ${filePath}: ${error.message}`)
+		} else if (error instanceof RangeError) {
+			warnings.push(
+				`${filePath}: File too complex for navigation analysis. Consider simplifying the template structure.`,
+			)
+		} else {
+			const message = error instanceof Error ? error.message : String(error)
+			warnings.push(
+				`${filePath}: Unexpected error during analysis: ${message}. Please report this as a bug.`,
+			)
+		}
 	}
 
-	// Deduplicate by screenId
-	const seenTemplateIds = new Set<string>()
-	const uniqueTemplateNavigations = templateNavigations.filter((nav) => {
-		if (seenTemplateIds.has(nav.screenId)) {
-			return false
-		}
-		seenTemplateIds.add(nav.screenId)
-		return true
-	})
-
-	const seenScriptIds = new Set<string>()
-	const uniqueScriptNavigations = scriptNavigations.filter((nav) => {
-		if (seenScriptIds.has(nav.screenId)) {
-			return false
-		}
-		seenScriptIds.add(nav.screenId)
-		return true
-	})
-
 	return {
-		templateNavigations: uniqueTemplateNavigations,
-		scriptNavigations: uniqueScriptNavigations,
+		templateNavigations: deduplicateByScreenId(templateNavigations),
+		scriptNavigations: deduplicateByScreenId(scriptNavigations),
 		warnings,
 	}
 }
 
 /**
- * Analyze template AST for RouterLink components
+ * Deduplicate navigations by screenId.
+ *
+ * @param navigations - Array of detected navigations
+ * @returns Array with duplicate screenIds removed (keeps first occurrence)
+ */
+function deduplicateByScreenId(
+	navigations: DetectedNavigation[],
+): DetectedNavigation[] {
+	const seen = new Set<string>()
+	return navigations.filter((nav) => {
+		if (seen.has(nav.screenId)) {
+			return false
+		}
+		seen.add(nav.screenId)
+		return true
+	})
+}
+
+/**
+ * Analyze template AST for RouterLink components.
+ *
+ * @param nodes - Array of template child nodes to traverse
+ * @param warnings - Array to collect warnings during analysis (mutated)
+ * @returns Array of detected navigation targets from RouterLink components
  */
 function analyzeTemplateAST(
 	nodes: TemplateChildNode[],
@@ -132,7 +143,11 @@ function isRouterLinkComponent(tag: string): boolean {
 }
 
 /**
- * Extract navigation from RouterLink component
+ * Extract navigation from RouterLink component.
+ *
+ * @param node - The element node representing a RouterLink component
+ * @param warnings - Array to collect warnings (mutated)
+ * @returns Detected navigation or null if no valid path found
  */
 function extractRouterLinkNavigation(
 	node: ElementNode,
@@ -165,7 +180,15 @@ function extractRouterLinkNavigation(
 }
 
 /**
- * Extract path from dynamic :to binding
+ * Extract path from dynamic :to binding.
+ *
+ * Handles expressions like `:to="'/path'"` or `v-bind:to="'/path'"`.
+ * Complex expressions that cannot be statically analyzed generate warnings.
+ *
+ * @param directive - The Vue directive AST node
+ * @param line - Line number for warning messages
+ * @param warnings - Array to collect warnings (mutated)
+ * @returns Detected navigation or null if path cannot be extracted
  */
 function extractDynamicToBinding(
 	// biome-ignore lint/suspicious/noExplicitAny: Vue compiler types are complex
@@ -197,13 +220,23 @@ function extractDynamicToBinding(
 		warnings.push(
 			`Dynamic :to binding at line ${line} cannot be statically analyzed. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
 		)
+	} else {
+		// Complex expression type (COMPOUND_EXPRESSION, etc.)
+		warnings.push(
+			`Complex :to binding at line ${line} uses an unsupported expression type. Add the target screen ID manually to the 'next' field in screen.meta.ts.`,
+		)
 	}
 
 	return null
 }
 
 /**
- * Check if a string is a static string literal
+ * Check if expression content is a static string literal.
+ *
+ * Recognizes single quotes, double quotes, and template literals without interpolation.
+ *
+ * @param content - The expression content (e.g., "'/path'" or "`/home`")
+ * @returns true if the content is a statically analyzable string literal
  */
 function isStaticStringLiteral(content: string): boolean {
 	// Single quotes: '/path'
@@ -233,7 +266,12 @@ function extractStringValue(content: string): string {
 }
 
 /**
- * Walk template AST nodes recursively
+ * Walk template AST nodes recursively in pre-order traversal.
+ *
+ * Traverses element nodes, v-if branches, and v-for loop bodies.
+ *
+ * @param nodes - Array of template child nodes to traverse
+ * @param callback - Function called for each node visited
  */
 function walkTemplateNodes(
 	nodes: TemplateChildNode[],

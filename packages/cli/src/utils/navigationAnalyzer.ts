@@ -6,13 +6,18 @@ import { pathToScreenId } from "./routeParserUtils.js"
  */
 export interface DetectedNavigation {
 	/** The target path (e.g., "/users", "/billing/invoices/:id") */
-	path: string
+	readonly path: string
 	/** Converted screen ID using pathToScreenId */
-	screenId: string
+	readonly screenId: string
 	/** Navigation method type */
-	type: "link" | "router-push" | "navigate" | "redirect" | "navigate-by-url"
+	readonly type:
+		| "link"
+		| "router-push"
+		| "navigate"
+		| "redirect"
+		| "navigate-by-url"
 	/** Line number where detected */
-	line: number
+	readonly line: number
 }
 
 /**
