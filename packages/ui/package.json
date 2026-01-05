@@ -39,6 +39,10 @@
 		"url": "https://github.com/wadakatu/screenbook/issues"
 	},
 	"files": [
+		"src",
+		"public",
+		"astro.config.mjs",
+		"tsconfig.json",
 		"dist",
 		"README.md"
 	],
