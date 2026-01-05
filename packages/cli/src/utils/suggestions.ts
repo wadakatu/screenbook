@@ -18,12 +18,17 @@ export function findSimilar(
 	options: FindSimilarOptions = {},
 ): string[] {
 	const { maxDistanceRatio = 0.4, maxSuggestions = 3 } = options
+
+	// Runtime validation for options
+	const effectiveRatio = Math.max(0, Math.min(1, maxDistanceRatio))
+	const effectiveSuggestions = Math.max(1, Math.floor(maxSuggestions))
+
 	const candidateArray = Array.isArray(candidates)
 		? candidates
 		: Array.from(candidates)
 
 	// Only suggest if distance is reasonable
-	const maxDistance = Math.ceil(target.length * maxDistanceRatio)
+	const maxDistance = Math.ceil(target.length * effectiveRatio)
 
 	const matches: Array<{ candidate: string; distance: number }> = []
 
@@ -37,12 +42,12 @@ export function findSimilar(
 	// Sort by distance (closest first) and return top suggestions
 	return matches
 		.sort((a, b) => a.distance - b.distance)
-		.slice(0, maxSuggestions)
+		.slice(0, effectiveSuggestions)
 		.map((m) => m.candidate)
 }
 
 /**
- * Find the single best match (for backwards compatibility)
+ * Find the single best match (convenience wrapper for findSimilar)
  */
 export function findBestMatch(
 	target: string,

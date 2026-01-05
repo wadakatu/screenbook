@@ -5,7 +5,7 @@ prev: false
 title: "ScreenLink"
 ---
 
-Defined in: [packages/core/src/types.ts:6](https://github.com/wadakatu/screenbook/blob/51f11f04e0c13fe988a91bca8f446a2b61a5c8c4/packages/core/src/types.ts#L6)
+Defined in: [packages/core/src/types.ts:6](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L6)
 
 External link to related resources
 
@@ -15,7 +15,7 @@ External link to related resources
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:12](https://github.com/wadakatu/screenbook/blob/51f11f04e0c13fe988a91bca8f446a2b61a5c8c4/packages/core/src/types.ts#L12)
+Defined in: [packages/core/src/types.ts:12](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L12)
 
 Display label for the link
 
@@ -35,7 +35,7 @@ Display label for the link
 
 > **url**: `string`
 
-Defined in: [packages/core/src/types.ts:18](https://github.com/wadakatu/screenbook/blob/51f11f04e0c13fe988a91bca8f446a2b61a5c8c4/packages/core/src/types.ts#L18)
+Defined in: [packages/core/src/types.ts:18](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L18)
 
 URL to the external resource
 

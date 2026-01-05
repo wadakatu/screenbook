@@ -84,6 +84,12 @@ describe("findSimilar", () => {
 		expect(result).toEqual([])
 	})
 
+	it("handles empty target string", () => {
+		const result = findSimilar("", ["test", "users"])
+		// Empty string has maxDistance = 0, so only exact empty matches work
+		expect(result).toEqual([])
+	})
+
 	it("uses custom maxDistanceRatio", () => {
 		// With default 0.4 ratio: "billing" (7 chars) -> threshold = ceil(2.8) = 3
 		// "billing" vs "billing" = 0 (matches)
@@ -118,6 +124,18 @@ describe("findBestMatch", () => {
 	it("works with Set candidates", () => {
 		const result = findBestMatch("billin", new Set(candidates))
 		expect(result).toBe("billing")
+	})
+
+	it("uses custom maxDistanceRatio parameter", () => {
+		// With default 0.4 ratio: "billing" (7 chars) -> threshold = 3
+		// "billing" vs "settings" = 4 (no match)
+		const strictResult = findBestMatch("billing", ["settings"], 0.4)
+		expect(strictResult).toBeUndefined()
+
+		// With 0.9 ratio: "billing" (7 chars) -> threshold = 7
+		// "billing" vs "settings" = 4 (match)
+		const lenientResult = findBestMatch("billing", ["settings"], 0.9)
+		expect(lenientResult).toBe("settings")
 	})
 })
 
