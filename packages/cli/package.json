@@ -23,11 +23,12 @@
 		"test:watch": "vitest"
 	},
 	"dependencies": {
+		"@apidevtools/swagger-parser": "^12.1.0",
 		"@babel/parser": "^7.28.5",
 		"@screenbook/core": "workspace:*",
 		"@vue/compiler-sfc": "^3.5.0",
-		"htmlparser2": "^9.1.0",
 		"gunshi": "^0.27.0",
+		"htmlparser2": "^9.1.0",
 		"jiti": "^2.6.1",
 		"minimatch": "^10.1.1",
 		"picocolors": "^1.1.1",
