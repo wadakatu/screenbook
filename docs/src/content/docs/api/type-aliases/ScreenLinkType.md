@@ -7,6 +7,6 @@ title: "ScreenLinkType"
 
 > **ScreenLinkType** = `"figma"` \| `"storybook"` \| `"docs"` \| `"other"`
 
-Defined in: [packages/core/src/types.ts:6](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L6)
+Defined in: [packages/core/src/types.ts:6](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/types.ts#L6)
 
 Type of external link for icon display
