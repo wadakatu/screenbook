@@ -381,5 +381,119 @@ describe("badge command", () => {
 			expect(content).toContain("0%")
 			expect(content).toContain("#e05d44") // Red for 0%
 		})
+
+		it("should generate simple json format", async () => {
+			// Create config
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesPattern: "src/pages/**/page.tsx",
+				})
+			`,
+			)
+
+			// Create route with screen.meta.ts
+			const pagesDir = join(testDir, "src/pages/home")
+			mkdirSync(pagesDir, { recursive: true })
+			writeFileSync(
+				join(pagesDir, "page.tsx"),
+				"export default function Home() {}",
+			)
+			writeFileSync(
+				join(pagesDir, "screen.meta.ts"),
+				`export const screen = { id: "home", title: "Home", route: "/" }`,
+			)
+
+			const { badgeCommand } = await import("../commands/badge.js")
+
+			await badgeCommand.run({
+				values: { format: "json" },
+			} as Parameters<typeof badgeCommand.run>[0])
+
+			// Should generate JSON file with coverage data
+			const jsonPath = join(testDir, ".screenbook/coverage-badge.json")
+			expect(existsSync(jsonPath)).toBe(true)
+			const content = JSON.parse(readFileSync(jsonPath, "utf-8"))
+			expect(content.percentage).toBe(100)
+			expect(content.covered).toBe(1)
+			expect(content.total).toBe(1)
+		})
+
+		it("should generate SVG badge with flat-square style", async () => {
+			// Create config
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesPattern: "src/pages/**/page.tsx",
+				})
+			`,
+			)
+
+			// Create route with screen.meta.ts
+			const pagesDir = join(testDir, "src/pages/home")
+			mkdirSync(pagesDir, { recursive: true })
+			writeFileSync(
+				join(pagesDir, "page.tsx"),
+				"export default function Home() {}",
+			)
+			writeFileSync(
+				join(pagesDir, "screen.meta.ts"),
+				`export const screen = { id: "home", title: "Home", route: "/" }`,
+			)
+
+			const { badgeCommand } = await import("../commands/badge.js")
+
+			await badgeCommand.run({
+				values: { style: "flat-square" },
+			} as Parameters<typeof badgeCommand.run>[0])
+
+			// Should generate badge with flat-square style (no rounded corners)
+			const badgePath = join(testDir, ".screenbook/coverage-badge.svg")
+			expect(existsSync(badgePath)).toBe(true)
+			const content = readFileSync(badgePath, "utf-8")
+			expect(content).toContain('rx="0"')
+		})
+
+		it("should exit with error when custom config file not found", async () => {
+			const { badgeCommand } = await import("../commands/badge.js")
+
+			await expect(
+				badgeCommand.run({
+					values: { config: "nonexistent.config.ts" },
+				} as Parameters<typeof badgeCommand.run>[0]),
+			).rejects.toThrow("Process exited with code 1")
+		})
+
+		it("should warn when no routes found", async () => {
+			// Create config with pattern that matches no files
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/nonexistent/**/screen.meta.ts",
+					routesPattern: "src/nonexistent/**/page.tsx",
+				})
+			`,
+			)
+
+			const { badgeCommand } = await import("../commands/badge.js")
+
+			await badgeCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof badgeCommand.run>[0])
+
+			// Should still generate badge with 0%
+			const badgePath = join(testDir, ".screenbook/coverage-badge.svg")
+			expect(existsSync(badgePath)).toBe(true)
+			const content = readFileSync(badgePath, "utf-8")
+			expect(content).toContain("0%")
+		})
 	})
 })
