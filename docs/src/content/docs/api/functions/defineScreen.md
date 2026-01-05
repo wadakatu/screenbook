@@ -7,7 +7,7 @@ title: "defineScreen"
 
 > **defineScreen**(`input`): [`Screen`](/screenbook/api/interfaces/screen/)
 
-Defined in: [packages/core/src/defineScreen.ts:39](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/defineScreen.ts#L39)
+Defined in: [packages/core/src/defineScreen.ts:39](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/defineScreen.ts#L39)
 
 Define a screen with metadata for the screen catalog.
 

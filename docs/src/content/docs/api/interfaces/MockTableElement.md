@@ -5,7 +5,7 @@ prev: false
 title: "MockTableElement"
 ---
 
-Defined in: [packages/core/src/types.ts:231](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L231)
+Defined in: [packages/core/src/types.ts:231](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/types.ts#L231)
 
 Table element for displaying tabular data
 
@@ -19,7 +19,7 @@ Table element for displaying tabular data
 
 > `optional` **columns**: `string`[]
 
-Defined in: [packages/core/src/types.ts:234](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L234)
+Defined in: [packages/core/src/types.ts:234](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/types.ts#L234)
 
 Column headers
 
@@ -29,7 +29,7 @@ Column headers
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L165)
+Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/types.ts#L165)
 
 Display label for the element
 
@@ -43,7 +43,7 @@ Display label for the element
 
 > `optional` **rowCount**: `number`
 
-Defined in: [packages/core/src/types.ts:236](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L236)
+Defined in: [packages/core/src/types.ts:236](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/types.ts#L236)
 
 Number of rows to display (default: 3)
 
@@ -53,7 +53,7 @@ Number of rows to display (default: 3)
 
 > `optional` **rowNavigateTo**: `string`
 
-Defined in: [packages/core/src/types.ts:238](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L238)
+Defined in: [packages/core/src/types.ts:238](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/types.ts#L238)
 
 Screen ID to navigate to when a row is clicked
 
@@ -63,7 +63,7 @@ Screen ID to navigate to when a row is clicked
 
 > **type**: `"table"`
 
-Defined in: [packages/core/src/types.ts:232](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L232)
+Defined in: [packages/core/src/types.ts:232](https://github.com/wadakatu/screenbook/blob/55cd66e5c88355be5d519e1630f75ec6b3f364a5/packages/core/src/types.ts#L232)
 
 Element type identifier
 

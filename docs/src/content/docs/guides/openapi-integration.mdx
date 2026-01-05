@@ -137,9 +137,11 @@ Screenbook uses fuzzy matching to suggest corrections for typos:
     Did you mean "GET /api/users"?
 ```
 
-## Case Insensitivity
+## Case Sensitivity
 
-Both formats support case-insensitive matching:
+**HTTP Method + Path format:**
+- HTTP methods are case-insensitive: `GET`, `get`, `Get` all match
+- Paths are case-sensitive: `/api/users` does NOT match `/api/Users`
 
 ```ts
 // All these match "GET /api/users":
@@ -147,6 +149,14 @@ Both formats support case-insensitive matching:
 "get /api/users"
 "Get /api/users"
 
+// This does NOT match:
+"get /api/Users"  // Path case mismatch
+```
+
+**OperationId format:**
+- Case-insensitive matching is supported
+
+```ts
 // Both match operationId "getUsers":
 "getUsers"
 "GETUSERS"

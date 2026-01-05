@@ -45,8 +45,8 @@ describe("validateDependsOnReferences", () => {
 
 			expect(result.valid).toBe(false)
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.screenId).toBe("test.screen")
-			expect(result.errors[0]!.invalidApi).toBe("invalidOperationId")
+			expect(result.errors[0]?.screenId).toBe("test.screen")
+			expect(result.errors[0]?.invalidApi).toBe("invalidOperationId")
 		})
 
 		it("supports case-insensitive operationId matching", async () => {
@@ -109,7 +109,7 @@ describe("validateDependsOnReferences", () => {
 
 			expect(result.valid).toBe(false)
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.invalidApi).toBe("GET /api/nonexistent")
+			expect(result.errors[0]?.invalidApi).toBe("GET /api/nonexistent")
 		})
 	})
 
@@ -164,7 +164,7 @@ describe("validateDependsOnReferences", () => {
 
 			expect(result.valid).toBe(false)
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.suggestion).toBe("getUsers")
+			expect(result.errors[0]?.suggestion).toBe("getUsers")
 		})
 
 		it("provides suggestions for similar HTTP endpoints", async () => {
@@ -178,7 +178,7 @@ describe("validateDependsOnReferences", () => {
 
 			expect(result.valid).toBe(false)
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.suggestion).toBe("GET /api/users")
+			expect(result.errors[0]?.suggestion).toBe("GET /api/users")
 		})
 
 		it("does not provide suggestions when no close match exists", async () => {
@@ -192,7 +192,7 @@ describe("validateDependsOnReferences", () => {
 
 			expect(result.valid).toBe(false)
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.suggestion).toBeUndefined()
+			expect(result.errors[0]?.suggestion).toBeUndefined()
 		})
 	})
 

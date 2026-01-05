@@ -15,6 +15,7 @@ describe("parseOpenApiSpecs", () => {
 			expect(result.errors).toHaveLength(0)
 			expect(result.specs).toHaveLength(1)
 
+			// biome-ignore lint/style/noNonNullAssertion: Length is verified above
 			const spec = result.specs[0]!
 			expect(spec.operationIds.has("getUsers")).toBe(true)
 			expect(spec.operationIds.has("createUser")).toBe(true)
@@ -28,6 +29,7 @@ describe("parseOpenApiSpecs", () => {
 		it("extracts HTTP endpoints from YAML file", async () => {
 			const result = await parseOpenApiSpecs(["simple.yaml"], fixturesDir)
 
+			// biome-ignore lint/style/noNonNullAssertion: Length is implicitly verified by subsequent expects
 			const spec = result.specs[0]!
 			expect(spec.httpEndpoints.has("GET /api/users")).toBe(true)
 			expect(spec.httpEndpoints.has("POST /api/users")).toBe(true)
@@ -39,6 +41,7 @@ describe("parseOpenApiSpecs", () => {
 		it("creates normalized mappings for case-insensitive matching", async () => {
 			const result = await parseOpenApiSpecs(["simple.yaml"], fixturesDir)
 
+			// biome-ignore lint/style/noNonNullAssertion: Length is implicitly verified by subsequent expects
 			const spec = result.specs[0]!
 			// OperationIds should have lowercase mappings
 			expect(spec.normalizedToOriginal.has("getusers")).toBe(true)
@@ -59,6 +62,7 @@ describe("parseOpenApiSpecs", () => {
 			expect(result.errors).toHaveLength(0)
 			expect(result.specs).toHaveLength(1)
 
+			// biome-ignore lint/style/noNonNullAssertion: Length is verified above
 			const spec = result.specs[0]!
 			expect(spec.operationIds.has("listPayments")).toBe(true)
 			expect(spec.operationIds.has("createPayment")).toBe(true)
@@ -68,6 +72,7 @@ describe("parseOpenApiSpecs", () => {
 		it("extracts HTTP endpoints from Swagger 2.0 JSON file", async () => {
 			const result = await parseOpenApiSpecs(["swagger2.json"], fixturesDir)
 
+			// biome-ignore lint/style/noNonNullAssertion: Length is implicitly verified by subsequent expects
 			const spec = result.specs[0]!
 			expect(spec.httpEndpoints.has("GET /api/payments")).toBe(true)
 			expect(spec.httpEndpoints.has("POST /api/payments")).toBe(true)
@@ -99,7 +104,7 @@ describe("parseOpenApiSpecs", () => {
 			const result = await parseOpenApiSpecs(["non-existent.yaml"], fixturesDir)
 
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.source).toBe("non-existent.yaml")
+			expect(result.errors[0]?.source).toBe("non-existent.yaml")
 			expect(result.specs).toHaveLength(0)
 		})
 
@@ -110,9 +115,9 @@ describe("parseOpenApiSpecs", () => {
 			)
 
 			expect(result.errors).toHaveLength(1)
-			expect(result.errors[0]!.source).toBe("non-existent.yaml")
+			expect(result.errors[0]?.source).toBe("non-existent.yaml")
 			expect(result.specs).toHaveLength(1)
-			expect(result.specs[0]!.source).toBe("simple.yaml")
+			expect(result.specs[0]?.source).toBe("simple.yaml")
 		})
 	})
 
@@ -133,6 +138,50 @@ describe("parseOpenApiSpecs", () => {
 
 			expect(result.errors).toHaveLength(0)
 			expect(result.specs).toHaveLength(1)
+		})
+
+		it("detects URL sources and does not prepend cwd", async () => {
+			// URLs should be kept as-is, not resolved relative to cwd
+			// This test verifies the error message contains the URL, not a file path
+			const result = await parseOpenApiSpecs(
+				["https://example.com/api/openapi.json"],
+				fixturesDir,
+			)
+
+			// Should fail because the URL doesn't exist, but error should reference URL
+			expect(result.errors).toHaveLength(1)
+			expect(result.errors[0]?.source).toBe(
+				"https://example.com/api/openapi.json",
+			)
+		})
+
+		it("handles http:// URLs the same as https://", async () => {
+			const result = await parseOpenApiSpecs(
+				["http://example.com/openapi.yaml"],
+				fixturesDir,
+			)
+
+			expect(result.errors).toHaveLength(1)
+			expect(result.errors[0]?.source).toBe("http://example.com/openapi.yaml")
+		})
+	})
+
+	describe("operations without operationId", () => {
+		it("extracts HTTP endpoints even when operationId is missing", async () => {
+			const result = await parseOpenApiSpecs(
+				["no-operation-id.yaml"],
+				fixturesDir,
+			)
+
+			expect(result.errors).toHaveLength(0)
+			expect(result.specs).toHaveLength(1)
+
+			// biome-ignore lint/style/noNonNullAssertion: Length is verified above
+			const spec = result.specs[0]!
+			// Should have HTTP endpoints but no operationIds
+			expect(spec.httpEndpoints.has("GET /api/items")).toBe(true)
+			expect(spec.httpEndpoints.has("POST /api/items")).toBe(true)
+			expect(spec.operationIds.size).toBe(0)
 		})
 	})
 })

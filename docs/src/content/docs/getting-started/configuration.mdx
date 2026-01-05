@@ -93,6 +93,27 @@ adoption: {
 }
 ```
 
+### `apiIntegration`
+
+**Type:** `ApiIntegrationConfig`
+**Default:** `undefined`
+
+Configuration for API integration features.
+
+```ts
+apiIntegration: {
+  // OpenAPI spec validation for dependsOn references
+  openapi: {
+    sources: ["./openapi.yaml", "https://api.example.com/openapi.json"],
+  },
+
+  // Client packages to scan for API imports
+  clientPackages: ["@/api/generated"],
+}
+```
+
+See [OpenAPI Integration](/guides/openapi-integration) for detailed documentation.
+
 ## Config File Discovery
 
 Screenbook looks for configuration files in this order:

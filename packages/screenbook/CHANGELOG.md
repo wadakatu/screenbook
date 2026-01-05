@@ -1,5 +1,67 @@
 # screenbook
 
+## 1.6.0
+
+### Minor Changes
+
+- ### New Features
+
+  #### OpenAPI/Swagger Integration for dependsOn Validation
+
+  Added support for validating `dependsOn` references against OpenAPI/Swagger specifications. This helps catch typos and invalid API references early in the development process.
+
+  **Configuration:**
+
+  ```ts
+  // screenbook.config.ts
+  export default defineConfig({
+    apiIntegration: {
+      openapi: {
+        sources: ["./openapi.yaml", "https://api.example.com/openapi.json"],
+      },
+    },
+  });
+  ```
+
+  **Features:**
+  - Support for both operationId (`getInvoiceById`) and HTTP format (`GET /api/invoices/{id}`)
+  - Support for OpenAPI 2.0 (Swagger), 3.0, and 3.1 specifications
+  - Local files (YAML/JSON) and remote URLs
+  - Fuzzy matching suggestions for typos
+  - Warnings by default, errors with `--strict` flag
+
+  #### Badge Command
+
+  New `screenbook badge` command to generate coverage badges for your README.
+
+  ```bash
+  screenbook badge --output coverage-badge.svg
+  ```
+
+  #### Link Type Icons
+
+  Added `type` field to `ScreenLink` for displaying different icons based on link type (navigation, action, docs, external).
+
+  ```ts
+  defineScreen({
+    next: [
+      { screen: "billing.payment", type: "action" },
+      { screen: "billing.help", type: "docs" },
+    ],
+  });
+  ```
+
+  ### Improvements
+  - **Verbose Mode**: Improved error messages with `--verbose` flag showing detailed stack traces
+  - **Better Suggestions**: Enhanced typo detection with fuzzy matching for screen IDs and API references
+
+### Patch Changes
+
+- Updated dependencies
+  - @screenbook/core@1.6.0
+  - @screenbook/cli@1.6.0
+  - @screenbook/ui@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes

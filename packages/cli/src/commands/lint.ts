@@ -301,7 +301,7 @@ export const lintCommand = define({
 async function lintRoutesFile(
 	routesFile: string,
 	cwd: string,
-	config: Pick<Config, "metaPattern" | "outDir" | "ignore">,
+	config: Pick<Config, "metaPattern" | "outDir" | "ignore" | "apiIntegration">,
 	adoption: AdoptionConfig,
 	allowCycles: boolean,
 	strict: boolean,
@@ -565,12 +565,10 @@ async function lintRoutesFile(
 			}
 
 			// Check dependsOn references against OpenAPI specs (if configured)
-			// Note: We need to get config from the outer scope for apiIntegration
-			const fullConfig = await loadConfig()
-			if (fullConfig.apiIntegration?.openapi?.sources?.length) {
+			if (config.apiIntegration?.openapi?.sources?.length) {
 				const openApiResult = await validateDependsOnAgainstOpenApi(
 					screens,
-					fullConfig.apiIntegration.openapi.sources,
+					config.apiIntegration.openapi.sources,
 					cwd,
 					strict,
 				)
@@ -708,62 +706,53 @@ async function validateDependsOnAgainstOpenApi(
 ): Promise<{ hasWarnings: boolean }> {
 	let hasWarnings = false
 
-	try {
-		// Parse OpenAPI specs
-		const parseResult = await parseOpenApiSpecs(sources, cwd)
+	// Parse OpenAPI specs (errors are collected internally, not thrown)
+	const parseResult = await parseOpenApiSpecs(sources, cwd)
 
-		// Report parse errors as warnings
-		for (const error of parseResult.errors) {
-			hasWarnings = true
-			logger.blank()
-			logger.warn(`Failed to parse OpenAPI spec: ${error.source}`)
-			logger.log(`  ${logger.dim(error.message)}`)
-		}
-
-		// Skip validation if no specs were parsed successfully
-		if (parseResult.specs.length === 0) {
-			return { hasWarnings }
-		}
-
-		// Validate dependsOn references
-		const validationResult = validateDependsOnReferences(
-			screens,
-			parseResult.specs,
-		)
-
-		if (validationResult.errors.length > 0) {
-			hasWarnings = true
-			logger.blank()
-			logger.warn(
-				`Invalid API dependencies (${validationResult.errors.length}):`,
-			)
-			logger.blank()
-			logger.log(
-				"  These dependsOn references don't match any OpenAPI operation.",
-			)
-			logger.blank()
-
-			for (const error of validationResult.errors) {
-				logger.itemWarn(`${error.screenId}: "${error.invalidApi}"`)
-				if (error.suggestion) {
-					logger.log(`    ${logger.dim(`Did you mean "${error.suggestion}"?`)}`)
-				}
-			}
-
-			// Fail in strict mode
-			if (strict) {
-				logger.blank()
-				logger.errorWithHelp(
-					ERRORS.INVALID_API_DEPENDENCIES(validationResult.errors.length),
-				)
-				process.exit(1)
-			}
-		}
-	} catch (error) {
+	// Report parse errors as warnings
+	for (const error of parseResult.errors) {
 		hasWarnings = true
-		logger.warn(
-			`Failed to validate API dependencies: ${error instanceof Error ? error.message : String(error)}`,
+		logger.blank()
+		logger.warn(`Failed to parse OpenAPI spec: ${error.source}`)
+		logger.log(`  ${logger.dim(error.message)}`)
+	}
+
+	// Skip validation if no specs were parsed successfully
+	if (parseResult.specs.length === 0) {
+		return { hasWarnings }
+	}
+
+	// Validate dependsOn references (synchronous, no exceptions expected)
+	const validationResult = validateDependsOnReferences(
+		screens,
+		parseResult.specs,
+	)
+
+	if (validationResult.errors.length > 0) {
+		hasWarnings = true
+		logger.blank()
+		logger.warn(`Invalid API dependencies (${validationResult.errors.length}):`)
+		logger.blank()
+		logger.log(
+			"  These dependsOn references don't match any OpenAPI operation.",
 		)
+		logger.blank()
+
+		for (const error of validationResult.errors) {
+			logger.itemWarn(`${error.screenId}: "${error.invalidApi}"`)
+			if (error.suggestion) {
+				logger.log(`    ${logger.dim(`Did you mean "${error.suggestion}"?`)}`)
+			}
+		}
+
+		// Fail in strict mode
+		if (strict) {
+			logger.blank()
+			logger.errorWithHelp(
+				ERRORS.INVALID_API_DEPENDENCIES(validationResult.errors.length),
+			)
+			process.exit(1)
+		}
 	}
 
 	return { hasWarnings }

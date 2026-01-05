@@ -464,7 +464,7 @@ export interface OpenApiConfig {
 	 * @example ["./openapi.yaml"]
 	 * @example ["./openapi.yaml", "https://api.example.com/openapi.json"]
 	 */
-	sources: string[]
+	readonly sources: readonly string[]
 }
 
 export interface ApiIntegrationConfig {
