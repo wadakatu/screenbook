@@ -1,5 +1,14 @@
 # screenbook
 
+## 1.7.0
+
+### Patch Changes
+
+- Updated dependencies [80700ff]
+- Updated dependencies [f2595d9]
+  - @screenbook/ui@1.7.0
+  - @screenbook/cli@1.7.0
+
 ## 1.6.1
 
 ### Patch Changes
