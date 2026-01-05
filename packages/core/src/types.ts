@@ -447,6 +447,26 @@ export const adoptionSchema = z.object({
  * }
  * ```
  */
+/**
+ * OpenAPI specification configuration for validating dependsOn references.
+ *
+ * @example
+ * ```ts
+ * const openapi: OpenApiConfig = {
+ *   sources: ["./openapi.yaml", "https://api.example.com/openapi.json"],
+ * }
+ * ```
+ */
+export interface OpenApiConfig {
+	/**
+	 * OpenAPI specification sources (local files or remote URLs).
+	 * Supports OpenAPI 2.0 (Swagger) and 3.x specifications.
+	 * @example ["./openapi.yaml"]
+	 * @example ["./openapi.yaml", "https://api.example.com/openapi.json"]
+	 */
+	sources: string[]
+}
+
 export interface ApiIntegrationConfig {
 	/**
 	 * Package names to scan for API client imports.
@@ -454,7 +474,7 @@ export interface ApiIntegrationConfig {
 	 * @example ["@/api/generated"]
 	 * @example ["@company/backend-client", "@company/auth-client"]
 	 */
-	clientPackages: string[]
+	clientPackages?: string[]
 
 	/**
 	 * Optional transform function to convert import name to dependsOn format.
@@ -463,16 +483,33 @@ export interface ApiIntegrationConfig {
 	 * @example (name) => `API.${name}`
 	 */
 	extractApiName?: (importName: string) => string
+
+	/**
+	 * OpenAPI specification configuration for validating dependsOn references.
+	 * When configured, `screenbook lint` will validate that dependsOn values
+	 * match operationIds or HTTP method + path from the OpenAPI spec.
+	 * @example { sources: ["./openapi.yaml"] }
+	 */
+	openapi?: OpenApiConfig
 }
+
+/**
+ * Schema for OpenAPI configuration (runtime validation)
+ * @internal
+ */
+export const openApiConfigSchema = z.object({
+	sources: z.array(z.string()).min(1),
+})
 
 /**
  * Schema for API integration configuration (runtime validation)
  * @internal
  */
 export const apiIntegrationSchema = z.object({
-	clientPackages: z.array(z.string()).min(1),
+	clientPackages: z.array(z.string()).optional(),
 	// Function validation is complex in Zod v4, so we use z.any() for the optional transform function
 	extractApiName: z.any().optional(),
+	openapi: openApiConfigSchema.optional(),
 })
 
 /**

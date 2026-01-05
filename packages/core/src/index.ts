@@ -20,6 +20,9 @@ export {
 	type MockSection,
 	type MockTableElement,
 	type MockTextElement,
+	// OpenAPI types
+	type OpenApiConfig,
+	openApiConfigSchema,
 	type Screen,
 	type ScreenInput,
 	type ScreenLink,
