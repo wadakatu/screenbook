@@ -81,7 +81,7 @@ jobs:
           if npm view @screenbook/core@$PKG_VERSION version 2>/dev/null; then
             echo "Version $PKG_VERSION already published, skipping"
           else
-            npm publish --access public --provenance
+            pnpm publish --access public --provenance --no-git-checks
           fi
         working-directory: packages/core
 
@@ -91,7 +91,7 @@ jobs:
           if npm view @screenbook/cli@$PKG_VERSION version 2>/dev/null; then
             echo "Version $PKG_VERSION already published, skipping"
           else
-            npm publish --access public --provenance
+            pnpm publish --access public --provenance --no-git-checks
           fi
         working-directory: packages/cli
 
@@ -101,7 +101,7 @@ jobs:
           if npm view @screenbook/ui@$PKG_VERSION version 2>/dev/null; then
             echo "Version $PKG_VERSION already published, skipping"
           else
-            npm publish --access public --provenance
+            pnpm publish --access public --provenance --no-git-checks
           fi
         working-directory: packages/ui
 
@@ -111,7 +111,7 @@ jobs:
           if npm view screenbook@$PKG_VERSION version 2>/dev/null; then
             echo "Version $PKG_VERSION already published, skipping"
           else
-            npm publish --access public --provenance
+            pnpm publish --access public --provenance --no-git-checks
           fi
         working-directory: packages/screenbook
 
