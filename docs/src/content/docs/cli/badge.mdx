@@ -1,0 +1,131 @@
+---
+title: screenbook badge
+description: Generate coverage badge for README
+---
+
+Generate a coverage badge showing the percentage of routes with screen.meta.ts files.
+
+## Usage
+
+```
+USAGE:
+  screenbook badge <OPTIONS>
+
+OPTIONS:
+  -h, --help                     Display this help message
+  -c, --config <config>          Path to config file
+  -o, --output <output>          Output file path
+  -f, --format <format>          Output format: svg (default), json, shields-json
+  --style <style>                Badge style: flat (default), flat-square
+  -v, --verbose                  Show detailed output
+```
+
+## Examples
+
+### Generate SVG badge (default)
+
+```bash
+screenbook badge
+# Output: .screenbook/coverage-badge.svg
+```
+
+### Generate shields.io JSON
+
+```bash
+screenbook badge --format shields-json
+# Output: .screenbook/coverage.json
+```
+
+### Custom output path
+
+```bash
+screenbook badge --output ./badges/coverage.svg
+```
+
+### Flat-square style
+
+```bash
+screenbook badge --style flat-square
+```
+
+## Output Formats
+
+### SVG Badge
+
+The default format generates an SVG image similar to shields.io badges:
+
+- **Green** (80%+): High coverage
+- **Yellow** (50-79%): Medium coverage
+- **Red** (<50%): Low coverage
+
+### shields-json
+
+Generates a JSON file compatible with [shields.io endpoint](https://shields.io/endpoint):
+
+```json
+{
+  "schemaVersion": 1,
+  "label": "screenbook",
+  "message": "85%",
+  "color": "brightgreen"
+}
+```
+
+### json
+
+Generates a simple JSON file with coverage data:
+
+```json
+{
+  "percentage": 85,
+  "covered": 17,
+  "total": 20
+}
+```
+
+## Usage in README
+
+### Local SVG
+
+```markdown
+![Screenbook Coverage](./.screenbook/coverage-badge.svg)
+```
+
+### With shields.io (dynamic)
+
+Host the `coverage.json` file on GitHub Pages or any static host, then:
+
+```markdown
+![Coverage](https://img.shields.io/endpoint?url=https://your-site.com/.screenbook/coverage.json)
+```
+
+## CI Integration
+
+Generate and commit the badge in your CI pipeline:
+
+```yaml
+# .github/workflows/badge.yml
+name: Update Coverage Badge
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install
+      - run: pnpm screenbook badge
+      - uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .screenbook
+          destination_dir: badges
+```

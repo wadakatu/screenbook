@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 import { cli, define } from "gunshi"
+import { badgeCommand } from "./commands/badge.js"
 import { buildCommand } from "./commands/build.js"
 import { devCommand } from "./commands/dev.js"
 import { doctorCommand } from "./commands/doctor.js"
@@ -33,6 +34,7 @@ const mainCommand = define({
 		console.log("  lint       Detect routes without screen.meta")
 		console.log("  impact     Analyze API dependency impact")
 		console.log("  pr-impact  Analyze PR changes impact")
+		console.log("  badge      Generate coverage badge for README")
 		console.log("  doctor     Diagnose common setup issues")
 		console.log("")
 		console.log("Run 'screenbook <command> --help' for more information")
@@ -50,6 +52,7 @@ await cli(process.argv.slice(2), mainCommand, {
 		lint: lintCommand,
 		impact: impactCommand,
 		"pr-impact": prImpactCommand,
+		badge: badgeCommand,
 		doctor: doctorCommand,
 	},
 })
