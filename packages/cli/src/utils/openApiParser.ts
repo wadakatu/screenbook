@@ -157,7 +157,7 @@ async function parseOpenApiSource(
  * ```
  */
 export async function parseOpenApiSpecs(
-	sources: string[],
+	sources: readonly string[],
 	cwd: string,
 ): Promise<OpenApiParseResult> {
 	const specs: ParsedOpenApiSpec[] = []

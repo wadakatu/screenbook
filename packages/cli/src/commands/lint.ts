@@ -699,8 +699,8 @@ function findOrphanScreens(screens: Screen[]): Screen[] {
  * Validate dependsOn references against OpenAPI specifications
  */
 async function validateDependsOnAgainstOpenApi(
-	screens: Screen[],
-	sources: string[],
+	screens: readonly Screen[],
+	sources: readonly string[],
 	cwd: string,
 	strict: boolean,
 ): Promise<{ hasWarnings: boolean }> {
