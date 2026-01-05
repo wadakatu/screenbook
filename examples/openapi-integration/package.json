@@ -1,0 +1,16 @@
+{
+	"name": "openapi-integration-example",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"screenbook:build": "screenbook build",
+		"screenbook:dev": "screenbook dev",
+		"screenbook:lint": "screenbook lint"
+	},
+	"devDependencies": {
+		"@screenbook/cli": "workspace:*",
+		"@screenbook/core": "workspace:*",
+		"typescript": "^5.9.0"
+	}
+}
