@@ -6,8 +6,11 @@ import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger, setVerbose } from "../utils/logger.js"
 
-type BadgeFormat = "svg" | "json" | "shields-json"
-type BadgeStyle = "flat" | "flat-square"
+const VALID_FORMATS = ["svg", "json", "shields-json"] as const
+const VALID_STYLES = ["flat", "flat-square"] as const
+
+type BadgeFormat = (typeof VALID_FORMATS)[number]
+type BadgeStyle = (typeof VALID_STYLES)[number]
 
 interface CoverageResult {
 	total: number
@@ -167,10 +170,44 @@ export const badgeCommand = define({
 	},
 	run: async (ctx) => {
 		setVerbose(ctx.values.verbose)
-		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
-		const format = (ctx.values.format ?? "svg") as BadgeFormat
-		const style = (ctx.values.style ?? "flat") as BadgeStyle
+
+		// Validate format and style arguments
+		const formatInput = ctx.values.format ?? "svg"
+		const styleInput = ctx.values.style ?? "flat"
+
+		if (!VALID_FORMATS.includes(formatInput as BadgeFormat)) {
+			logger.error(`Invalid format: "${formatInput}"`)
+			logger.log(
+				`  ${logger.dim(`Valid formats: ${VALID_FORMATS.join(", ")}`)}`,
+			)
+			process.exit(1)
+		}
+
+		if (!VALID_STYLES.includes(styleInput as BadgeStyle)) {
+			logger.error(`Invalid style: "${styleInput}"`)
+			logger.log(`  ${logger.dim(`Valid styles: ${VALID_STYLES.join(", ")}`)}`)
+			process.exit(1)
+		}
+
+		const format = formatInput as BadgeFormat
+		const style = styleInput as BadgeStyle
+
+		// Load configuration
+		let config: Awaited<ReturnType<typeof loadConfig>>
+		try {
+			config = await loadConfig(ctx.values.config)
+		} catch (error) {
+			if (ctx.values.config) {
+				logger.errorWithStack(
+					error,
+					`Failed to load config from ${ctx.values.config}`,
+				)
+			} else {
+				logger.errorWithHelp(ERRORS.CONFIG_NOT_FOUND)
+			}
+			process.exit(1)
+		}
 
 		// Check for routes configuration
 		if (!config.routesPattern) {
@@ -181,12 +218,21 @@ export const badgeCommand = define({
 		logger.info("Calculating coverage...")
 
 		// Calculate coverage
-		const coverage = await calculateCoverage(
-			config.routesPattern,
-			config.metaPattern,
-			config.ignore,
-			cwd,
-		)
+		let coverage: CoverageResult
+		try {
+			coverage = await calculateCoverage(
+				config.routesPattern,
+				config.metaPattern,
+				config.ignore,
+				cwd,
+			)
+		} catch (error) {
+			logger.errorWithStack(error, "Failed to calculate coverage")
+			logger.log(
+				`  ${logger.dim("Check that your routesPattern and metaPattern are valid glob patterns.")}`,
+			)
+			process.exit(1)
+		}
 
 		if (coverage.total === 0) {
 			logger.warn(`No route files found matching: ${config.routesPattern}`)
@@ -232,12 +278,31 @@ export const badgeCommand = define({
 
 		// Ensure output directory exists
 		const outputDir = dirname(outputPath)
-		if (!existsSync(outputDir)) {
-			mkdirSync(outputDir, { recursive: true })
+		try {
+			if (!existsSync(outputDir)) {
+				mkdirSync(outputDir, { recursive: true })
+			}
+		} catch (error) {
+			logger.errorWithStack(
+				error,
+				`Failed to create output directory: ${outputDir}`,
+			)
+			logger.log(
+				`  ${logger.dim("Check that you have write permissions to this location.")}`,
+			)
+			process.exit(1)
 		}
 
 		// Write the badge
-		writeFileSync(outputPath, content)
+		try {
+			writeFileSync(outputPath, content)
+		} catch (error) {
+			logger.errorWithStack(error, `Failed to write badge file: ${outputPath}`)
+			logger.log(
+				`  ${logger.dim("Check that you have write permissions and sufficient disk space.")}`,
+			)
+			process.exit(1)
+		}
 
 		logger.blank()
 		logger.success(`Generated ${logger.path(outputPath)}`)
