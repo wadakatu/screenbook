@@ -123,6 +123,18 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  examples/openapi-integration:
+    devDependencies:
+      '@screenbook/cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@screenbook/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
   examples/qwikcity:
     dependencies:
       '@builder.io/qwik':
