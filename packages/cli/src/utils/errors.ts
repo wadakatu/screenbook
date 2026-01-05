@@ -166,6 +166,27 @@ screenbook impact "PaymentAPI.*"  # Use quotes for patterns`,
 			"Fix the validation errors above. Screen references must point to existing screens.",
 	}),
 
+	INVALID_API_DEPENDENCIES: (count: number): ErrorOptions => ({
+		title: `${count} invalid API ${count === 1 ? "dependency" : "dependencies"} detected`,
+		suggestion:
+			"Fix the dependsOn values to match operationIds or HTTP endpoints from your OpenAPI spec.",
+		example: `// Using operationId
+dependsOn: ["getInvoiceById", "updatePaymentStatus"]
+
+// Using HTTP method + path
+dependsOn: ["GET /api/invoices/{id}", "POST /api/payments"]`,
+	}),
+
+	// ============================================
+	// OpenAPI Errors
+	// ============================================
+
+	OPENAPI_PARSE_ERROR: (source: string): ErrorOptions => ({
+		title: `Failed to parse OpenAPI spec: ${source}`,
+		suggestion:
+			"Check that the file path is correct and the OpenAPI specification is valid YAML or JSON.",
+	}),
+
 	// ============================================
 	// Lint Errors
 	// ============================================
