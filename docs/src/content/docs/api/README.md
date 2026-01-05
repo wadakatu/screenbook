@@ -19,6 +19,7 @@ title: "@screenbook/core"
 - [MockSection](/screenbook/api/interfaces/mocksection/)
 - [MockTableElement](/screenbook/api/interfaces/mocktableelement/)
 - [MockTextElement](/screenbook/api/interfaces/mocktextelement/)
+- [OpenApiConfig](/screenbook/api/interfaces/openapiconfig/)
 - [Screen](/screenbook/api/interfaces/screen/)
 - [ScreenLink](/screenbook/api/interfaces/screenlink/)
 - [ScreenMock](/screenbook/api/interfaces/screenmock/)

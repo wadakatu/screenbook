@@ -5,27 +5,15 @@ prev: false
 title: "ApiIntegrationConfig"
 ---
 
-Defined in: [packages/core/src/types.ts:450](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L450)
-
-API integration configuration for auto-detecting dependencies from
-OpenAPI-generated clients (Orval, openapi-typescript, etc.).
-
-## Example
-
-```ts
-const apiIntegration: ApiIntegrationConfig = {
-  clientPackages: ["@/api/generated", "@company/backend-client"],
-  extractApiName: (name) => name.replace(/^use/, ""),
-}
-```
+Defined in: [packages/core/src/types.ts:470](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L470)
 
 ## Properties
 
-### clientPackages
+### clientPackages?
 
-> **clientPackages**: `string`[]
+> `optional` **clientPackages**: `string`[]
 
-Defined in: [packages/core/src/types.ts:457](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L457)
+Defined in: [packages/core/src/types.ts:477](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L477)
 
 Package names to scan for API client imports.
 These should match the import paths used in your code.
@@ -46,7 +34,7 @@ These should match the import paths used in your code.
 
 > `optional` **extractApiName**: (`importName`) => `string`
 
-Defined in: [packages/core/src/types.ts:465](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L465)
+Defined in: [packages/core/src/types.ts:485](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L485)
 
 Optional transform function to convert import name to dependsOn format.
 If not provided, the import name is used as-is.
@@ -69,4 +57,22 @@ If not provided, the import name is used as-is.
 
 ```ts
 (name) => `API.${name}`
+```
+
+***
+
+### openapi?
+
+> `optional` **openapi**: [`OpenApiConfig`](/screenbook/api/interfaces/openapiconfig/)
+
+Defined in: [packages/core/src/types.ts:493](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L493)
+
+OpenAPI specification configuration for validating dependsOn references.
+When configured, `screenbook lint` will validate that dependsOn values
+match operationIds or HTTP method + path from the OpenAPI spec.
+
+#### Example
+
+```ts
+{ sources: ["./openapi.yaml"] }
 ```
