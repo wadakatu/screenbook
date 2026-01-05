@@ -1,5 +1,57 @@
 # screenbook
 
+## 1.6.0
+
+### Minor Changes
+
+- ## New Features
+
+  ### OpenAPI/Swagger Integration for dependsOn Validation
+
+  Validate `dependsOn` references against OpenAPI/Swagger specifications to catch typos and non-existent API references.
+
+  ```typescript
+  // screenbook.config.ts
+  export default defineConfig({
+    apiIntegration: {
+      openapi: {
+        sources: ["./openapi.yaml"],
+      },
+    },
+  });
+  ```
+
+  Supports both operationId and HTTP format:
+
+  ```typescript
+  dependsOn: [
+    "getInvoiceById", // operationId format
+    "GET /api/users/{id}", // HTTP format
+  ];
+  ```
+
+  ### Badge Command
+
+  New `screenbook badge` command to generate coverage badges for your README.
+
+  ### Link Type Icons
+
+  Added `type` field to `ScreenLink` for displaying icons in the navigation graph.
+
+  ### Improved Error Messages
+
+  Enhanced error messages with verbose mode and suggestions for common mistakes.
+
+  ## Bug Fixes
+  - Fixed CLI bundling issue with `@vue/compiler-sfc` packages causing startup failures
+
+### Patch Changes
+
+- Updated dependencies
+  - @screenbook/core@1.6.0
+  - @screenbook/cli@1.6.0
+  - @screenbook/ui@1.6.0
+
 ## 1.5.0
 
 ### Minor Changes
