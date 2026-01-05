@@ -1,5 +1,12 @@
 # example-angular-router
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [ef23c0f]
+  - @screenbook/cli@1.6.1
+
 ## 0.0.4
 
 ### Patch Changes
