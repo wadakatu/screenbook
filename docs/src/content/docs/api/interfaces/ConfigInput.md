@@ -5,7 +5,7 @@ prev: false
 title: "ConfigInput"
 ---
 
-Defined in: [packages/core/src/types.ts:537](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L537)
+Defined in: [packages/core/src/types.ts:537](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L537)
 
 Input type for defineConfig function.
 All fields with defaults are optional in input.
@@ -25,7 +25,7 @@ defineConfig({
 
 > `optional` **adoption**: [`AdoptionConfig`](/screenbook/api/interfaces/adoptionconfig/)
 
-Defined in: [packages/core/src/types.ts:577](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L577)
+Defined in: [packages/core/src/types.ts:577](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L577)
 
 Progressive adoption configuration
 
@@ -35,7 +35,7 @@ Progressive adoption configuration
 
 > `optional` **apiIntegration**: [`ApiIntegrationConfig`](/screenbook/api/interfaces/apiintegrationconfig/)
 
-Defined in: [packages/core/src/types.ts:583](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L583)
+Defined in: [packages/core/src/types.ts:583](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L583)
 
 API integration configuration for auto-detecting dependencies
 from OpenAPI-generated clients
@@ -46,7 +46,7 @@ from OpenAPI-generated clients
 
 > `optional` **ignore**: `string`[]
 
-Defined in: [packages/core/src/types.ts:572](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L572)
+Defined in: [packages/core/src/types.ts:572](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L572)
 
 Patterns to ignore when scanning.
 Defaults to node_modules and .git directories.
@@ -57,7 +57,7 @@ Defaults to node_modules and .git directories.
 
 > `optional` **metaPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:550](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L550)
+Defined in: [packages/core/src/types.ts:550](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L550)
 
 Glob pattern for screen metadata files
 
@@ -79,7 +79,7 @@ Glob pattern for screen metadata files
 
 > `optional` **outDir**: `string`
 
-Defined in: [packages/core/src/types.ts:543](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L543)
+Defined in: [packages/core/src/types.ts:543](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L543)
 
 Output directory for generated files
 
@@ -101,7 +101,7 @@ Output directory for generated files
 
 > `optional` **routesFile**: `string`
 
-Defined in: [packages/core/src/types.ts:566](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L566)
+Defined in: [packages/core/src/types.ts:566](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L566)
 
 Path to a router configuration file (for config-based routing).
 Use this for frameworks like Vue Router, React Router, etc.
@@ -119,7 +119,7 @@ Cannot be used together with routesPattern.
 
 > `optional` **routesPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:558](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L558)
+Defined in: [packages/core/src/types.ts:558](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L558)
 
 Glob pattern for route files (for generate/lint commands).
 Use this for file-based routing frameworks.

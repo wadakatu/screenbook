@@ -5,7 +5,7 @@ prev: false
 title: "ScreenMock"
 ---
 
-Defined in: [packages/core/src/types.ts:258](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L258)
+Defined in: [packages/core/src/types.ts:258](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L258)
 
 Complete mock definition for a screen
 
@@ -15,6 +15,6 @@ Complete mock definition for a screen
 
 > **sections**: [`MockSection`](/screenbook/api/interfaces/mocksection/)[]
 
-Defined in: [packages/core/src/types.ts:260](https://github.com/wadakatu/screenbook/blob/16bf98a134c488d5d540a903a00020a32e271e92/packages/core/src/types.ts#L260)
+Defined in: [packages/core/src/types.ts:260](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L260)
 
 Sections containing UI elements
