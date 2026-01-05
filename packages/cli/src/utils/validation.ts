@@ -1,4 +1,5 @@
 import type { Screen } from "@screenbook/core"
+import { findBestMatch } from "./suggestions.js"
 
 export interface ValidationError {
 	screenId: string
@@ -28,7 +29,7 @@ export function validateScreenReferences(screens: Screen[]): ValidationResult {
 						screenId: screen.id,
 						field: "next",
 						invalidRef: nextId,
-						suggestion: findSimilar(nextId, screenIds),
+						suggestion: findBestMatch(nextId, screenIds),
 					})
 				}
 			}
@@ -42,7 +43,7 @@ export function validateScreenReferences(screens: Screen[]): ValidationResult {
 						screenId: screen.id,
 						field: "entryPoints",
 						invalidRef: entryId,
-						suggestion: findSimilar(entryId, screenIds),
+						suggestion: findBestMatch(entryId, screenIds),
 					})
 				}
 			}
@@ -53,75 +54,6 @@ export function validateScreenReferences(screens: Screen[]): ValidationResult {
 		valid: errors.length === 0,
 		errors,
 	}
-}
-
-/**
- * Find similar screen ID using Levenshtein distance
- */
-function findSimilar(
-	target: string,
-	candidates: Set<string>,
-): string | undefined {
-	let bestMatch: string | undefined
-	let bestDistance = Number.POSITIVE_INFINITY
-
-	// Only suggest if distance is reasonable (less than 40% of target length)
-	const maxDistance = Math.ceil(target.length * 0.4)
-
-	for (const candidate of candidates) {
-		const distance = levenshteinDistance(target, candidate)
-		if (distance < bestDistance && distance <= maxDistance) {
-			bestDistance = distance
-			bestMatch = candidate
-		}
-	}
-
-	return bestMatch
-}
-
-/**
- * Calculate Levenshtein distance between two strings
- */
-function levenshteinDistance(a: string, b: string): number {
-	// Pre-initialize matrix with proper dimensions
-	const matrix: number[][] = Array.from({ length: a.length + 1 }, () =>
-		Array.from({ length: b.length + 1 }, () => 0),
-	)
-
-	// Helper to safely get/set matrix values (matrix is pre-initialized, so these are always valid)
-	const get = (i: number, j: number): number => matrix[i]?.[j] ?? 0
-	const set = (i: number, j: number, value: number): void => {
-		const row = matrix[i]
-		if (row) row[j] = value
-	}
-
-	// Initialize first column
-	for (let i = 0; i <= a.length; i++) {
-		set(i, 0, i)
-	}
-
-	// Initialize first row
-	for (let j = 0; j <= b.length; j++) {
-		set(0, j, j)
-	}
-
-	// Fill the matrix
-	for (let i = 1; i <= a.length; i++) {
-		for (let j = 1; j <= b.length; j++) {
-			const cost = a[i - 1] === b[j - 1] ? 0 : 1
-			set(
-				i,
-				j,
-				Math.min(
-					get(i - 1, j) + 1, // deletion
-					get(i, j - 1) + 1, // insertion
-					get(i - 1, j - 1) + cost, // substitution
-				),
-			)
-		}
-	}
-
-	return get(a.length, b.length)
 }
 
 /**

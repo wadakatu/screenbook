@@ -149,11 +149,12 @@ export async function checkDependencies(cwd: string): Promise<CheckResult> {
 			status: "pass",
 			message: `@screenbook/core@${coreVersion}, @screenbook/cli@${cliVersion}`,
 		}
-	} catch {
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
 		return {
 			name: "Dependencies",
 			status: "fail",
-			message: "Failed to read package.json",
+			message: `Failed to read package.json: ${errorMessage}`,
 			suggestion: "Ensure package.json is valid JSON",
 		}
 	}
@@ -181,11 +182,12 @@ export async function checkMetaPattern(
 			status: "pass",
 			message: `Found ${files.length} screen.meta.ts file${files.length > 1 ? "s" : ""}`,
 		}
-	} catch {
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
 		return {
 			name: "Screen meta files",
 			status: "fail",
-			message: `Invalid pattern: ${metaPattern}`,
+			message: `Invalid pattern: ${metaPattern} (${errorMessage})`,
 			suggestion: "Check metaPattern in your config file",
 		}
 	}
@@ -223,11 +225,12 @@ export async function checkRoutesPattern(
 			status: "pass",
 			message: `Found ${files.length} route file${files.length > 1 ? "s" : ""}`,
 		}
-	} catch {
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
 		return {
 			name: "Routes pattern",
 			status: "fail",
-			message: `Invalid pattern: ${routesPattern}`,
+			message: `Invalid pattern: ${routesPattern} (${errorMessage})`,
 			suggestion: "Check routesPattern in your config file",
 		}
 	}
@@ -257,11 +260,12 @@ export async function checkBuildOutput(
 			status: "pass",
 			message: `screens.json contains ${screens.length} screen${screens.length > 1 ? "s" : ""}`,
 		}
-	} catch {
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
 		return {
 			name: "Build output",
 			status: "fail",
-			message: "screens.json is corrupted",
+			message: `screens.json is corrupted: ${errorMessage}`,
 			suggestion: "Run 'screenbook build' to regenerate",
 		}
 	}
@@ -329,11 +333,13 @@ export async function checkVersionCompatibility(
 			status: "pass",
 			message: "Package versions are compatible",
 		}
-	} catch {
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
 		return {
 			name: "Version compatibility",
 			status: "fail",
-			message: "Failed to read package.json",
+			message: `Failed to read package.json: ${errorMessage}`,
+			suggestion: "Ensure package.json is valid JSON",
 		}
 	}
 }

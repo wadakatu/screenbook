@@ -19,7 +19,7 @@ import {
 	promptFrameworkSelection,
 } from "../utils/detectFramework.js"
 import { isInteractive } from "../utils/isInteractive.js"
-import { logger } from "../utils/logger.js"
+import { logger, setVerbose } from "../utils/logger.js"
 import {
 	type GenerateFromRoutesPatternOptions,
 	generateFromRoutesPattern,
@@ -350,8 +350,15 @@ export const initCommand = define({
 			description: "Port for the dev server",
 			default: "4321",
 		},
+		verbose: {
+			type: "boolean",
+			short: "v",
+			description: "Show detailed output including stack traces",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
+		setVerbose(ctx.values.verbose)
 		const cwd = process.cwd()
 		const force = ctx.values.force ?? false
 		const skipDetect = ctx.values.skipDetect ?? false

@@ -9,7 +9,7 @@ import {
 	formatImpactJson,
 	formatImpactText,
 } from "../utils/impactAnalysis.js"
-import { logger } from "../utils/logger.js"
+import { logger, setVerbose } from "../utils/logger.js"
 
 export const impactCommand = define({
 	name: "impact",
@@ -38,8 +38,15 @@ export const impactCommand = define({
 			description: "Maximum depth for transitive dependencies",
 			default: 3,
 		},
+		verbose: {
+			type: "boolean",
+			short: "v",
+			description: "Show detailed output including stack traces",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
+		setVerbose(ctx.values.verbose)
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
 

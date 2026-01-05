@@ -9,7 +9,7 @@ import { analyzeAngularComponent } from "../utils/angularTemplateAnalyzer.js"
 import { analyzeApiImports } from "../utils/apiImportAnalyzer.js"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
-import { logger } from "../utils/logger.js"
+import { logger, setVerbose } from "../utils/logger.js"
 import {
 	analyzeNavigation,
 	detectNavigationFramework,
@@ -69,8 +69,15 @@ export const generateCommand = define({
 				"Detect navigation targets from code (Link, router.push, navigate)",
 			default: false,
 		},
+		verbose: {
+			type: "boolean",
+			short: "v",
+			description: "Show detailed output including stack traces",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
+		setVerbose(ctx.values.verbose)
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
 		const dryRun = ctx.values.dryRun ?? false

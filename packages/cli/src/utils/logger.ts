@@ -1,5 +1,25 @@
 import pc from "picocolors"
 
+// ============================================
+// Verbose Mode State
+// ============================================
+
+let verboseMode = false
+
+/**
+ * Enable or disable verbose mode for detailed output
+ */
+export function setVerbose(verbose: boolean): void {
+	verboseMode = verbose
+}
+
+/**
+ * Check if verbose mode is enabled
+ */
+export function isVerbose(): boolean {
+	return verboseMode
+}
+
 /**
  * Structured error options for detailed error messages
  */
@@ -81,6 +101,23 @@ export const logger = {
 			}
 		}
 
+		console.error()
+	},
+
+	/**
+	 * Display an error with optional stack trace (shown only in verbose mode)
+	 */
+	errorWithStack: (error: unknown, context?: string): void => {
+		const err = error instanceof Error ? error : new Error(String(error))
+		const message = context ? `${context}: ${err.message}` : err.message
+		console.error(`${pc.red("✗")} ${pc.red(`Error: ${message}`)}`)
+		if (verboseMode && err.stack) {
+			console.error()
+			console.error(`  ${pc.dim("Stack trace:")}`)
+			for (const line of err.stack.split("\n").slice(1)) {
+				console.error(`  ${pc.dim(line)}`)
+			}
+		}
 		console.error()
 	},
 

@@ -8,7 +8,7 @@ import { createJiti } from "jiti"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
-import { logger } from "../utils/logger.js"
+import { logger, setVerbose } from "../utils/logger.js"
 
 export const devCommand = define({
 	name: "dev",
@@ -25,8 +25,15 @@ export const devCommand = define({
 			description: "Port to run the server on",
 			default: "4321",
 		},
+		verbose: {
+			type: "boolean",
+			short: "v",
+			description: "Show detailed output including stack traces",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
+		setVerbose(ctx.values.verbose)
 		const config = await loadConfig(ctx.values.config)
 		const port = ctx.values.port ?? "4321"
 		const cwd = process.cwd()

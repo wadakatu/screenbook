@@ -72,6 +72,57 @@ describe("ERRORS", () => {
 	})
 
 	describe("dynamic error functions", () => {
+		it("should generate NO_ROUTES_FOUND with pattern", () => {
+			const error = ERRORS.NO_ROUTES_FOUND("src/pages/**/*.tsx")
+			expect(error).toMatchObject({
+				title: "No routes found matching pattern: src/pages/**/*.tsx",
+				suggestion: expect.any(String),
+				example: expect.any(String),
+			})
+		})
+
+		it("should generate FILE_READ_ERROR with file path and error", () => {
+			const error = ERRORS.FILE_READ_ERROR(
+				"src/config.ts",
+				"ENOENT: no such file",
+			)
+			expect(error).toMatchObject({
+				title: "Failed to read file: src/config.ts",
+				message: "ENOENT: no such file",
+				suggestion: expect.any(String),
+			})
+		})
+
+		it("should generate PARSE_ERROR with file path and error", () => {
+			const error = ERRORS.PARSE_ERROR("src/routes.ts", "Unexpected token")
+			expect(error).toMatchObject({
+				title: "Failed to parse: src/routes.ts",
+				message: "Unexpected token",
+				suggestion: expect.any(String),
+			})
+		})
+
+		it("should generate SCREEN_NOT_FOUND without suggestions", () => {
+			const error = ERRORS.SCREEN_NOT_FOUND("billing.unknown")
+			expect(error).toMatchObject({
+				title: 'Screen "billing.unknown" not found',
+				message: undefined,
+				suggestion: expect.any(String),
+			})
+		})
+
+		it("should generate SCREEN_NOT_FOUND with suggestions", () => {
+			const error = ERRORS.SCREEN_NOT_FOUND("billing.invoce", [
+				"billing.invoice",
+				"billing.invoices",
+			])
+			expect(error.title).toBe('Screen "billing.invoce" not found')
+			expect(error.message).toContain("Did you mean one of these?")
+			expect(error.message).toContain("billing.invoice")
+			expect(error.message).toContain("billing.invoices")
+			expect(error.suggestion).toBeDefined()
+		})
+
 		it("should generate META_FILE_LOAD_ERROR with file path", () => {
 			const error = ERRORS.META_FILE_LOAD_ERROR("src/screens/home.meta.ts")
 			expect(error).toMatchObject({
