@@ -5,7 +5,7 @@ prev: false
 title: "ApiIntegrationConfig"
 ---
 
-Defined in: [packages/core/src/types.ts:470](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L470)
+Defined in: [packages/core/src/types.ts:470](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/types.ts#L470)
 
 ## Properties
 
@@ -13,7 +13,7 @@ Defined in: [packages/core/src/types.ts:470](https://github.com/wadakatu/screenb
 
 > `optional` **clientPackages**: `string`[]
 
-Defined in: [packages/core/src/types.ts:477](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L477)
+Defined in: [packages/core/src/types.ts:477](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/types.ts#L477)
 
 Package names to scan for API client imports.
 These should match the import paths used in your code.
@@ -34,7 +34,7 @@ These should match the import paths used in your code.
 
 > `optional` **extractApiName**: (`importName`) => `string`
 
-Defined in: [packages/core/src/types.ts:485](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L485)
+Defined in: [packages/core/src/types.ts:485](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/types.ts#L485)
 
 Optional transform function to convert import name to dependsOn format.
 If not provided, the import name is used as-is.
@@ -65,7 +65,7 @@ If not provided, the import name is used as-is.
 
 > `optional` **openapi**: [`OpenApiConfig`](/screenbook/api/interfaces/openapiconfig/)
 
-Defined in: [packages/core/src/types.ts:493](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L493)
+Defined in: [packages/core/src/types.ts:493](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/types.ts#L493)
 
 OpenAPI specification configuration for validating dependsOn references.
 When configured, `screenbook lint` will validate that dependsOn values

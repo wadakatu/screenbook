@@ -7,7 +7,7 @@ title: "extractNavigationTargets"
 
 > **extractNavigationTargets**(`mock`): `string`[]
 
-Defined in: [packages/core/src/extractNavigationTargets.ts:27](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/extractNavigationTargets.ts#L27)
+Defined in: [packages/core/src/extractNavigationTargets.ts:27](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/extractNavigationTargets.ts#L27)
 
 Extracts all navigation target screen IDs from a mock definition.
 

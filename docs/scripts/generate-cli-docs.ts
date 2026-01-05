@@ -129,9 +129,9 @@ Screenbook provides a powerful CLI to manage your screen catalog.
 ## Installation
 
 \`\`\`bash
-npm install -g @screenbook/cli
+npm install -D screenbook
 # or
-pnpm add -g @screenbook/cli
+pnpm add -D screenbook
 \`\`\`
 
 ## Commands
