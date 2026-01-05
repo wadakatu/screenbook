@@ -29,6 +29,7 @@ title: "@screenbook/core"
 - [MockElementType](/screenbook/api/type-aliases/mockelementtype/)
 - [MockLayout](/screenbook/api/type-aliases/mocklayout/)
 - [ScreenInput](/screenbook/api/type-aliases/screeninput/)
+- [ScreenLinkType](/screenbook/api/type-aliases/screenlinktype/)
 
 ## Functions
 

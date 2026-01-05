@@ -5,7 +5,7 @@ prev: false
 title: "MockInputElement"
 ---
 
-Defined in: [packages/core/src/types.ts:170](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L170)
+Defined in: [packages/core/src/types.ts:182](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L182)
 
 Input field element
 
@@ -19,7 +19,7 @@ Input field element
 
 > `optional` **inputType**: `"text"` \| `"email"` \| `"password"` \| `"textarea"` \| `"search"`
 
-Defined in: [packages/core/src/types.ts:175](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L175)
+Defined in: [packages/core/src/types.ts:187](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L187)
 
 Input type for semantics
 
@@ -29,7 +29,7 @@ Input type for semantics
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:153](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L153)
+Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L165)
 
 Display label for the element
 
@@ -43,7 +43,7 @@ Display label for the element
 
 > `optional` **placeholder**: `string`
 
-Defined in: [packages/core/src/types.ts:173](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L173)
+Defined in: [packages/core/src/types.ts:185](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L185)
 
 Placeholder text
 
@@ -53,7 +53,7 @@ Placeholder text
 
 > **type**: `"input"`
 
-Defined in: [packages/core/src/types.ts:171](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L171)
+Defined in: [packages/core/src/types.ts:183](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L183)
 
 Element type identifier
 

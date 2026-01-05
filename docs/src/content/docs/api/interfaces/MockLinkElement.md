@@ -5,7 +5,7 @@ prev: false
 title: "MockLinkElement"
 ---
 
-Defined in: [packages/core/src/types.ts:181](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L181)
+Defined in: [packages/core/src/types.ts:193](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L193)
 
 Link element with optional navigation
 
@@ -19,7 +19,7 @@ Link element with optional navigation
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:153](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L153)
+Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L165)
 
 Display label for the element
 
@@ -33,7 +33,7 @@ Display label for the element
 
 > `optional` **navigateTo**: `string`
 
-Defined in: [packages/core/src/types.ts:184](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L184)
+Defined in: [packages/core/src/types.ts:196](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L196)
 
 Screen ID to navigate to when clicked
 
@@ -43,7 +43,7 @@ Screen ID to navigate to when clicked
 
 > **type**: `"link"`
 
-Defined in: [packages/core/src/types.ts:182](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L182)
+Defined in: [packages/core/src/types.ts:194](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L194)
 
 Element type identifier
 

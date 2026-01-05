@@ -1,6 +1,11 @@
 import { z } from "zod"
 
 /**
+ * Type of external link for icon display
+ */
+export type ScreenLinkType = "figma" | "storybook" | "docs" | "other"
+
+/**
  * External link to related resources
  */
 export interface ScreenLink {
@@ -16,6 +21,13 @@ export interface ScreenLink {
 	 * @example "https://storybook.example.com/?path=/story/billing-invoice"
 	 */
 	url: string
+	/**
+	 * Type of link for icon display
+	 * If not specified, the type is inferred from the URL
+	 * @example "figma"
+	 * @example "storybook"
+	 */
+	type?: ScreenLinkType
 }
 
 /**
@@ -368,6 +380,7 @@ export const screenSchema = z.object({
 			z.object({
 				label: z.string(),
 				url: z.string().url(),
+				type: z.enum(["figma", "storybook", "docs", "other"]).optional(),
 			}),
 		)
 		.optional(),

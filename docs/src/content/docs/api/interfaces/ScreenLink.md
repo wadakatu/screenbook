@@ -5,7 +5,7 @@ prev: false
 title: "ScreenLink"
 ---
 
-Defined in: [packages/core/src/types.ts:6](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L6)
+Defined in: [packages/core/src/types.ts:11](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L11)
 
 External link to related resources
 
@@ -15,7 +15,7 @@ External link to related resources
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:12](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L12)
+Defined in: [packages/core/src/types.ts:17](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L17)
 
 Display label for the link
 
@@ -31,11 +31,32 @@ Display label for the link
 
 ***
 
+### type?
+
+> `optional` **type**: [`ScreenLinkType`](/screenbook/api/type-aliases/screenlinktype/)
+
+Defined in: [packages/core/src/types.ts:30](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L30)
+
+Type of link for icon display
+If not specified, the type is inferred from the URL
+
+#### Examples
+
+```ts
+"figma"
+```
+
+```ts
+"storybook"
+```
+
+***
+
 ### url
 
 > **url**: `string`
 
-Defined in: [packages/core/src/types.ts:18](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L18)
+Defined in: [packages/core/src/types.ts:23](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L23)
 
 URL to the external resource
 

@@ -64,6 +64,50 @@ describe("screenSchema", () => {
 		expect(result.success).toBe(false)
 	})
 
+	it("should validate links with type field", () => {
+		const result = screenSchema.safeParse({
+			id: "home",
+			title: "Home",
+			route: "/",
+			links: [
+				{ label: "Figma", url: "https://figma.com/file/xxx", type: "figma" },
+				{
+					label: "Storybook",
+					url: "https://storybook.example.com",
+					type: "storybook",
+				},
+				{ label: "Docs", url: "https://docs.example.com", type: "docs" },
+				{ label: "Other", url: "https://example.com", type: "other" },
+			],
+		})
+
+		expect(result.success).toBe(true)
+	})
+
+	it("should accept links without type field (backward compatibility)", () => {
+		const result = screenSchema.safeParse({
+			id: "home",
+			title: "Home",
+			route: "/",
+			links: [{ label: "Link", url: "https://example.com" }],
+		})
+
+		expect(result.success).toBe(true)
+	})
+
+	it("should reject links with invalid type value", () => {
+		const result = screenSchema.safeParse({
+			id: "home",
+			title: "Home",
+			route: "/",
+			links: [
+				{ label: "Bad", url: "https://example.com", type: "invalid-type" },
+			],
+		})
+
+		expect(result.success).toBe(false)
+	})
+
 	it("should accept route with parameters", () => {
 		const result = screenSchema.safeParse({
 			id: "user.detail",

@@ -7,7 +7,7 @@ title: "ScreenInput"
 
 > **ScreenInput** = [`Screen`](/screenbook/api/interfaces/screen/)
 
-Defined in: [packages/core/src/types.ts:349](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L349)
+Defined in: [packages/core/src/types.ts:361](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L361)
 
 Input type for defineScreen function.
 Same as Screen but used for input validation.
