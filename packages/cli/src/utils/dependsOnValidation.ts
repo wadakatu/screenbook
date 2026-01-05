@@ -1,5 +1,8 @@
 import type { Screen } from "@screenbook/core"
-import type { ParsedOpenApiSpec } from "./openApiParser.js"
+import {
+	getAllApiIdentifiers,
+	type ParsedOpenApiSpec,
+} from "./openApiParser.js"
 import { findBestMatch } from "./suggestions.js"
 
 /**
@@ -7,27 +10,40 @@ import { findBestMatch } from "./suggestions.js"
  */
 export interface DependsOnValidationError {
 	/** ID of the screen with the invalid reference */
-	screenId: string
+	readonly screenId: string
 	/** The invalid API reference */
-	invalidApi: string
+	readonly invalidApi: string
 	/** Suggested correction (if found via fuzzy matching) */
-	suggestion?: string
+	readonly suggestion?: string
 }
 
 /**
- * Result of validating dependsOn references
+ * Successful validation result (all references are valid)
  */
-export interface DependsOnValidationResult {
-	/** Whether all references are valid */
-	valid: boolean
-	/** List of validation errors */
-	errors: DependsOnValidationError[]
+interface DependsOnValidationSuccess {
+	readonly valid: true
+	readonly errors: readonly []
 }
+
+/**
+ * Failed validation result (some references are invalid)
+ */
+interface DependsOnValidationFailure {
+	readonly valid: false
+	readonly errors: readonly DependsOnValidationError[]
+}
+
+/**
+ * Result of validating dependsOn references (discriminated union)
+ */
+export type DependsOnValidationResult =
+	| DependsOnValidationSuccess
+	| DependsOnValidationFailure
 
 /**
  * Normalize a dependsOn value for matching
  * - HTTP format: lowercase the method, keep path as-is
- * - operationId: return as-is (case-sensitive)
+ * - operationId: return as-is for exact match first, then case-insensitive fallback
  */
 function normalizeForMatching(value: string): {
 	normalized: string
@@ -35,9 +51,9 @@ function normalizeForMatching(value: string): {
 } {
 	// Check if it looks like HTTP format: "GET /path" or "POST /path"
 	const httpMatch = value.match(/^(GET|POST|PUT|DELETE|PATCH|OPTIONS|HEAD)\s+/i)
-	if (httpMatch) {
+	if (httpMatch?.[1]) {
 		// Normalize: lowercase method, keep path
-		const method = httpMatch[1]!.toLowerCase()
+		const method = httpMatch[1].toLowerCase()
 		const path = value.slice(httpMatch[0].length)
 		return {
 			normalized: `${method} ${path}`,
@@ -45,7 +61,7 @@ function normalizeForMatching(value: string): {
 		}
 	}
 
-	// Treat as operationId - return as-is for case-sensitive matching
+	// Treat as operationId - return as-is (exact match attempted first, then case-insensitive)
 	return {
 		normalized: value,
 		isHttpFormat: false,
@@ -57,7 +73,7 @@ function normalizeForMatching(value: string): {
  */
 function matchesOpenApiSpec(
 	dependsOnValue: string,
-	specs: ParsedOpenApiSpec[],
+	specs: readonly ParsedOpenApiSpec[],
 ): boolean {
 	const { normalized, isHttpFormat } = normalizeForMatching(dependsOnValue)
 
@@ -84,27 +100,13 @@ function matchesOpenApiSpec(
 }
 
 /**
- * Get all valid API identifiers for fuzzy matching
- */
-function getAllIdentifiers(specs: ParsedOpenApiSpec[]): string[] {
-	const identifiers: string[] = []
-
-	for (const spec of specs) {
-		identifiers.push(...spec.operationIds)
-		identifiers.push(...spec.httpEndpoints)
-	}
-
-	return identifiers
-}
-
-/**
  * Find a suggestion for an invalid API reference using fuzzy matching
  */
 function findApiSuggestion(
 	invalidApi: string,
-	specs: ParsedOpenApiSpec[],
+	specs: readonly ParsedOpenApiSpec[],
 ): string | undefined {
-	const allIdentifiers = getAllIdentifiers(specs)
+	const allIdentifiers = getAllApiIdentifiers(specs)
 	if (allIdentifiers.length === 0) {
 		return undefined
 	}
@@ -139,8 +141,8 @@ function findApiSuggestion(
  * ```
  */
 export function validateDependsOnReferences(
-	screens: Screen[],
-	specs: ParsedOpenApiSpec[],
+	screens: readonly Screen[],
+	specs: readonly ParsedOpenApiSpec[],
 ): DependsOnValidationResult {
 	const errors: DependsOnValidationError[] = []
 
@@ -161,8 +163,8 @@ export function validateDependsOnReferences(
 		}
 	}
 
-	return {
-		valid: errors.length === 0,
-		errors,
+	if (errors.length === 0) {
+		return { valid: true, errors: [] as const }
 	}
+	return { valid: false, errors }
 }

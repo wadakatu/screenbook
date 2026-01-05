@@ -7,13 +7,13 @@ import type { OpenAPI, OpenAPIV3 } from "openapi-types"
  */
 export interface ParsedOpenApiSpec {
 	/** Source path/URL of the OpenAPI spec */
-	source: string
+	readonly source: string
 	/** Set of valid operationIds (e.g., "getInvoiceById") */
-	operationIds: Set<string>
+	readonly operationIds: ReadonlySet<string>
 	/** Set of valid HTTP method + path combos (e.g., "GET /api/invoices/{id}") */
-	httpEndpoints: Set<string>
+	readonly httpEndpoints: ReadonlySet<string>
 	/** Map from lowercase key to original format for case-insensitive matching */
-	normalizedToOriginal: Map<string, string>
+	readonly normalizedToOriginal: ReadonlyMap<string, string>
 }
 
 /**
@@ -21,9 +21,9 @@ export interface ParsedOpenApiSpec {
  */
 export interface OpenApiParseResult {
 	/** Successfully parsed specifications */
-	specs: ParsedOpenApiSpec[]
+	readonly specs: readonly ParsedOpenApiSpec[]
 	/** Errors encountered during parsing */
-	errors: OpenApiParseError[]
+	readonly errors: readonly OpenApiParseError[]
 }
 
 /**
@@ -31,9 +31,9 @@ export interface OpenApiParseResult {
  */
 export interface OpenApiParseError {
 	/** Source path/URL that failed to parse */
-	source: string
+	readonly source: string
 	/** Error message */
-	message: string
+	readonly message: string
 }
 
 /**
@@ -157,7 +157,7 @@ async function parseOpenApiSource(
  * ```
  */
 export async function parseOpenApiSpecs(
-	sources: string[],
+	sources: readonly string[],
 	cwd: string,
 ): Promise<OpenApiParseResult> {
 	const specs: ParsedOpenApiSpec[] = []
@@ -181,7 +181,9 @@ export async function parseOpenApiSpecs(
 /**
  * Get all valid API identifiers from parsed specs (for suggestions)
  */
-export function getAllApiIdentifiers(specs: ParsedOpenApiSpec[]): string[] {
+export function getAllApiIdentifiers(
+	specs: readonly ParsedOpenApiSpec[],
+): string[] {
 	const identifiers: string[] = []
 
 	for (const spec of specs) {
