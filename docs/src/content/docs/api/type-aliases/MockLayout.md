@@ -7,6 +7,6 @@ title: "MockLayout"
 
 > **MockLayout** = `"vertical"` \| `"horizontal"`
 
-Defined in: [packages/core/src/types.ts:132](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L132)
+Defined in: [packages/core/src/types.ts:144](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L144)
 
 Layout direction for mock sections

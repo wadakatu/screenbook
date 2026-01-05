@@ -23,6 +23,7 @@ export {
 	type Screen,
 	type ScreenInput,
 	type ScreenLink,
+	type ScreenLinkType,
 	type ScreenMock,
 	screenMockSchema,
 	screenSchema,

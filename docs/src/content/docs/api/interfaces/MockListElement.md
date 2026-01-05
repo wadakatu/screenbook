@@ -5,7 +5,7 @@ prev: false
 title: "MockListElement"
 ---
 
-Defined in: [packages/core/src/types.ts:208](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L208)
+Defined in: [packages/core/src/types.ts:220](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L220)
 
 List element for displaying multiple items
 
@@ -19,7 +19,7 @@ List element for displaying multiple items
 
 > `optional` **itemCount**: `number`
 
-Defined in: [packages/core/src/types.ts:211](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L211)
+Defined in: [packages/core/src/types.ts:223](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L223)
 
 Number of items to display (default: 3)
 
@@ -29,7 +29,7 @@ Number of items to display (default: 3)
 
 > `optional` **itemNavigateTo**: `string`
 
-Defined in: [packages/core/src/types.ts:213](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L213)
+Defined in: [packages/core/src/types.ts:225](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L225)
 
 Screen ID to navigate to when an item is clicked
 
@@ -39,7 +39,7 @@ Screen ID to navigate to when an item is clicked
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:153](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L153)
+Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L165)
 
 Display label for the element
 
@@ -53,7 +53,7 @@ Display label for the element
 
 > **type**: `"list"`
 
-Defined in: [packages/core/src/types.ts:209](https://github.com/wadakatu/screenbook/blob/ab8b8bc6a7c88609223c3b2f1bea15f6e8e8bd8d/packages/core/src/types.ts#L209)
+Defined in: [packages/core/src/types.ts:221](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L221)
 
 Element type identifier
 

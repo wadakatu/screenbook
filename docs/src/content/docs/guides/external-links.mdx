@@ -1,0 +1,135 @@
+---
+title: External Links
+description: Link screens to Figma, Storybook, and other resources
+---
+
+Screenbook supports linking screens to external resources like Figma designs, Storybook components, and documentation. These links are displayed with type-specific icons in the UI.
+
+## Link Types
+
+| Type | Icon | Description |
+|------|------|-------------|
+| `figma` | Figma logo | Links to Figma design files |
+| `storybook` | Storybook logo | Links to Storybook stories |
+| `docs` | Document icon | Links to documentation |
+| `other` | External link icon | Generic external links |
+
+## Usage
+
+Add links to your screen definition using the `links` field:
+
+```typescript
+import { defineScreen } from "screenbook"
+
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+  links: [
+    {
+      type: "figma",
+      url: "https://www.figma.com/file/xxx/Design?node-id=123:456",
+      label: "Desktop Design"
+    },
+    {
+      type: "figma",
+      url: "https://www.figma.com/file/xxx/Design?node-id=123:789",
+      label: "Mobile Design"
+    },
+    {
+      type: "storybook",
+      url: "https://storybook.example.com/?path=/story/invoice-detail",
+      label: "Storybook"
+    },
+    {
+      type: "docs",
+      url: "https://wiki.example.com/billing/invoice",
+      label: "Wiki"
+    },
+  ],
+})
+```
+
+## Auto-Detection
+
+The `type` field is optional. When not specified, Screenbook automatically infers the type from the URL:
+
+- URLs containing `figma.com` are detected as `figma`
+- URLs containing `storybook` are detected as `storybook`
+- Other URLs default to `other`
+
+```typescript
+// Type is auto-detected as "figma"
+links: [
+  {
+    url: "https://www.figma.com/file/xxx/Design",
+    label: "Design"
+  },
+]
+```
+
+## Figma Integration
+
+### Linking to Specific Frames
+
+To link to a specific frame in Figma, include the `node-id` query parameter:
+
+```typescript
+links: [
+  {
+    type: "figma",
+    url: "https://www.figma.com/file/ABC123/MyDesign?node-id=1:2",
+    label: "Header Component"
+  },
+]
+```
+
+### Multiple Designs
+
+Many screens have multiple design variations (desktop, mobile, dark mode). Add multiple Figma links with descriptive labels:
+
+```typescript
+links: [
+  {
+    type: "figma",
+    url: "https://www.figma.com/file/xxx?node-id=1:1",
+    label: "Desktop"
+  },
+  {
+    type: "figma",
+    url: "https://www.figma.com/file/xxx?node-id=1:2",
+    label: "Mobile"
+  },
+  {
+    type: "figma",
+    url: "https://www.figma.com/file/xxx?node-id=1:3",
+    label: "Dark Mode"
+  },
+]
+```
+
+## Storybook Integration
+
+Link screens to their corresponding Storybook stories:
+
+```typescript
+links: [
+  {
+    type: "storybook",
+    url: "https://storybook.example.com/?path=/story/pages-invoice-detail--default",
+    label: "Default Story"
+  },
+  {
+    type: "storybook",
+    url: "https://storybook.example.com/?path=/story/pages-invoice-detail--loading",
+    label: "Loading State"
+  },
+]
+```
+
+## Best Practices
+
+1. **Use descriptive labels**: Instead of "Figma", use "Desktop Design" or "Mobile Mockup"
+2. **Link to specific frames**: Use node-id to link directly to the relevant frame
+3. **Keep links updated**: Remove or update links when designs change
+4. **Group related links**: Multiple links of the same type should have clear, distinguishing labels
