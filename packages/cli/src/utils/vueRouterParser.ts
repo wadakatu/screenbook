@@ -60,6 +60,9 @@ export function parseVueRouterConfig(
 
 	const routes: ParsedRoute[] = []
 
+	// Build import map to resolve component identifiers
+	const importMap = buildImportMap(ast.program.body, routesFileDir)
+
 	// Find routes array in the AST
 	for (const node of ast.program.body) {
 		// Handle: export const routes = [...]
@@ -73,7 +76,12 @@ export function parseVueRouterConfig(
 					decl.id.name === "routes" &&
 					decl.init?.type === "ArrayExpression"
 				) {
-					const parsed = parseRoutesArray(decl.init, routesFileDir, warnings)
+					const parsed = parseRoutesArray(
+						decl.init,
+						routesFileDir,
+						warnings,
+						importMap,
+					)
 					routes.push(...parsed)
 				}
 			}
@@ -87,7 +95,12 @@ export function parseVueRouterConfig(
 					decl.id.name === "routes" &&
 					decl.init?.type === "ArrayExpression"
 				) {
-					const parsed = parseRoutesArray(decl.init, routesFileDir, warnings)
+					const parsed = parseRoutesArray(
+						decl.init,
+						routesFileDir,
+						warnings,
+						importMap,
+					)
 					routes.push(...parsed)
 				}
 			}
@@ -98,7 +111,12 @@ export function parseVueRouterConfig(
 			node.type === "ExportDefaultDeclaration" &&
 			node.declaration.type === "ArrayExpression"
 		) {
-			const parsed = parseRoutesArray(node.declaration, routesFileDir, warnings)
+			const parsed = parseRoutesArray(
+				node.declaration,
+				routesFileDir,
+				warnings,
+				importMap,
+			)
 			routes.push(...parsed)
 		}
 
@@ -112,6 +130,7 @@ export function parseVueRouterConfig(
 				node.declaration.expression,
 				routesFileDir,
 				warnings,
+				importMap,
 			)
 			routes.push(...parsed)
 		}
@@ -128,6 +147,46 @@ export function parseVueRouterConfig(
 }
 
 /**
+ * Map of identifier names to their resolved file paths
+ */
+type ImportMap = Map<string, string>
+
+/**
+ * Build a map of imported identifiers to their file paths
+ */
+function buildImportMap(
+	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
+	body: any[],
+	baseDir: string,
+): ImportMap {
+	const importMap: ImportMap = new Map()
+
+	for (const node of body) {
+		if (node.type !== "ImportDeclaration") continue
+
+		const source = node.source.value
+		if (typeof source !== "string") continue
+
+		// Resolve the import path
+		const resolvedPath = resolveImportPath(source, baseDir)
+		if (!resolvedPath) continue
+
+		// Map each imported specifier to the resolved path
+		for (const specifier of node.specifiers) {
+			if (specifier.type === "ImportDefaultSpecifier") {
+				// import Component from './path'
+				importMap.set(specifier.local.name, resolvedPath)
+			} else if (specifier.type === "ImportSpecifier") {
+				// import { Component } from './path'
+				importMap.set(specifier.local.name, resolvedPath)
+			}
+		}
+	}
+
+	return importMap
+}
+
+/**
  * Parse an array expression containing route objects
  */
 function parseRoutesArray(
@@ -135,6 +194,7 @@ function parseRoutesArray(
 	arrayNode: any,
 	baseDir: string,
 	warnings: string[],
+	importMap: ImportMap,
 ): ParsedRoute[] {
 	const routes: ParsedRoute[] = []
 
@@ -151,7 +211,7 @@ function parseRoutesArray(
 		}
 
 		if (element.type === "ObjectExpression") {
-			const route = parseRouteObject(element, baseDir, warnings)
+			const route = parseRouteObject(element, baseDir, warnings, importMap)
 			if (route) {
 				routes.push(route)
 			}
@@ -169,10 +229,10 @@ function parseRouteObject(
 	objectNode: any,
 	baseDir: string,
 	warnings: string[],
+	importMap: ImportMap,
 ): ParsedRoute | null {
-	const route: ParsedRoute = {
-		path: "",
-	}
+	const route: Partial<ParsedRoute> = {}
+	let hasPath = false
 
 	for (const prop of objectNode.properties) {
 		if (prop.type !== "ObjectProperty") continue
@@ -184,6 +244,7 @@ function parseRouteObject(
 			case "path":
 				if (prop.value.type === "StringLiteral") {
 					route.path = prop.value.value
+					hasPath = true
 				}
 				break
 
@@ -200,33 +261,44 @@ function parseRouteObject(
 				break
 
 			case "component":
-				route.component = extractComponentPath(prop.value, baseDir)
+				route.component = extractComponentPath(prop.value, baseDir, importMap)
 				break
 
 			case "children":
 				if (prop.value.type === "ArrayExpression") {
-					route.children = parseRoutesArray(prop.value, baseDir, warnings)
+					route.children = parseRoutesArray(
+						prop.value,
+						baseDir,
+						warnings,
+						importMap,
+					)
 				}
 				break
 		}
 	}
 
-	// Skip routes without path
-	if (!route.path) {
+	// Skip routes without path property
+	// Empty string "" is valid in Vue Router (matches parent path)
+	if (!hasPath) {
 		return null
 	}
 
-	return route
+	return route as ParsedRoute
 }
 
 /**
  * Extract component path from various component definitions
  */
-// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
-function extractComponentPath(node: any, baseDir: string): string | undefined {
+function extractComponentPath(
+	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
+	node: any,
+	baseDir: string,
+	importMap: ImportMap,
+): string | undefined {
 	// Direct identifier: component: HomeView
 	if (node.type === "Identifier") {
-		return undefined // Can't resolve without tracking imports
+		// Look up the identifier in the import map
+		return importMap.get(node.name)
 	}
 
 	// Arrow function with import: () => import('./views/Home.vue')

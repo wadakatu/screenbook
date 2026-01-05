@@ -201,6 +201,74 @@ export const routes = [
 			expect(result.routes[0]?.component).toContain("views/About.vue")
 		})
 
+		it("should resolve component identifier from imports", () => {
+			const routesFile = join(testDir, "routes.ts")
+			writeFileSync(
+				routesFile,
+				`
+import PageProjects from './pages/PageProjects/PageProjects.vue'
+import { PageSettings } from './pages/PageSettings/PageSettings.vue'
+
+export const routes = [
+  {
+    path: '/projects',
+    name: 'PageProjects',
+    component: PageProjects,
+  },
+  {
+    path: '/settings',
+    name: 'PageSettings',
+    component: PageSettings,
+  },
+]
+`,
+			)
+
+			const result = parseVueRouterConfig(routesFile)
+
+			expect(result.routes).toHaveLength(2)
+			expect(result.routes[0]?.component).toContain(
+				"pages/PageProjects/PageProjects.vue",
+			)
+			expect(result.routes[1]?.component).toContain(
+				"pages/PageSettings/PageSettings.vue",
+			)
+		})
+
+		it("should resolve component identifiers in nested routes", () => {
+			const routesFile = join(testDir, "routes.ts")
+			writeFileSync(
+				routesFile,
+				`
+import LayoutEditor from './layouts/LayoutEditor.vue'
+import PageProjects from './pages/PageProjects/PageProjects.vue'
+
+export const routes = [
+  {
+    path: '/projects',
+    component: LayoutEditor,
+    children: [
+      {
+        path: '',
+        name: 'PageProjects',
+        component: PageProjects,
+      },
+    ],
+  },
+]
+`,
+			)
+
+			const result = parseVueRouterConfig(routesFile)
+
+			expect(result.routes).toHaveLength(1)
+			expect(result.routes[0]?.component).toContain("layouts/LayoutEditor.vue")
+			expect(result.routes[0]?.children).toHaveLength(1)
+			expect(result.routes[0]?.children?.[0]?.component).toContain(
+				"pages/PageProjects/PageProjects.vue",
+			)
+		})
+
 		it("should throw error when file does not exist", () => {
 			const nonExistentFile = join(testDir, "non-existent.ts")
 
