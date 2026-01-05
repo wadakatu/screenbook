@@ -1,0 +1,264 @@
+---
+title: OpenAPI Integration
+description: Validate dependsOn references against your OpenAPI specifications
+---
+
+Screenbook can validate that `dependsOn` API references in your screen definitions actually exist in your OpenAPI/Swagger specifications. This helps catch typos, outdated references, and ensure documentation accuracy.
+
+## Configuration
+
+Add your OpenAPI specification sources to the `apiIntegration.openapi` configuration:
+
+```ts
+// screenbook.config.ts
+import { defineConfig } from "@screenbook/core"
+
+export default defineConfig({
+  routesPattern: "src/app/**/page.tsx",
+  apiIntegration: {
+    openapi: {
+      sources: [
+        "./openapi.yaml",                           // Local file
+        "https://api.example.com/openapi.json",     // Remote URL
+      ],
+    },
+  },
+})
+```
+
+### Supported Formats
+
+Screenbook supports:
+- OpenAPI 3.0 and 3.1 (YAML and JSON)
+- Swagger 2.0 (YAML and JSON)
+- Local files and remote URLs
+
+## Defining Dependencies
+
+You can reference APIs in two formats:
+
+### Operation ID Format
+
+Use the `operationId` from your OpenAPI spec:
+
+```ts
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+  dependsOn: [
+    "getInvoiceById",      // operationId from OpenAPI
+    "updatePaymentStatus",
+  ],
+})
+```
+
+### HTTP Method + Path Format
+
+Use the HTTP method and path directly:
+
+```ts
+export const screen = defineScreen({
+  id: "billing.invoice.detail",
+  title: "Invoice Detail",
+  route: "/billing/invoices/:id",
+  dependsOn: [
+    "GET /api/invoices/{id}",
+    "POST /api/payments",
+  ],
+})
+```
+
+### Mixed Formats
+
+You can mix both formats:
+
+```ts
+dependsOn: [
+  "getInvoiceById",           // operationId
+  "GET /api/payments",        // HTTP format
+]
+```
+
+## Validation
+
+Screenbook validates `dependsOn` references during `screenbook lint`:
+
+```bash
+npx screenbook lint
+```
+
+### Warning Mode (Default)
+
+Invalid references show warnings but don't fail:
+
+```
+Linting screens... 24 screens found
+
+⚠ Invalid API dependencies (2):
+  ⚠ billing.invoice.detail: "getInvoicById"
+      Did you mean "getInvoiceById"?
+  ⚠ billing.payment.start: "createPaymnt"
+      Did you mean "createPayment"?
+
+✓ Lint passed with warnings
+```
+
+### Strict Mode
+
+Use `--strict` to fail CI on invalid references:
+
+```bash
+npx screenbook lint --strict
+```
+
+```
+✗ Error: 2 invalid API dependencies detected
+
+  Fix the dependsOn values to match operationIds or HTTP endpoints from your OpenAPI spec.
+
+  Example:
+  // Using operationId
+  dependsOn: ["getInvoiceById", "updatePaymentStatus"]
+
+  // Using HTTP method + path
+  dependsOn: ["GET /api/invoices/{id}", "POST /api/payments"]
+```
+
+## Typo Suggestions
+
+Screenbook uses fuzzy matching to suggest corrections for typos:
+
+```
+⚠ billing.invoice.detail: "getUsrs"
+    Did you mean "getUsers"?
+
+⚠ billing.payment.start: "GET /api/user"
+    Did you mean "GET /api/users"?
+```
+
+## Case Insensitivity
+
+Both formats support case-insensitive matching:
+
+```ts
+// All these match "GET /api/users":
+"GET /api/users"
+"get /api/users"
+"Get /api/users"
+
+// Both match operationId "getUsers":
+"getUsers"
+"GETUSERS"
+```
+
+## Multiple OpenAPI Sources
+
+Validate against multiple API specs (e.g., microservices):
+
+```ts
+export default defineConfig({
+  apiIntegration: {
+    openapi: {
+      sources: [
+        "./billing-api/openapi.yaml",
+        "./user-api/openapi.yaml",
+        "https://payment.api/v1/openapi.json",
+      ],
+    },
+  },
+})
+```
+
+## Error Handling
+
+If an OpenAPI source fails to parse, Screenbook:
+1. Shows a warning for the failed source
+2. Continues validating against other sources
+3. Does not fail the build (unless `--strict` is used)
+
+```
+⚠ Warning: Failed to parse OpenAPI spec: https://invalid.url/openapi.yaml
+  Check that the file path is correct and the OpenAPI specification is valid YAML or JSON.
+
+Validating against 2 remaining specs...
+```
+
+## CI Integration
+
+Add OpenAPI validation to your CI pipeline:
+
+```yaml
+# .github/workflows/lint.yml
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install
+      - run: pnpm screenbook build
+      - run: pnpm screenbook lint --strict
+```
+
+## Best Practices
+
+### 1. Keep OpenAPI Specs Updated
+
+Ensure your OpenAPI specifications stay in sync with your actual API:
+
+```yaml
+# Auto-generate OpenAPI from code if possible
+# Or add to CI to verify spec matches implementation
+```
+
+### 2. Use Operation IDs
+
+Prefer `operationId` over HTTP format for readability:
+
+```ts
+// Preferred: Clear, concise
+dependsOn: ["getInvoiceById", "createPayment"]
+
+// Alternative: When operationId is unavailable
+dependsOn: ["GET /api/invoices/{id}", "POST /api/payments"]
+```
+
+### 3. Enable Strict Mode in CI
+
+Catch issues before merging:
+
+```bash
+# In CI
+npx screenbook lint --strict
+
+# Locally (allows warnings)
+npx screenbook lint
+```
+
+### 4. Use Remote URLs for External APIs
+
+For third-party APIs with public OpenAPI specs:
+
+```ts
+apiIntegration: {
+  openapi: {
+    sources: [
+      "./internal-api.yaml",
+      "https://api.stripe.com/v1/openapi.json",
+    ],
+  },
+}
+```

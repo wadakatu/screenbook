@@ -1,0 +1,40 @@
+{
+	"swagger": "2.0",
+	"info": {
+		"title": "Swagger 2 Test API",
+		"version": "1.0.0"
+	},
+	"paths": {
+		"/api/payments": {
+			"get": {
+				"operationId": "listPayments",
+				"summary": "List all payments",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			},
+			"post": {
+				"operationId": "createPayment",
+				"summary": "Create a payment",
+				"responses": {
+					"201": {
+						"description": "Created"
+					}
+				}
+			}
+		},
+		"/api/payments/{id}": {
+			"get": {
+				"operationId": "getPaymentById",
+				"summary": "Get payment by ID",
+				"responses": {
+					"200": {
+						"description": "Success"
+					}
+				}
+			}
+		}
+	}
+}

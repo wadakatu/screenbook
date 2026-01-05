@@ -71,6 +71,10 @@ export default defineConfig({
 						{ label: "Navigation Graph", slug: "guides/navigation-graph" },
 						{ label: "Impact Analysis", slug: "guides/impact-analysis" },
 						{
+							label: "OpenAPI Integration",
+							slug: "guides/openapi-integration",
+						},
+						{
 							label: "Progressive Adoption",
 							slug: "guides/progressive-adoption",
 						},

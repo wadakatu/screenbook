@@ -5,7 +5,7 @@ prev: false
 title: "MockTextElement"
 ---
 
-Defined in: [packages/core/src/types.ts:202](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L202)
+Defined in: [packages/core/src/types.ts:202](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L202)
 
 Text element for labels and headings
 
@@ -19,7 +19,7 @@ Text element for labels and headings
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L165)
+Defined in: [packages/core/src/types.ts:165](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L165)
 
 Display label for the element
 
@@ -33,7 +33,7 @@ Display label for the element
 
 > **type**: `"text"`
 
-Defined in: [packages/core/src/types.ts:203](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L203)
+Defined in: [packages/core/src/types.ts:203](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L203)
 
 Element type identifier
 
@@ -47,6 +47,6 @@ Element type identifier
 
 > `optional` **variant**: `"heading"` \| `"subheading"` \| `"body"` \| `"caption"`
 
-Defined in: [packages/core/src/types.ts:205](https://github.com/wadakatu/screenbook/blob/af484fb5ff60b2152a66636fa6b54441fb1d41de/packages/core/src/types.ts#L205)
+Defined in: [packages/core/src/types.ts:205](https://github.com/wadakatu/screenbook/blob/4297cef1bf18ac5352258b2adf457cafe1df7d79/packages/core/src/types.ts#L205)
 
 Text style variant

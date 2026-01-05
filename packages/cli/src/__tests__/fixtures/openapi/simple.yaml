@@ -1,0 +1,51 @@
+openapi: "3.0.0"
+info:
+  title: Test API
+  version: "1.0.0"
+paths:
+  /api/users:
+    get:
+      operationId: getUsers
+      summary: Get all users
+      responses:
+        "200":
+          description: Success
+    post:
+      operationId: createUser
+      summary: Create a user
+      responses:
+        "201":
+          description: Created
+  /api/users/{id}:
+    get:
+      operationId: getUserById
+      summary: Get user by ID
+      responses:
+        "200":
+          description: Success
+    put:
+      operationId: updateUser
+      summary: Update a user
+      responses:
+        "200":
+          description: Success
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      responses:
+        "204":
+          description: No Content
+  /api/invoices:
+    get:
+      operationId: getInvoices
+      summary: Get all invoices
+      responses:
+        "200":
+          description: Success
+  /api/invoices/{id}:
+    get:
+      operationId: getInvoiceById
+      summary: Get invoice by ID
+      responses:
+        "200":
+          description: Success
