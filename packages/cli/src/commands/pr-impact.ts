@@ -6,7 +6,7 @@ import { define } from "gunshi"
 import { loadConfig } from "../utils/config.js"
 import { ERRORS } from "../utils/errors.js"
 import { analyzeImpact, type ImpactResult } from "../utils/impactAnalysis.js"
-import { logger } from "../utils/logger.js"
+import { logger, setVerbose } from "../utils/logger.js"
 import { extractApiNames, formatMarkdown } from "../utils/prImpact.js"
 
 export const prImpactCommand = define({
@@ -36,8 +36,15 @@ export const prImpactCommand = define({
 			description: "Maximum depth for transitive dependencies",
 			default: 3,
 		},
+		verbose: {
+			type: "boolean",
+			short: "v",
+			description: "Show detailed output including stack traces",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
+		setVerbose(ctx.values.verbose)
 		const config = await loadConfig(ctx.values.config)
 		const cwd = process.cwd()
 

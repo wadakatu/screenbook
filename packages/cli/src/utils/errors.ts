@@ -54,6 +54,16 @@ export default defineConfig({
 })`,
 	} satisfies ErrorOptions,
 
+	NO_ROUTES_FOUND: (pattern: string): ErrorOptions => ({
+		title: `No routes found matching pattern: ${pattern}`,
+		suggestion: "Check your routesPattern in screenbook.config.ts.",
+		example: `// Common patterns:
+"src/app/**/page.tsx"     // Next.js App Router
+"src/pages/**/*.tsx"      // Pages Router
+"src/pages/**/*.vue"      // Vue/Nuxt
+"src/routes/**/*.tsx"     // SolidStart/QwikCity`,
+	}),
+
 	// ============================================
 	// Build/File Errors
 	// ============================================
@@ -82,6 +92,30 @@ export const screen = defineScreen({
   title: "Example Screen",
   route: "/example",
 })`,
+	}),
+
+	FILE_READ_ERROR: (filePath: string, error: string): ErrorOptions => ({
+		title: `Failed to read file: ${filePath}`,
+		message: error,
+		suggestion: "Check if the file exists and you have read permissions.",
+	}),
+
+	PARSE_ERROR: (filePath: string, error: string): ErrorOptions => ({
+		title: `Failed to parse: ${filePath}`,
+		message: error,
+		suggestion: "Check for syntax errors in the file.",
+	}),
+
+	SCREEN_NOT_FOUND: (
+		screenId: string,
+		suggestions?: string[],
+	): ErrorOptions => ({
+		title: `Screen "${screenId}" not found`,
+		message:
+			suggestions && suggestions.length > 0
+				? `Did you mean one of these?\n${suggestions.map((s) => `  - ${s}`).join("\n")}`
+				: undefined,
+		suggestion: "Check the screen ID in your screen.meta.ts file.",
 	}),
 
 	// ============================================

@@ -11,7 +11,7 @@ import {
 	getCycleSummary,
 } from "../utils/cycleDetection.js"
 import { ERRORS } from "../utils/errors.js"
-import { logger } from "../utils/logger.js"
+import { logger, setVerbose } from "../utils/logger.js"
 import {
 	formatValidationErrors,
 	validateScreenReferences,
@@ -55,8 +55,15 @@ export const buildCommand = define({
 			description: "Suppress all circular navigation warnings",
 			default: false,
 		},
+		verbose: {
+			type: "boolean",
+			short: "v",
+			description: "Show detailed output including stack traces",
+			default: false,
+		},
 	},
 	run: async (ctx) => {
+		setVerbose(ctx.values.verbose)
 		const config = await loadConfig(ctx.values.config)
 		const outDir = ctx.values.outDir ?? config.outDir
 		const cwd = process.cwd()
