@@ -7,7 +7,10 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import { parseCommaSeparated } from "../commands/generate.js"
+import {
+	DEFAULT_EXCLUDE_PATTERNS,
+	parseCommaSeparated,
+} from "../commands/generate.js"
 
 // Mock console.log to suppress output during tests
 vi.spyOn(console, "log").mockImplementation(() => {})
@@ -746,6 +749,247 @@ export const routes = [
 
 			const profileContent = readFileSync(profileMetaPath, "utf-8")
 			expect(profileContent).toContain('route: "/user/:id/profile"')
+		})
+	})
+
+	describe("DEFAULT_EXCLUDE_PATTERNS", () => {
+		it("should contain common component directory patterns", () => {
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/components/**")
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/shared/**")
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/utils/**")
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/hooks/**")
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/composables/**")
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/stores/**")
+			expect(DEFAULT_EXCLUDE_PATTERNS).toContain("**/services/**")
+		})
+	})
+
+	describe("exclude patterns integration (issue #170)", () => {
+		const testDir = join(process.cwd(), ".test-exclude-patterns")
+		let originalCwd: string
+
+		beforeEach(() => {
+			originalCwd = process.cwd()
+			if (existsSync(testDir)) {
+				rmSync(testDir, { recursive: true })
+			}
+			mkdirSync(testDir, { recursive: true })
+			process.chdir(testDir)
+			mockExit.mockClear()
+		})
+
+		afterEach(() => {
+			process.chdir(originalCwd)
+			if (existsSync(testDir)) {
+				rmSync(testDir, { recursive: true })
+			}
+			vi.resetModules()
+		})
+
+		it("should NOT generate screen.meta.ts in components directories (routesPattern mode)", async () => {
+			// Create page and component Vue files
+			const pagesDir = join(testDir, "src/pages/PageAdmin")
+			const componentsDir = join(pagesDir, "components")
+			mkdirSync(componentsDir, { recursive: true })
+
+			// Main page file (should generate screen.meta.ts)
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Admin</div></template>",
+			)
+
+			// Component file (should NOT generate screen.meta.ts)
+			writeFileSync(
+				join(componentsDir, "AdminHeader.vue"),
+				"<template><header>Admin Header</header></template>",
+			)
+
+			// Config using routesPattern
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/*.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Main page should have screen.meta.ts
+			expect(existsSync(join(pagesDir, "screen.meta.ts"))).toBe(true)
+
+			// Components directory should NOT have screen.meta.ts
+			expect(existsSync(join(componentsDir, "screen.meta.ts"))).toBe(false)
+		})
+
+		it("should NOT generate screen.meta.ts in nested components directories", async () => {
+			// Create nested component structure like in issue #170
+			const pagesDir = join(testDir, "src/pages/PageProjectsEditor")
+			const componentsDir = join(pagesDir, "components")
+			const leftPaneDir = join(componentsDir, "LeftPane")
+			const viewsDir = join(leftPaneDir, "views")
+			mkdirSync(viewsDir, { recursive: true })
+
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Projects Editor</div></template>",
+			)
+			writeFileSync(
+				join(componentsDir, "Editor.vue"),
+				"<template><div>Editor</div></template>",
+			)
+			writeFileSync(
+				join(leftPaneDir, "LeftPane.vue"),
+				"<template><div>Left Pane</div></template>",
+			)
+			writeFileSync(
+				join(viewsDir, "TreeView.vue"),
+				"<template><div>Tree View</div></template>",
+			)
+
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/*.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Main page should have screen.meta.ts
+			expect(existsSync(join(pagesDir, "screen.meta.ts"))).toBe(true)
+
+			// All components directories should NOT have screen.meta.ts
+			expect(existsSync(join(componentsDir, "screen.meta.ts"))).toBe(false)
+			expect(existsSync(join(leftPaneDir, "screen.meta.ts"))).toBe(false)
+			expect(existsSync(join(viewsDir, "screen.meta.ts"))).toBe(false)
+		})
+
+		it("should NOT generate screen.meta.ts in other excluded directories", async () => {
+			// Test other excluded patterns: hooks, composables, utils, etc.
+			const pagesDir = join(testDir, "src/pages/Dashboard")
+			const hooksDir = join(pagesDir, "hooks")
+			const composablesDir = join(pagesDir, "composables")
+			const utilsDir = join(pagesDir, "utils")
+			mkdirSync(hooksDir, { recursive: true })
+			mkdirSync(composablesDir, { recursive: true })
+			mkdirSync(utilsDir, { recursive: true })
+
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Dashboard</div></template>",
+			)
+			writeFileSync(
+				join(hooksDir, "useDashboard.ts"),
+				"export function useDashboard() {}",
+			)
+			writeFileSync(
+				join(composablesDir, "useData.ts"),
+				"export function useData() {}",
+			)
+			writeFileSync(join(utilsDir, "helpers.ts"), "export function helper() {}")
+
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/*.{vue,ts}",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Main page should have screen.meta.ts
+			expect(existsSync(join(pagesDir, "screen.meta.ts"))).toBe(true)
+
+			// Excluded directories should NOT have screen.meta.ts
+			expect(existsSync(join(hooksDir, "screen.meta.ts"))).toBe(false)
+			expect(existsSync(join(composablesDir, "screen.meta.ts"))).toBe(false)
+			expect(existsSync(join(utilsDir, "screen.meta.ts"))).toBe(false)
+		})
+
+		it("should NOT generate screen.meta.ts for components in routesFile mode", async () => {
+			// Create routes file with component in a components directory
+			const srcDir = join(testDir, "src/router")
+			const viewsDir = join(testDir, "src/views")
+			const componentsDir = join(viewsDir, "components")
+			mkdirSync(srcDir, { recursive: true })
+			mkdirSync(viewsDir, { recursive: true })
+			mkdirSync(componentsDir, { recursive: true })
+
+			// Routes file with only a component in components directory
+			writeFileSync(
+				join(srcDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: '/header',
+    name: 'header',
+    component: () => import('../views/components/Header.vue'),
+  },
+]
+`,
+			)
+
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+import { defineConfig } from "@screenbook/core"
+export default defineConfig({
+  metaPattern: "src/**/screen.meta.ts",
+  routesFile: "src/router/routes.ts",
+})
+`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Components directory should NOT have screen.meta.ts
+			// because it matches the exclude pattern **/components/**
+			expect(existsSync(join(componentsDir, "screen.meta.ts"))).toBe(false)
 		})
 	})
 })

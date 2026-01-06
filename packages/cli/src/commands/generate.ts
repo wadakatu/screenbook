@@ -41,6 +41,52 @@ const VUE_ROUTER_CONFIG_PATHS = [
 ]
 
 /**
+ * Default patterns to exclude from screen.meta.ts generation.
+ * These directories typically contain reusable components, not navigable screens.
+ * @see https://github.com/wadakatu/screenbook/issues/170
+ */
+export const DEFAULT_EXCLUDE_PATTERNS = [
+	"**/components/**",
+	"**/shared/**",
+	"**/utils/**",
+	"**/hooks/**",
+	"**/composables/**",
+	"**/stores/**",
+	"**/services/**",
+	"**/helpers/**",
+	"**/lib/**",
+	"**/common/**",
+]
+
+/**
+ * Check if a path matches any of the exclude patterns
+ */
+function matchesExcludePattern(
+	filePath: string,
+	excludePatterns: readonly string[],
+): boolean {
+	// Simple pattern matching for directory-based patterns
+	for (const pattern of excludePatterns) {
+		// Convert glob pattern to a simple check
+		// e.g., "**/components/**" -> path contains "/components/"
+		const cleanPattern = pattern
+			.replace(/\*\*/g, "")
+			.replace(/\*/g, "")
+			.replace(/^\//, "")
+			.replace(/\/$/, "")
+
+		if (cleanPattern && filePath.includes(`/${cleanPattern}/`)) {
+			return true
+		}
+		// Also check if the path starts with the pattern (e.g., "components/...")
+		if (cleanPattern && filePath.startsWith(`${cleanPattern}/`)) {
+			return true
+		}
+	}
+	return false
+}
+
+/**
  * Detect Vue Router configuration file in the project
  */
 function detectVueRouterConfigFile(cwd: string): string | null {
@@ -334,6 +380,12 @@ async function generateFromRoutesFile(
 		const metaPath = determineMetaPath(route, cwd)
 		const absoluteMetaPath = resolve(cwd, metaPath)
 
+		// Skip routes in component directories (issue #170)
+		if (matchesExcludePattern(metaPath, DEFAULT_EXCLUDE_PATTERNS)) {
+			skipped++
+			continue
+		}
+
 		if (!force && existsSync(absoluteMetaPath)) {
 			if (!interactive) {
 				skipped++
@@ -518,10 +570,13 @@ export async function generateFromRoutesPattern(
 	logger.info("Scanning for route files...")
 	logger.blank()
 
+	// Merge user ignore patterns with default exclude patterns for component directories
+	const mergedIgnore = [...ignore, ...DEFAULT_EXCLUDE_PATTERNS]
+
 	// Find all route files
 	const routeFiles = await glob(routesPattern, {
 		cwd,
-		ignore,
+		ignore: mergedIgnore,
 	})
 
 	if (routeFiles.length === 0) {
