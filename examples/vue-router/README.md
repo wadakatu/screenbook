@@ -22,12 +22,17 @@ src/
 │   ├── User/
 │   │   ├── index.vue         # User route (/user/:id)
 │   │   └── screen.meta.ts    # User screen metadata
-│   └── UserProfile/
-│       ├── index.vue         # Profile route (/user/:id/profile)
-│       └── screen.meta.ts    # Profile screen metadata
+│   ├── UserProfile/
+│   │   ├── index.vue         # Profile route (/user/:id/profile)
+│   │   └── screen.meta.ts    # Profile screen metadata
+│   └── PageProjects/
+│       ├── index.vue         # Projects route (/projects) - Note: directory name differs from route
+│       └── screen.meta.ts    # Projects screen metadata
 ├── App.vue
 └── main.ts
 ```
+
+> **Note**: The `PageProjects` directory demonstrates that Screenbook correctly extracts the route path from Vue Router configuration, not from the directory name. This ensures the generated `screen.meta.ts` has `route: "/projects"` instead of `route: "/PageProjects"`.
 
 ## Screenbook Configuration
 

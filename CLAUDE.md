@@ -49,6 +49,18 @@ pnpm docs:dev         # Start docs dev server
 - Tests: Place in `__tests__/` or `*.test.ts` files
 - Language: English only (code, docs, commits)
 
+## Release Process
+
+⚠️ **NEVER run `pnpm changeset version` manually** - GitHub Action handles this automatically.
+
+1. Add changeset in feature branch: `pnpm changeset`
+2. Merge feature PR to main (changeset file included)
+3. **Wait** - GitHub Action creates "Version Packages" PR automatically
+4. Merge "Version Packages" PR
+5. GitHub Action publishes to npm automatically
+
+See `.claude/rules/release.md` for details.
+
 ## Rules
 
 Detailed rules are auto-loaded from `.claude/rules/`.
