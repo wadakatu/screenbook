@@ -1,5 +1,19 @@
 # @screenbook/cli
 
+## 1.7.1
+
+### Patch Changes
+
+- 540caef: ### @screenbook/cli
+  - Fix coverage calculation to use route files count instead of total routes
+  - Fix missing routes identification in coverage.json
+  - Exclude component directories from screen.meta.ts generation
+  - Use Vue Router config for route extraction in routesPattern mode
+
+  ### @screenbook/ui
+  - Expand graph visualization to use available container space
+  - Escape slashes in Mermaid graph labels
+
 ## 1.7.0
 
 ### Minor Changes
