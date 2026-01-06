@@ -32,7 +32,7 @@ src/app/
 
 ```ts
 // screenbook.config.ts
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
   metaPattern: "src/app/**/screen.meta.ts",
@@ -72,7 +72,7 @@ src/
 
 ```ts
 // screenbook.config.ts
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
   metaPattern: "src/pages/**/screen.meta.ts",
@@ -102,7 +102,7 @@ Both examples demonstrate:
 
 ```ts
 // screen.meta.ts
-import { defineScreen } from "@screenbook/core"
+import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
   id: "dashboard",
