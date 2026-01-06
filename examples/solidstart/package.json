@@ -19,8 +19,7 @@
 		"vinxi": "^0.5.0"
 	},
 	"devDependencies": {
-		"@screenbook/cli": "workspace:*",
-		"@screenbook/core": "workspace:*",
-		"typescript": "^5.9.0"
+		"typescript": "^5.9.0",
+		"screenbook": "workspace:*"
 	}
 }

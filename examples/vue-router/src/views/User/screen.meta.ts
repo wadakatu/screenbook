@@ -1,4 +1,4 @@
-import { defineScreen } from "@screenbook/core"
+import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
 	id: "user.id",

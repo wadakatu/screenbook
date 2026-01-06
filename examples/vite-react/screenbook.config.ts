@@ -1,4 +1,4 @@
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
 	metaPattern: "src/pages/**/screen.meta.ts",

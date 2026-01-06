@@ -7,8 +7,7 @@
 		"screenbook": "screenbook"
 	},
 	"dependencies": {
-		"@screenbook/cli": "workspace:*",
-		"@screenbook/core": "workspace:*"
+		"screenbook": "workspace:*"
 	},
 	"devDependencies": {
 		"typescript": "^5.7.2"

@@ -25,7 +25,7 @@ src/
 The `screenbook.config.ts` file configures Screenbook for Vite + React:
 
 ```typescript
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
   metaPattern: "src/pages/**/screen.meta.ts",
@@ -67,7 +67,7 @@ pnpm screenbook:lint
 Each screen has a colocated `screen.meta.ts` file:
 
 ```typescript
-import { defineScreen } from "@screenbook/core"
+import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
   id: "dashboard",
