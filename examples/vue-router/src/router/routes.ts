@@ -28,4 +28,11 @@ export const routes: RouteRecordRaw[] = [
 			},
 		],
 	},
+	// Issue #169: Directory name (PageProjects) differs from route path (/projects)
+	// This tests that the correct route is extracted from Vue Router config
+	{
+		path: "/projects",
+		name: "projects",
+		component: () => import("../views/PageProjects/index.vue"),
+	},
 ]
