@@ -229,4 +229,76 @@ describe("build command", () => {
 		expect(missingRoutes).toContain("src/pages/contact/index.vue")
 		expect(missingRoutes).not.toContain("src/pages/home/index.vue")
 	})
+
+	it("should count coverage correctly when multiple routes share one screen.meta.ts (issue #174)", async () => {
+		// This test reproduces issue #174: coverage calculation inconsistency
+		// When multiple route files exist in the same directory with one screen.meta.ts,
+		// the coverage should count route files, not screen files
+
+		// Use unique config filename to avoid jiti cache issues
+		const configFile = "screenbook-issue174.config.ts"
+		writeFileSync(
+			join(testDir, configFile),
+			`
+			export default {
+				metaPattern: "src/pages/**/screen.meta.ts",
+				routesPattern: "src/pages/**/*.vue",
+				outDir: ".screenbook",
+				ignore: ["node_modules/**"],
+			}
+		`,
+		)
+
+		// Create directory with multiple route files and one screen.meta.ts
+		const usersDir = join(testDir, "src/pages/users")
+		const productsDir = join(testDir, "src/pages/products")
+
+		mkdirSync(usersDir, { recursive: true })
+		mkdirSync(productsDir, { recursive: true })
+
+		// Users directory: 3 route files, 1 screen.meta.ts
+		writeFileSync(join(usersDir, "index.vue"), "<template>Users</template>")
+		writeFileSync(
+			join(usersDir, "detail.vue"),
+			"<template>User Detail</template>",
+		)
+		writeFileSync(
+			join(usersDir, "create.vue"),
+			"<template>Create User</template>",
+		)
+		writeFileSync(
+			join(usersDir, "screen.meta.ts"),
+			`export const screen = { id: "users", title: "Users", route: "/users" }`,
+		)
+
+		// Products directory: 2 route files, no screen.meta.ts
+		writeFileSync(
+			join(productsDir, "index.vue"),
+			"<template>Products</template>",
+		)
+		writeFileSync(
+			join(productsDir, "detail.vue"),
+			"<template>Product Detail</template>",
+		)
+
+		const { buildCommand } = await import("../commands/build.js")
+
+		await buildCommand.run({
+			values: { config: configFile, outDir: undefined },
+		} as Parameters<typeof buildCommand.run>[0])
+
+		const coveragePath = join(testDir, ".screenbook/coverage.json")
+		const coverage = JSON.parse(readFileSync(coveragePath, "utf-8"))
+
+		// Total: 5 route files (3 in users, 2 in products)
+		expect(coverage.total).toBe(5)
+
+		// Covered: 3 route files in users directory (which has screen.meta.ts)
+		// NOT 1 (the number of screen.meta.ts files)
+		expect(coverage.covered).toBe(3)
+
+		// Missing: 2 route files in products directory
+		expect(coverage.missing).toHaveLength(2)
+		expect(coverage.percentage).toBe(60)
+	})
 })

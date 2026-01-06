@@ -215,8 +215,11 @@ async function generateCoverageData(
 	}
 
 	// Calculate coverage
+	// When routesPattern is configured, count route files (not screens)
+	// This ensures consistency with the lint command
 	const total = routeFiles.length > 0 ? routeFiles.length : screens.length
-	const covered = screens.length
+	const covered =
+		routeFiles.length > 0 ? routeFiles.length - missing.length : screens.length
 	const percentage = total > 0 ? Math.round((covered / total) * 100) : 100
 
 	// Group by owner
