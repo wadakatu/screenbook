@@ -9,7 +9,7 @@ Screenbook uses a `screenbook.config.ts` file for configuration. This file is au
 
 ```ts
 // screenbook.config.ts
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
   // Output directory for generated files
@@ -112,7 +112,7 @@ npx screenbook build --config ./config/screenbook.config.ts
 The `defineConfig` function provides full TypeScript support with autocompletion and type checking:
 
 ```ts
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
   // TypeScript will provide autocomplete and type checking here
