@@ -1,5 +1,15 @@
 # @screenbook/cli
 
+## 1.7.2
+
+### Patch Changes
+
+- b44ee50: ### @screenbook/cli
+  - Use `screenbook` imports in generated templates and config examples.
+
+  ### screenbook
+  - Align CLI output templates to reference `screenbook` instead of `@screenbook/core`.
+
 ## 1.7.1
 
 ### Patch Changes
