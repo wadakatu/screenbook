@@ -612,9 +612,6 @@ code {
 	border-radius: var(--radius-lg);
 	padding: 32px;
 	min-height: 400px;
-	display: flex;
-	justify-content: center;
-	align-items: center;
 }
 
 .graph-legend {
@@ -824,6 +821,12 @@ code {
 /* Mermaid */
 .mermaid {
 	background: transparent;
+	width: 100%;
+}
+
+.mermaid svg {
+	width: 100%;
+	height: auto;
 }
 
 .mermaid .node rect {
