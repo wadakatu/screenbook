@@ -561,4 +561,191 @@ export function Dashboard() {
 			expect(content).toContain('"profile"')
 		})
 	})
+
+	describe("generateFromRoutesPattern with Vue Router auto-detection", () => {
+		const testDir = join(process.cwd(), ".test-generate-vue")
+		let originalCwd: string
+
+		beforeEach(() => {
+			originalCwd = process.cwd()
+			if (existsSync(testDir)) {
+				rmSync(testDir, { recursive: true })
+			}
+			mkdirSync(testDir, { recursive: true })
+			process.chdir(testDir)
+			mockExit.mockClear()
+		})
+
+		afterEach(() => {
+			process.chdir(originalCwd)
+			if (existsSync(testDir)) {
+				rmSync(testDir, { recursive: true })
+			}
+			vi.resetModules()
+		})
+
+		it("should use routes from Vue Router config when using routesPattern", async () => {
+			// Create Vue Router config file
+			const routerDir = join(testDir, "src/router")
+			const pagesDir = join(testDir, "src/pages/PageProjects")
+			mkdirSync(routerDir, { recursive: true })
+			mkdirSync(pagesDir, { recursive: true })
+
+			// Vue Router configuration with actual route paths
+			writeFileSync(
+				join(routerDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: "/projects",
+    component: () => import("../pages/PageProjects/index.vue"),
+  },
+]
+`,
+			)
+
+			// Create the Vue component
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Projects</div></template>",
+			)
+
+			// Config using routesPattern (file-based routing pattern)
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/*.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check that screen.meta.ts was created with correct route
+			const metaPath = join(pagesDir, "screen.meta.ts")
+			expect(existsSync(metaPath)).toBe(true)
+
+			const content = readFileSync(metaPath, "utf-8")
+			// Should use "/projects" from Vue Router config, not "/PageProjects" from directory name
+			expect(content).toContain('route: "/projects"')
+			expect(content).not.toContain('route: "/PageProjects"')
+		})
+
+		it("should fall back to path-based inference when Vue Router config not found", async () => {
+			// Create only the page file, no router config
+			const pagesDir = join(testDir, "src/pages/dashboard")
+			mkdirSync(pagesDir, { recursive: true })
+
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Dashboard</div></template>",
+			)
+
+			// Config using routesPattern without Vue Router config
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/*.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check that screen.meta.ts was created with inferred route
+			const metaPath = join(pagesDir, "screen.meta.ts")
+			expect(existsSync(metaPath)).toBe(true)
+
+			const content = readFileSync(metaPath, "utf-8")
+			// Should fall back to path-based inference
+			expect(content).toContain('route: "/dashboard"')
+		})
+
+		it("should handle nested routes from Vue Router config", async () => {
+			// Create Vue Router config file with nested routes
+			const routerDir = join(testDir, "src/router")
+			const userDir = join(testDir, "src/pages/UserLayout")
+			const profileDir = join(testDir, "src/pages/UserProfile")
+			mkdirSync(routerDir, { recursive: true })
+			mkdirSync(userDir, { recursive: true })
+			mkdirSync(profileDir, { recursive: true })
+
+			writeFileSync(
+				join(routerDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: "/user/:id",
+    component: () => import("../pages/UserLayout/index.vue"),
+    children: [
+      {
+        path: "profile",
+        component: () => import("../pages/UserProfile/index.vue"),
+      },
+    ],
+  },
+]
+`,
+			)
+
+			writeFileSync(
+				join(userDir, "index.vue"),
+				"<template><div>User</div></template>",
+			)
+			writeFileSync(
+				join(profileDir, "index.vue"),
+				"<template><div>Profile</div></template>",
+			)
+
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/*.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check UserProfile gets the nested path
+			const profileMetaPath = join(profileDir, "screen.meta.ts")
+			expect(existsSync(profileMetaPath)).toBe(true)
+
+			const profileContent = readFileSync(profileMetaPath, "utf-8")
+			expect(profileContent).toContain('route: "/user/:id/profile"')
+		})
+	})
 })
