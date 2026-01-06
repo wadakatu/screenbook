@@ -1073,7 +1073,7 @@ function generateScreenMetaContent(
 			? "// Auto-detected navigation targets (add more as needed)"
 			: "// Screen IDs this screen can navigate to"
 
-	return `import { defineScreen } from "@screenbook/core"
+	return `import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
 	id: "${meta.id}",

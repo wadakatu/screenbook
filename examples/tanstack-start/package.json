@@ -19,10 +19,9 @@
 		"vinxi": "^0.5.0"
 	},
 	"devDependencies": {
-		"@screenbook/cli": "workspace:*",
-		"@screenbook/core": "workspace:*",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
-		"typescript": "^5.9.0"
+		"typescript": "^5.9.0",
+		"screenbook": "workspace:*"
 	}
 }

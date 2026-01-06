@@ -12,7 +12,7 @@ export const ERRORS = {
 		title: "Routes configuration not found",
 		suggestion:
 			"Add routesPattern (for file-based routing) or routesFile (for config-based routing) to your screenbook.config.ts.",
-		example: `import { defineConfig } from "@screenbook/core"
+		example: `import { defineConfig } from "screenbook"
 
 // Option 1: File-based routing (Next.js, Nuxt, etc.)
 export default defineConfig({
@@ -29,7 +29,7 @@ export default defineConfig({
 		title: `Routes file not found: ${filePath}`,
 		suggestion:
 			"Check the routesFile path in your screenbook.config.ts. The file should export a routes array.",
-		example: `import { defineConfig } from "@screenbook/core"
+		example: `import { defineConfig } from "screenbook"
 
 export default defineConfig({
   routesFile: "src/router/routes.ts",  // Make sure this file exists
@@ -47,7 +47,7 @@ export default defineConfig({
 		title: "Configuration file not found",
 		suggestion:
 			"Run 'screenbook init' to create a screenbook.config.ts file, or create one manually.",
-		example: `import { defineConfig } from "@screenbook/core"
+		example: `import { defineConfig } from "screenbook"
 
 export default defineConfig({
   metaPattern: "src/**/screen.meta.ts",
@@ -85,7 +85,7 @@ export default defineConfig({
 		title: `Failed to load ${filePath}`,
 		suggestion:
 			"Check the file for syntax errors or missing exports. The file should export a 'screen' object.",
-		example: `import { defineScreen } from "@screenbook/core"
+		example: `import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
   id: "example.screen",

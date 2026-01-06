@@ -1,4 +1,4 @@
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
 	// File-based routing pattern (similar to Next.js App Router)
