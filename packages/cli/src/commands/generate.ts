@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, join, relative, resolve } from "node:path"
+import { basename, dirname, join, relative, resolve } from "node:path"
 import type { ApiIntegrationConfig, Screen } from "@screenbook/core"
 import { define } from "gunshi"
 import prompts from "prompts"
@@ -27,6 +27,96 @@ import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 import { analyzeVueSFC } from "../utils/vueSFCTemplateAnalyzer.js"
+
+/**
+ * Common paths where Vue Router configuration files are typically located
+ */
+const VUE_ROUTER_CONFIG_PATHS = [
+	"src/router/routes.ts",
+	"src/router/index.ts",
+	"src/router.ts",
+	"src/routes.ts",
+	"router/routes.ts",
+	"router/index.ts",
+]
+
+/**
+ * Detect Vue Router configuration file in the project
+ */
+function detectVueRouterConfigFile(cwd: string): string | null {
+	for (const configPath of VUE_ROUTER_CONFIG_PATHS) {
+		const absolutePath = join(cwd, configPath)
+		if (existsSync(absolutePath)) {
+			return absolutePath
+		}
+	}
+	return null
+}
+
+/**
+ * Build a map from component file paths to their route information.
+ * Normalizes paths for reliable matching.
+ */
+function buildRouteComponentMap(
+	flatRoutes: FlatRoute[],
+	cwd: string,
+): Map<string, FlatRoute> {
+	const map = new Map<string, FlatRoute>()
+
+	for (const route of flatRoutes) {
+		if (route.componentPath) {
+			// Normalize the component path relative to cwd
+			const relativePath = relative(cwd, route.componentPath)
+			// Use the directory containing the component as the key
+			const componentDir = dirname(relativePath)
+			// Also add a key for just the filename to handle different directory structures
+			const componentName = basename(route.componentPath)
+			const componentNameWithoutExt = componentName.replace(/\.[^.]+$/, "")
+
+			map.set(componentDir, route)
+			// Store by component directory name for matching with route file directories
+			map.set(basename(componentDir), route)
+			// Store by component filename without extension
+			map.set(componentNameWithoutExt, route)
+		}
+	}
+
+	return map
+}
+
+/**
+ * Find matching route from the component map for a given route file
+ */
+function findMatchingRoute(
+	routeFile: string,
+	routeComponentMap: Map<string, FlatRoute>,
+): FlatRoute | null {
+	const routeDir = dirname(routeFile)
+	const routeDirName = basename(routeDir)
+
+	// Try exact directory match
+	if (routeComponentMap.has(routeDir)) {
+		return routeComponentMap.get(routeDir) ?? null
+	}
+
+	// Try directory name match
+	if (routeComponentMap.has(routeDirName)) {
+		return routeComponentMap.get(routeDirName) ?? null
+	}
+
+	// Try to find a component that shares the same directory name
+	for (const [, route] of routeComponentMap) {
+		if (route.componentPath) {
+			const componentDir = dirname(route.componentPath)
+			const componentDirName = basename(componentDir)
+			if (componentDirName === routeDirName) {
+				return route
+			}
+		}
+	}
+
+	return null
+}
 
 export const generateCommand = define({
 	name: "generate",
@@ -440,6 +530,33 @@ export async function generateFromRoutesPattern(
 	}
 
 	logger.log(`Found ${routeFiles.length} route files`)
+
+	// For Vue projects, try to detect and parse Vue Router configuration
+	let routeComponentMap: Map<string, FlatRoute> | null = null
+	const isVuePattern = routesPattern.includes(".vue")
+
+	if (isVuePattern) {
+		const vueRouterConfig = detectVueRouterConfigFile(cwd)
+		if (vueRouterConfig) {
+			try {
+				const parseResult = parseVueRouterConfig(vueRouterConfig)
+				const flatRoutes = flattenRoutes(parseResult.routes)
+				if (flatRoutes.length > 0) {
+					routeComponentMap = buildRouteComponentMap(flatRoutes, cwd)
+					logger.log(
+						`  ${logger.dim(`(using routes from ${relative(cwd, vueRouterConfig)})`)}`,
+					)
+				}
+				for (const warning of parseResult.warnings) {
+					logger.warn(warning)
+				}
+			} catch (error) {
+				const message = error instanceof Error ? error.message : String(error)
+				logger.warn(`Could not parse Vue Router config: ${message}`)
+			}
+		}
+	}
+
 	logger.blank()
 
 	let created = 0
@@ -462,8 +579,23 @@ export async function generateFromRoutesPattern(
 			continue
 		}
 
-		// Generate screen metadata from path
-		const screenMeta = inferScreenMeta(routeDir, routesPattern)
+		// Try to find matching route from Vue Router config first
+		let screenMeta: InferredScreenMeta
+		const matchedRoute = routeComponentMap
+			? findMatchingRoute(routeFile, routeComponentMap)
+			: null
+
+		if (matchedRoute) {
+			// Use route information from Vue Router config
+			screenMeta = {
+				id: matchedRoute.screenId,
+				title: matchedRoute.screenTitle,
+				route: matchedRoute.fullPath,
+			}
+		} else {
+			// Fall back to path-based inference
+			screenMeta = inferScreenMeta(routeDir, routesPattern)
+		}
 
 		// Detect API dependencies if enabled
 		let detectedApis: string[] = []
