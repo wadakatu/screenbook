@@ -35,4 +35,10 @@ export const routes: RouteRecordRaw[] = [
 		name: "projects",
 		component: () => import("../views/PageProjects/index.vue"),
 	},
+	// Issue #171: Title containing slash to test Mermaid graph escaping
+	{
+		path: "/admin/dashboard",
+		name: "admin-dashboard",
+		component: () => import("../views/AdminDashboard/index.vue"),
+	},
 ]
