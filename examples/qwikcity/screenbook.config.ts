@@ -1,4 +1,4 @@
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
 	metaPattern: "src/routes/**/screen.meta.ts",

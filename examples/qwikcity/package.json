@@ -17,10 +17,9 @@
 		"@builder.io/qwik-city": "^1.12.0"
 	},
 	"devDependencies": {
-		"@screenbook/cli": "workspace:*",
-		"@screenbook/core": "workspace:*",
 		"typescript": "^5.9.0",
 		"vite": "^6.0.0",
-		"vite-tsconfig-paths": "^5.1.0"
+		"vite-tsconfig-paths": "^5.1.0",
+		"screenbook": "workspace:*"
 	}
 }

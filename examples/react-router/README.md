@@ -52,7 +52,7 @@ src/
 The `screenbook.config.ts` file configures Screenbook for this project:
 
 ```ts
-import { defineConfig } from "@screenbook/core"
+import { defineConfig } from "screenbook"
 
 export default defineConfig({
   routesFile: "src/router/routes.tsx",

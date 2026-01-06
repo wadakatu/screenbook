@@ -18,12 +18,11 @@
 		"react-router-dom": "^7.1.1"
 	},
 	"devDependencies": {
-		"@screenbook/cli": "workspace:*",
-		"@screenbook/core": "workspace:*",
 		"@types/react": "^19.0.2",
 		"@types/react-dom": "^19.0.2",
 		"@vitejs/plugin-react": "^4.4.3",
 		"typescript": "~5.9.3",
-		"vite": "^7.2.4"
+		"vite": "^7.2.4",
+		"screenbook": "workspace:*"
 	}
 }
