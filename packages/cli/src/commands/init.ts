@@ -29,7 +29,7 @@ export function generateConfigTemplate(
 	framework: FrameworkInfo | null,
 ): string {
 	if (framework) {
-		return `import { defineConfig } from "@screenbook/core"
+		return `import { defineConfig } from "screenbook"
 
 export default defineConfig({
 	// Auto-detected: ${framework.name}
@@ -41,7 +41,7 @@ export default defineConfig({
 	}
 
 	// Fallback template when no framework detected
-	return `import { defineConfig } from "@screenbook/core"
+	return `import { defineConfig } from "screenbook"
 
 export default defineConfig({
 	// Glob pattern for screen metadata files
