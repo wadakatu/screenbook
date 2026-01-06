@@ -4,6 +4,13 @@ import { loadScreens } from "@/utils/loadScreens"
 
 const screens = loadScreens()
 
+// Escape special characters for Mermaid labels
+function escapeMermaidLabel(text: string): string {
+	return text
+		.replace(/"/g, "'")
+		.replace(/\//g, "&#47;")
+}
+
 // Generate Navigation Mermaid graph
 let navigationGraph = ""
 const screensWithMock: string[] = []
@@ -11,7 +18,7 @@ if (screens.length > 0) {
 	const lines: string[] = ["flowchart TD"]
 
 	for (const screen of screens) {
-		const label = screen.title.replace(/"/g, "'")
+		const label = escapeMermaidLabel(screen.title)
 		const id = screen.id.replace(/\./g, "_")
 		const mockIndicator = screen.mock ? " 📱" : ""
 		lines.push(`    ${id}["${label}${mockIndicator}"]`)
@@ -70,7 +77,8 @@ if (screens.length > 0) {
 	lines.push("    %% API nodes")
 	for (const api of apis) {
 		const id = api.replace(/\./g, "_")
-		lines.push(`    ${id}[/"${api}"/]`)
+		const label = escapeMermaidLabel(api)
+		lines.push(`    ${id}[/"${label}"/]`)
 	}
 
 	lines.push("")
@@ -79,7 +87,7 @@ if (screens.length > 0) {
 	// Add screen nodes
 	for (const screen of screens) {
 		if (screen.dependsOn && screen.dependsOn.length > 0) {
-			const label = screen.title.replace(/"/g, "'")
+			const label = escapeMermaidLabel(screen.title)
 			const id = screen.id.replace(/\./g, "_")
 			lines.push(`    ${id}["${label}"]`)
 		}
