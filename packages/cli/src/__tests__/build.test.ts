@@ -163,4 +163,70 @@ describe("build command", () => {
 		expect(graph).toContain("billing_invoice_detail")
 		expect(graph).not.toContain("billing.invoice.detail[")
 	})
+
+	it("should generate coverage.json with correct missing routes", async () => {
+		// Create config with routesPattern
+		writeFileSync(
+			join(testDir, "screenbook.config.ts"),
+			`
+			export default {
+				metaPattern: "src/pages/**/screen.meta.ts",
+				routesPattern: "src/pages/**/index.vue",
+				outDir: ".screenbook",
+				ignore: ["node_modules/**"],
+			}
+		`,
+		)
+
+		// Create 3 route files
+		const homeDir = join(testDir, "src/pages/home")
+		const aboutDir = join(testDir, "src/pages/about")
+		const contactDir = join(testDir, "src/pages/contact")
+
+		mkdirSync(homeDir, { recursive: true })
+		mkdirSync(aboutDir, { recursive: true })
+		mkdirSync(contactDir, { recursive: true })
+
+		writeFileSync(join(homeDir, "index.vue"), "<template>Home</template>")
+		writeFileSync(join(aboutDir, "index.vue"), "<template>About</template>")
+		writeFileSync(join(contactDir, "index.vue"), "<template>Contact</template>")
+
+		// Create screen.meta.ts only for home (1 of 3 routes documented)
+		writeFileSync(
+			join(homeDir, "screen.meta.ts"),
+			`
+			export const screen = {
+				id: "home",
+				title: "Home",
+				route: "/",
+			}
+		`,
+		)
+
+		const { buildCommand } = await import("../commands/build.js")
+
+		await buildCommand.run({
+			values: { config: "screenbook.config.ts", outDir: undefined },
+		} as Parameters<typeof buildCommand.run>[0])
+
+		const coveragePath = join(testDir, ".screenbook/coverage.json")
+		expect(existsSync(coveragePath)).toBe(true)
+
+		const coverage = JSON.parse(readFileSync(coveragePath, "utf-8"))
+
+		// Should have 3 total routes, 1 covered, 2 missing
+		expect(coverage.total).toBe(3)
+		expect(coverage.covered).toBe(1)
+		expect(coverage.percentage).toBe(33)
+
+		// Missing should contain 2 routes (about and contact)
+		expect(coverage.missing).toHaveLength(2)
+
+		const missingRoutes = coverage.missing.map(
+			(m: { route: string }) => m.route,
+		)
+		expect(missingRoutes).toContain("src/pages/about/index.vue")
+		expect(missingRoutes).toContain("src/pages/contact/index.vue")
+		expect(missingRoutes).not.toContain("src/pages/home/index.vue")
+	})
 })

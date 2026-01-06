@@ -175,7 +175,7 @@ export const buildCommand = define({
 async function generateCoverageData(
 	config: { routesPattern?: string; metaPattern: string; ignore: string[] },
 	cwd: string,
-	screens: Screen[],
+	screens: Array<Screen & { filePath?: string }>,
 ): Promise<CoverageData> {
 	// Get all route files if routesPattern is configured
 	let routeFiles: string[] = []
@@ -186,31 +186,27 @@ async function generateCoverageData(
 		})
 	}
 
-	// Get directories that have screen.meta.ts
-	const _metaDirs = new Set(
-		screens.map((s) => {
-			// Extract directory from route or id
-			const parts = s.id.split(".")
-			return parts.slice(0, -1).join("/") || parts[0]
-		}),
-	)
+	// Build a set of directories that have screen.meta.ts
+	// Use the actual file paths from loaded screens
+	const metaDirs = new Set<string>()
+	for (const screen of screens) {
+		if (screen.filePath) {
+			// Get relative directory from absolute path
+			const absoluteDir = dirname(screen.filePath)
+			const relativeDir = absoluteDir.startsWith(cwd)
+				? absoluteDir.slice(cwd.length + 1)
+				: absoluteDir
+			metaDirs.add(relativeDir)
+		}
+	}
 
-	// Find missing routes (routes without screen.meta.ts)
+	// Find missing routes (routes without screen.meta.ts in the same directory)
 	const missing: CoverageData["missing"] = []
 	for (const routeFile of routeFiles) {
 		const routeDir = dirname(routeFile)
-		const hasMetaFile = screens.some((s) => {
-			// Check if any screen's route matches this route file's directory
-			const screenDir = s.id.replace(/\./g, "/")
-			return (
-				routeDir.includes(screenDir) ||
-				screenDir.includes(
-					routeDir.replace(/^src\/pages\//, "").replace(/^app\//, ""),
-				)
-			)
-		})
 
-		if (!hasMetaFile) {
+		// Check if there's a screen.meta.ts in the same directory
+		if (!metaDirs.has(routeDir)) {
 			missing.push({
 				route: routeFile,
 				suggestedPath: join(dirname(routeFile), "screen.meta.ts"),
