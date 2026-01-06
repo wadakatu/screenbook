@@ -2,8 +2,8 @@
 // This is a reusable component, NOT a screen
 // screen.meta.ts should NOT be generated here (issue #170)
 defineProps<{
-  title: string
-  description: string
+	title: string
+	description: string
 }>()
 </script>
 
