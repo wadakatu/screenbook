@@ -1,5 +1,12 @@
 # example-angular-router
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [b44ee50]
+  - screenbook@1.7.2
+
 ## 0.0.7
 
 ### Patch Changes
