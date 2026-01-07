@@ -76,4 +76,42 @@ describe("defineConfig", () => {
 			}),
 		).toThrow("Cannot specify both 'routesPattern' and 'routesFile'")
 	})
+
+	it("should set lint.orphans to 'warn' by default", () => {
+		const config = defineConfig({
+			lint: {},
+		})
+
+		expect(config.lint?.orphans).toBe("warn")
+	})
+
+	it("should allow lint.orphans to be set to 'off'", () => {
+		const config = defineConfig({
+			lint: { orphans: "off" },
+		})
+
+		expect(config.lint?.orphans).toBe("off")
+	})
+
+	it("should allow lint.orphans to be set to 'error'", () => {
+		const config = defineConfig({
+			lint: { orphans: "error" },
+		})
+
+		expect(config.lint?.orphans).toBe("error")
+	})
+
+	it("should allow lint.orphans to be set to 'warn'", () => {
+		const config = defineConfig({
+			lint: { orphans: "warn" },
+		})
+
+		expect(config.lint?.orphans).toBe("warn")
+	})
+
+	it("should allow lint config to be undefined", () => {
+		const config = defineConfig()
+
+		expect(config.lint).toBeUndefined()
+	})
 })

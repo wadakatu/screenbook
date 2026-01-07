@@ -494,11 +494,33 @@ export interface ApiIntegrationConfig {
 }
 
 /**
+ * Lint configuration for controlling warning behavior.
+ */
+export interface LintConfig {
+	/**
+	 * Control orphan screen detection behavior.
+	 * - "warn": Show warnings for orphan screens (default)
+	 * - "off": Disable orphan screen warnings
+	 * - "error": Treat orphan screens as errors (fail lint)
+	 * @default "warn"
+	 */
+	orphans?: "warn" | "off" | "error"
+}
+
+/**
  * Schema for OpenAPI configuration (runtime validation)
  * @internal
  */
 export const openApiConfigSchema = z.object({
 	sources: z.array(z.string()).min(1),
+})
+
+/**
+ * Schema for lint configuration (runtime validation)
+ * @internal
+ */
+export const lintConfigSchema = z.object({
+	orphans: z.enum(["warn", "off", "error"]).default("warn"),
 })
 
 /**
@@ -570,6 +592,12 @@ export interface Config {
 	 * @example { clientPackages: ["@/api/generated"] }
 	 */
 	apiIntegration?: ApiIntegrationConfig
+
+	/**
+	 * Lint configuration for controlling warning behavior
+	 * @example { orphans: "off" }
+	 */
+	lint?: LintConfig
 }
 
 /**
@@ -631,6 +659,11 @@ export interface ConfigInput {
 	 * from OpenAPI-generated clients
 	 */
 	apiIntegration?: ApiIntegrationConfig
+
+	/**
+	 * Lint configuration for controlling warning behavior
+	 */
+	lint?: LintConfig
 }
 
 /**
@@ -646,6 +679,7 @@ export const configSchema = z
 		ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
 		adoption: adoptionSchema.optional(),
 		apiIntegration: apiIntegrationSchema.optional(),
+		lint: lintConfigSchema.optional(),
 	})
 	.refine((data) => !(data.routesPattern && data.routesFile), {
 		message:

@@ -7,7 +7,7 @@ title: "defineConfig"
 
 > **defineConfig**(`input`): [`Config`](/screenbook/api/interfaces/config/)
 
-Defined in: [packages/core/src/defineScreen.ts:68](https://github.com/wadakatu/screenbook/blob/ef23c0f12ae1a1d049097d28de425394d6bc08ee/packages/core/src/defineScreen.ts#L68)
+Defined in: [packages/core/src/defineScreen.ts:68](https://github.com/wadakatu/screenbook/blob/0fda59c011aab5f6efc357d9181c480c84f6a890/packages/core/src/defineScreen.ts#L68)
 
 Define Screenbook configuration.
 

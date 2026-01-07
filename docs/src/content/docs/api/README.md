@@ -11,6 +11,7 @@ title: "@screenbook/core"
 - [ApiIntegrationConfig](/screenbook/api/interfaces/apiintegrationconfig/)
 - [Config](/screenbook/api/interfaces/config/)
 - [ConfigInput](/screenbook/api/interfaces/configinput/)
+- [LintConfig](/screenbook/api/interfaces/lintconfig/)
 - [MockButtonElement](/screenbook/api/interfaces/mockbuttonelement/)
 - [MockImageElement](/screenbook/api/interfaces/mockimageelement/)
 - [MockInputElement](/screenbook/api/interfaces/mockinputelement/)

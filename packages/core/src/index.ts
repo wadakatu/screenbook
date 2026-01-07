@@ -8,6 +8,8 @@ export {
 	type Config,
 	type ConfigInput,
 	configSchema,
+	type LintConfig,
+	lintConfigSchema,
 	// Mock types
 	type MockButtonElement,
 	type MockElement,
