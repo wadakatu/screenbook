@@ -5,7 +5,7 @@ prev: false
 title: "Config"
 ---
 
-Defined in: [packages/core/src/types.ts:540](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L540)
+Defined in: [packages/core/src/types.ts:549](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L549)
 
 Screenbook configuration options.
 
@@ -15,7 +15,7 @@ Screenbook configuration options.
 
 > `optional` **adoption**: [`AdoptionConfig`](/screenbook/api/interfaces/adoptionconfig/)
 
-Defined in: [packages/core/src/types.ts:595](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L595)
+Defined in: [packages/core/src/types.ts:604](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L604)
 
 Progressive adoption configuration for gradual rollout
 
@@ -31,7 +31,7 @@ Progressive adoption configuration for gradual rollout
 
 > `optional` **apiIntegration**: [`ApiIntegrationConfig`](/screenbook/api/interfaces/apiintegrationconfig/)
 
-Defined in: [packages/core/src/types.ts:602](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L602)
+Defined in: [packages/core/src/types.ts:611](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L611)
 
 API integration configuration for auto-detecting dependencies
 from OpenAPI-generated clients (Orval, openapi-typescript, etc.)
@@ -48,7 +48,7 @@ from OpenAPI-generated clients (Orval, openapi-typescript, etc.)
 
 > `optional` **excludePatterns**: `string`[]
 
-Defined in: [packages/core/src/types.ts:589](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L589)
+Defined in: [packages/core/src/types.ts:598](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L598)
 
 Patterns to exclude from route detection.
 Directories matching these patterns are ignored when checking for screen.meta.ts.
@@ -64,7 +64,7 @@ https://github.com/wadakatu/screenbook/issues/190
 
 > **ignore**: `string`[]
 
-Defined in: [packages/core/src/types.ts:581](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L581)
+Defined in: [packages/core/src/types.ts:590](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L590)
 
 Patterns to ignore when scanning (glob patterns).
 Defaults to node_modules and .git directories.
@@ -75,7 +75,7 @@ Defaults to node_modules and .git directories.
 
 > `optional` **lint**: [`LintConfig`](/screenbook/api/interfaces/lintconfig/)
 
-Defined in: [packages/core/src/types.ts:608](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L608)
+Defined in: [packages/core/src/types.ts:617](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L617)
 
 Lint configuration for controlling warning behavior
 
@@ -91,7 +91,7 @@ Lint configuration for controlling warning behavior
 
 > **metaPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:556](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L556)
+Defined in: [packages/core/src/types.ts:565](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L565)
 
 Glob pattern for screen metadata files.
 Supports colocation: place screen.meta.ts alongside your route files.
@@ -118,7 +118,7 @@ Supports colocation: place screen.meta.ts alongside your route files.
 
 > **outDir**: `string`
 
-Defined in: [packages/core/src/types.ts:547](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L547)
+Defined in: [packages/core/src/types.ts:556](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L556)
 
 Output directory for generated files
 
@@ -144,7 +144,7 @@ Output directory for generated files
 
 > `optional` **routesFile**: `string`
 
-Defined in: [packages/core/src/types.ts:575](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L575)
+Defined in: [packages/core/src/types.ts:584](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L584)
 
 Path to a router configuration file (for config-based routing).
 Use this for frameworks like Vue Router, React Router, etc.
@@ -166,7 +166,7 @@ Cannot be used together with routesPattern.
 
 > `optional` **routesPattern**: `string`
 
-Defined in: [packages/core/src/types.ts:566](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L566)
+Defined in: [packages/core/src/types.ts:575](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L575)
 
 Glob pattern for route files (for generate/lint commands).
 Use this for file-based routing frameworks (Next.js, Nuxt, Remix, etc.).

@@ -4,11 +4,12 @@ import { parse } from "@babel/parser"
 import {
 	type ParsedRoute,
 	type ParseResult,
+	type ParseWarning,
 	resolveImportPath,
 } from "./routeParserUtils.js"
 
 // Re-export shared types
-export type { ParsedRoute, ParseResult }
+export type { ParsedRoute, ParseResult, ParseWarning }
 
 /**
  * Internal route definition collected from createRoute/createRootRoute calls
@@ -31,7 +32,7 @@ export function parseTanStackRouterConfig(
 ): ParseResult {
 	const absolutePath = resolve(filePath)
 	const routesFileDir = dirname(absolutePath)
-	const warnings: string[] = []
+	const warnings: ParseWarning[] = []
 
 	// Read file with proper error handling (skip if content is preloaded)
 	let content: string
@@ -87,9 +88,11 @@ export function parseTanStackRouterConfig(
 
 	// Warn if no routes were found
 	if (routes.length === 0) {
-		warnings.push(
-			"No routes found. Supported patterns: 'createRootRoute()', 'createRoute()', and '.addChildren([...])'",
-		)
+		warnings.push({
+			type: "general",
+			message:
+				"No routes found. Supported patterns: 'createRootRoute()', 'createRoute()', and '.addChildren([...])'",
+		})
 	}
 
 	return { routes, warnings }
@@ -103,7 +106,7 @@ function collectRouteDefinitions(
 	node: any,
 	routeMap: Map<string, RouteDefinition>,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): void {
 	// Handle: const xxxRoute = createRoute({ ... }) or createRootRoute({ ... })
 	if (node.type === "VariableDeclaration") {
@@ -190,7 +193,7 @@ function extractRouteFromCallExpression(
 	callNode: any,
 	variableName: string,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): RouteDefinition | null {
 	const callee = callNode.callee
 
@@ -240,10 +243,12 @@ function extractRouteFromCallExpression(
 						// Normalize TanStack Router path: $param -> :param
 						routeDef.path = normalizeTanStackPath(prop.value.value)
 					} else {
-						const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
-						warnings.push(
-							`Dynamic path value (${prop.value.type})${loc}. Only string literal paths can be statically analyzed.`,
-						)
+						const line = prop.loc?.start.line
+						warnings.push({
+							type: "general",
+							message: `Dynamic path value (${prop.value.type})${line ? ` at line ${line}` : ""}. Only string literal paths can be statically analyzed.`,
+							line,
+						})
 					}
 					break
 
@@ -262,10 +267,12 @@ function extractRouteFromCallExpression(
 						if (body.type === "Identifier") {
 							routeDef.parentVariableName = body.name
 						} else {
-							const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
-							warnings.push(
-								`Dynamic getParentRoute${loc}. Only static route references can be analyzed.`,
-							)
+							const line = prop.loc?.start.line
+							warnings.push({
+								type: "general",
+								message: `Dynamic getParentRoute${line ? ` at line ${line}` : ""}. Only static route references can be analyzed.`,
+								line,
+							})
 						}
 					}
 					break
@@ -284,7 +291,7 @@ function extractComponentValue(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	// Direct component reference: component: Home
 	if (node.type === "Identifier") {
@@ -300,10 +307,12 @@ function extractComponentValue(
 				return extractLazyImportPath(importArg, baseDir, warnings)
 			}
 			// lazyRouteComponent called without arguments
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`lazyRouteComponent called without arguments${loc}. Expected arrow function with import().`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `lazyRouteComponent called without arguments${line ? ` at line ${line}` : ""}. Expected arrow function with import().`,
+				line,
+			})
 			return undefined
 		}
 		// Other call expressions are not supported
@@ -320,27 +329,33 @@ function extractComponentValue(
 			}
 			// Handle JSXMemberExpression like <Namespace.Component />
 			if (openingElement?.name?.type === "JSXMemberExpression") {
-				const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-				warnings.push(
-					`Namespaced JSX component${loc}. Component extraction not fully supported for member expressions.`,
-				)
+				const line = node.loc?.start.line
+				warnings.push({
+					type: "general",
+					message: `Namespaced JSX component${line ? ` at line ${line}` : ""}. Component extraction not fully supported for member expressions.`,
+					line,
+				})
 				return undefined
 			}
 		}
 		// Block body arrow functions: () => { return <Home /> }
 		if (node.body.type === "BlockStatement") {
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`Arrow function with block body${loc}. Only concise arrow functions returning JSX directly can be analyzed.`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Arrow function with block body${line ? ` at line ${line}` : ""}. Only concise arrow functions returning JSX directly can be analyzed.`,
+				line,
+			})
 			return undefined
 		}
 		// JSX Fragment: () => <>...</>
 		if (node.body.type === "JSXFragment") {
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`JSX Fragment detected${loc}. Cannot extract component name from fragments.`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `JSX Fragment detected${line ? ` at line ${line}` : ""}. Cannot extract component name from fragments.`,
+				line,
+			})
 			return undefined
 		}
 	}
@@ -355,7 +370,7 @@ function extractLazyImportPath(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	// Arrow function: () => import('./path')
 	if (node.type === "ArrowFunctionExpression") {
@@ -382,10 +397,12 @@ function extractLazyImportPath(
 		}
 	}
 
-	const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-	warnings.push(
-		`Unrecognized lazy pattern (${node.type})${loc}. Expected arrow function with import().`,
-	)
+	const line = node.loc?.start.line
+	warnings.push({
+		type: "general",
+		message: `Unrecognized lazy pattern (${node.type})${line ? ` at line ${line}` : ""}. Expected arrow function with import().`,
+		line,
+	})
 	return undefined
 }
 
@@ -396,7 +413,7 @@ function processAddChildrenCalls(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	routeMap: Map<string, RouteDefinition>,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): void {
 	// Handle: const routeTree = rootRoute.addChildren([...])
 	// or: const routeTree = rootRoute.addChildren([indexRoute, aboutRoute.addChildren([...])])
@@ -424,7 +441,7 @@ function processAddChildrenExpression(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	expr: any,
 	routeMap: Map<string, RouteDefinition>,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	if (!expr) return undefined
 
@@ -453,10 +470,12 @@ function processAddChildrenExpression(
 
 		const parentDef = routeMap.get(parentVarName)
 		if (!parentDef) {
-			const loc = expr.loc ? ` at line ${expr.loc.start.line}` : ""
-			warnings.push(
-				`Parent route "${parentVarName}" not found${loc}. Ensure it's defined with createRoute/createRootRoute.`,
-			)
+			const line = expr.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Parent route "${parentVarName}" not found${line ? ` at line ${line}` : ""}. Ensure it's defined with createRoute/createRootRoute.`,
+				line,
+			})
 			return undefined
 		}
 
@@ -485,10 +504,18 @@ function processAddChildrenExpression(
 				}
 				// Spread operator
 				else if (element.type === "SpreadElement") {
-					const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-					warnings.push(
-						`Spread operator detected${loc}. Routes from spread cannot be statically analyzed.`,
-					)
+					const line = element.loc?.start.line
+					const variableName =
+						element.argument?.type === "Identifier"
+							? element.argument.name
+							: undefined
+
+					warnings.push({
+						type: "spread",
+						message: `Spread operator detected${line ? ` at line ${line}` : ""}`,
+						line,
+						variableName,
+					})
 				}
 			}
 
@@ -506,7 +533,7 @@ function processAddChildrenExpression(
  */
 function buildRouteTree(
 	routeMap: Map<string, RouteDefinition>,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	// Find root routes
 	const rootDefs = Array.from(routeMap.values()).filter((def) => def.isRoot)
@@ -548,7 +575,7 @@ function buildRouteTree(
  */
 function buildTreeFromParentRelations(
 	routeMap: Map<string, RouteDefinition>,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	// Find routes without parents (top-level routes)
 	const topLevelDefs = Array.from(routeMap.values()).filter(
@@ -575,14 +602,15 @@ function buildTreeFromParentRelations(
 function buildRouteFromDefinition(
 	def: RouteDefinition,
 	routeMap: Map<string, RouteDefinition>,
-	warnings: string[],
+	warnings: ParseWarning[],
 	visited: Set<string>,
 ): ParsedRoute | null {
 	// Circular reference detection
 	if (visited.has(def.variableName)) {
-		warnings.push(
-			`Circular reference detected: route "${def.variableName}" references itself in the route tree.`,
-		)
+		warnings.push({
+			type: "general",
+			message: `Circular reference detected: route "${def.variableName}" references itself in the route tree.`,
+		})
 		return null
 	}
 	visited.add(def.variableName)
@@ -608,9 +636,10 @@ function buildRouteFromDefinition(
 					children.push(childRoute)
 				}
 			} else {
-				warnings.push(
-					`Child route "${childName}" not found. Ensure it's defined with createRoute.`,
-				)
+				warnings.push({
+					type: "general",
+					message: `Child route "${childName}" not found. Ensure it's defined with createRoute.`,
+				})
 			}
 		}
 		if (children.length > 0) {

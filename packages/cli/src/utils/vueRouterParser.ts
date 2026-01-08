@@ -6,13 +6,14 @@ import {
 	flattenRoutes,
 	type ParsedRoute,
 	type ParseResult,
+	type ParseWarning,
 	pathToScreenId,
 	pathToScreenTitle,
 	resolveImportPath,
 } from "./routeParserUtils.js"
 
 // Re-export shared types and utilities
-export type { ParsedRoute, FlatRoute, ParseResult }
+export type { ParsedRoute, FlatRoute, ParseResult, ParseWarning }
 export { flattenRoutes, pathToScreenId, pathToScreenTitle }
 
 /**
@@ -24,7 +25,7 @@ export function parseVueRouterConfig(
 ): ParseResult {
 	const absolutePath = resolve(filePath)
 	const routesFileDir = dirname(absolutePath)
-	const warnings: string[] = []
+	const warnings: ParseWarning[] = []
 
 	// Read file with proper error handling (skip if content is preloaded)
 	let content: string
@@ -138,9 +139,11 @@ export function parseVueRouterConfig(
 
 	// Warn if no routes were found
 	if (routes.length === 0) {
-		warnings.push(
-			"No routes array found. Supported patterns: 'export const routes = [...]', 'export default [...]', or 'export default [...] satisfies RouteRecordRaw[]'",
-		)
+		warnings.push({
+			type: "general",
+			message:
+				"No routes array found. Supported patterns: 'export const routes = [...]', 'export default [...]', or 'export default [...] satisfies RouteRecordRaw[]'",
+		})
 	}
 
 	return { routes, warnings }
@@ -193,7 +196,7 @@ function parseRoutesArray(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	arrayNode: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 	importMap: ImportMap,
 ): ParsedRoute[] {
 	const routes: ParsedRoute[] = []
@@ -203,10 +206,18 @@ function parseRoutesArray(
 
 		// Handle spread elements
 		if (element.type === "SpreadElement") {
-			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-			warnings.push(
-				`Spread operator detected${loc}. Routes from spread cannot be statically analyzed.`,
-			)
+			const line = element.loc?.start.line
+			const variableName =
+				element.argument?.type === "Identifier"
+					? element.argument.name
+					: undefined
+
+			warnings.push({
+				type: "spread",
+				message: `Spread operator detected${line ? ` at line ${line}` : ""}`,
+				line,
+				variableName,
+			})
 			continue
 		}
 
@@ -228,7 +239,7 @@ function parseRouteObject(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	objectNode: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 	importMap: ImportMap,
 ): ParsedRoute | null {
 	const route: Partial<ParsedRoute> = {}

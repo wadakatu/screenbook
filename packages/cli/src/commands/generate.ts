@@ -12,6 +12,7 @@ import {
 	DEFAULT_EXCLUDE_PATTERNS,
 	matchesExcludePattern,
 } from "../utils/constants.js"
+import { displayGenerateWarnings } from "../utils/displayWarnings.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger, setVerbose } from "../utils/logger.js"
 import {
@@ -213,6 +214,7 @@ export const generateCommand = define({
 				detectApi,
 				detectNavigation,
 				apiIntegration: config.apiIntegration,
+				spreadOperator: config.lint?.spreadOperator,
 			})
 			return
 		}
@@ -226,6 +228,7 @@ export const generateCommand = define({
 			detectApi,
 			detectNavigation,
 			apiIntegration: config.apiIntegration,
+			spreadOperator: config.lint?.spreadOperator,
 		})
 	},
 })
@@ -237,6 +240,7 @@ interface GenerateFromRoutesFileOptions {
 	readonly detectApi: boolean
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
+	readonly spreadOperator?: "warn" | "off" | "error"
 }
 
 /**
@@ -254,6 +258,7 @@ async function generateFromRoutesFile(
 		detectApi,
 		detectNavigation,
 		apiIntegration,
+		spreadOperator,
 	} = options
 	const absoluteRoutesFile = resolve(cwd, routesFile)
 
@@ -315,9 +320,9 @@ async function generateFromRoutesFile(
 	}
 
 	// Show warnings
-	for (const warning of parseResult.warnings) {
-		logger.warn(warning)
-	}
+	displayGenerateWarnings(parseResult.warnings, {
+		spreadOperatorSetting: spreadOperator,
+	})
 
 	// Flatten routes
 	const flatRoutes = flattenRoutes(parseResult.routes)
@@ -505,6 +510,7 @@ export interface GenerateFromRoutesPatternOptions {
 	readonly detectApi: boolean
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
+	readonly spreadOperator?: "warn" | "off" | "error"
 }
 
 /**
@@ -523,6 +529,7 @@ export async function generateFromRoutesPattern(
 		detectApi,
 		detectNavigation,
 		apiIntegration,
+		spreadOperator,
 	} = options
 
 	logger.info("Scanning for route files...")
@@ -560,9 +567,9 @@ export async function generateFromRoutesPattern(
 						`  ${logger.dim(`(using routes from ${relative(cwd, vueRouterConfig)})`)}`,
 					)
 				}
-				for (const warning of parseResult.warnings) {
-					logger.warn(warning)
-				}
+				displayGenerateWarnings(parseResult.warnings, {
+					spreadOperatorSetting: spreadOperator,
+				})
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error)
 				logger.warn(`Could not parse Vue Router config: ${message}`)

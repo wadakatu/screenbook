@@ -505,6 +505,15 @@ export interface LintConfig {
 	 * @default "warn"
 	 */
 	orphans?: "warn" | "off" | "error"
+
+	/**
+	 * Control spread operator warning behavior in route parsing.
+	 * - "warn": Show detailed warnings when spread operators are detected (default)
+	 * - "off": Suppress spread operator warnings
+	 * - "error": Treat spread operators as errors (fail lint)
+	 * @default "warn"
+	 */
+	spreadOperator?: "warn" | "off" | "error"
 }
 
 /**
@@ -521,6 +530,7 @@ export const openApiConfigSchema = z.object({
  */
 export const lintConfigSchema = z.object({
 	orphans: z.enum(["warn", "off", "error"]).default("warn"),
+	spreadOperator: z.enum(["warn", "off", "error"]).default("warn"),
 })
 
 /**

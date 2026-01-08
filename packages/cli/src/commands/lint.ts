@@ -16,6 +16,7 @@ import {
 	getCycleSummary,
 } from "../utils/cycleDetection.js"
 import { validateDependsOnReferences } from "../utils/dependsOnValidation.js"
+import { displayWarnings } from "../utils/displayWarnings.js"
 import { ERRORS } from "../utils/errors.js"
 import { isVerbose, logger, setVerbose } from "../utils/logger.js"
 import { parseOpenApiSpecs } from "../utils/openApiParser.js"
@@ -419,9 +420,14 @@ async function lintRoutesFile(
 		}
 
 		// Show warnings
-		for (const warning of parseResult.warnings) {
-			logger.warn(warning)
+		const warningsResult = displayWarnings(parseResult.warnings, {
+			spreadOperatorSetting: config.lint?.spreadOperator,
+		})
+		if (warningsResult.hasWarnings) {
 			hasWarnings = true
+		}
+		if (warningsResult.shouldFailLint) {
+			shouldFailLint = true
 		}
 
 		flatRoutes = flattenRoutes(parseResult.routes)

@@ -5,7 +5,7 @@ prev: false
 title: "AdoptionConfig"
 ---
 
-Defined in: [packages/core/src/types.ts:402](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L402)
+Defined in: [packages/core/src/types.ts:402](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L402)
 
 Progressive adoption configuration for gradual rollout.
 
@@ -25,7 +25,7 @@ const adoption: AdoptionConfig = {
 
 > `optional` **includePatterns**: `string`[]
 
-Defined in: [packages/core/src/types.ts:418](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L418)
+Defined in: [packages/core/src/types.ts:418](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L418)
 
 Glob patterns to include for coverage checking (progressive mode only)
 
@@ -45,7 +45,7 @@ Glob patterns to include for coverage checking (progressive mode only)
 
 > `optional` **minimumCoverage**: `number`
 
-Defined in: [packages/core/src/types.ts:425](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L425)
+Defined in: [packages/core/src/types.ts:425](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L425)
 
 Minimum coverage percentage required to pass lint (0-100)
 
@@ -65,7 +65,7 @@ Minimum coverage percentage required to pass lint (0-100)
 
 > `optional` **mode**: `"full"` \| `"progressive"`
 
-Defined in: [packages/core/src/types.ts:411](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L411)
+Defined in: [packages/core/src/types.ts:411](https://github.com/wadakatu/screenbook/blob/6005b6bc35a5bb21b6a450ee7633658b30cb36bf/packages/core/src/types.ts#L411)
 
 Adoption mode for screen metadata coverage
 - `"full"`: All routes must have screen.meta.ts (default)

@@ -798,6 +798,11 @@ const someOtherExport = 123
 
 			expect(mockExit).not.toHaveBeenCalled()
 		})
+
+		// Note: Integration tests for lint.spreadOperator config are covered by unit tests
+		// in displayWarnings.test.ts. The config schema correctly parses the lint.spreadOperator
+		// option as verified by core/types.test.ts. Integration testing with jiti has caching
+		// issues that make these tests flaky.
 	})
 
 	describe("excludePatterns", () => {
