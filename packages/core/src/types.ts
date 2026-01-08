@@ -581,6 +581,14 @@ export interface Config {
 	ignore: string[]
 
 	/**
+	 * Patterns to exclude from route detection.
+	 * Directories matching these patterns are ignored when checking for screen.meta.ts.
+	 * Useful for excluding component directories like "components/", "hooks/", etc.
+	 * @see https://github.com/wadakatu/screenbook/issues/190
+	 */
+	excludePatterns?: string[]
+
+	/**
 	 * Progressive adoption configuration for gradual rollout
 	 * @example { mode: "progressive", includePatterns: ["src/pages/billing/**"], minimumCoverage: 80 }
 	 */
@@ -650,6 +658,12 @@ export interface ConfigInput {
 	ignore?: string[]
 
 	/**
+	 * Patterns to exclude from route detection.
+	 * @see https://github.com/wadakatu/screenbook/issues/190
+	 */
+	excludePatterns?: string[]
+
+	/**
 	 * Progressive adoption configuration
 	 */
 	adoption?: AdoptionConfig
@@ -677,6 +691,7 @@ export const configSchema = z
 		routesPattern: z.string().optional(),
 		routesFile: z.string().optional(),
 		ignore: z.array(z.string()).default(["**/node_modules/**", "**/.git/**"]),
+		excludePatterns: z.array(z.string()).optional(),
 		adoption: adoptionSchema.optional(),
 		apiIntegration: apiIntegrationSchema.optional(),
 		lint: lintConfigSchema.optional(),

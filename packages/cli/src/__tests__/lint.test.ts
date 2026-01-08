@@ -799,4 +799,295 @@ const someOtherExport = 123
 			expect(mockExit).not.toHaveBeenCalled()
 		})
 	})
+
+	describe("excludePatterns", () => {
+		it("should exclude files in components directory by default", async () => {
+			// Create config with routesPattern
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesPattern: "src/pages/**/*.vue",
+				})
+			`,
+			)
+
+			// Create page file (should require screen.meta.ts)
+			const pageDir = join(testDir, "src/pages/PageAuth")
+			mkdirSync(pageDir, { recursive: true })
+			writeFileSync(
+				join(pageDir, "PageAuth.vue"),
+				"<template><div>Auth</div></template>",
+			)
+			writeFileSync(
+				join(pageDir, "screen.meta.ts"),
+				`export const screen = { id: "auth", title: "Auth", route: "/auth" }`,
+			)
+
+			// Create component file (should be excluded by default)
+			const componentsDir = join(pageDir, "components")
+			mkdirSync(componentsDir, { recursive: true })
+			writeFileSync(
+				join(componentsDir, "AgreeMessage.vue"),
+				"<template><div>Component</div></template>",
+			)
+			// No screen.meta.ts for component - should not cause failure
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			await lintCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			// Should not fail because components are excluded by default
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should use custom excludePatterns when provided", async () => {
+			// Create config with custom excludePatterns that include widgets
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesPattern: "src/pages/**/*.vue",
+					excludePatterns: ["**/widgets/**", "**/components/**"],
+				})
+			`,
+			)
+
+			// Create page file
+			const pageDir = join(testDir, "src/pages/PageHome")
+			mkdirSync(pageDir, { recursive: true })
+			writeFileSync(
+				join(pageDir, "PageHome.vue"),
+				"<template><div>Home</div></template>",
+			)
+			writeFileSync(
+				join(pageDir, "screen.meta.ts"),
+				`export const screen = { id: "home", title: "Home", route: "/" }`,
+			)
+
+			// Create widget file (should be excluded by custom pattern)
+			const widgetsDir = join(pageDir, "widgets")
+			mkdirSync(widgetsDir, { recursive: true })
+			writeFileSync(
+				join(widgetsDir, "Widget.vue"),
+				"<template><div>Widget</div></template>",
+			)
+
+			// Create component file (also excluded by custom pattern)
+			const componentsDir = join(pageDir, "components")
+			mkdirSync(componentsDir, { recursive: true })
+			writeFileSync(
+				join(componentsDir, "Button.vue"),
+				"<template><button>Click</button></template>",
+			)
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should pass because both widgets and components are excluded
+			await lintCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should exclude files in multiple default directories", async () => {
+			// Create config with routesPattern (no custom excludePatterns)
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesPattern: "src/pages/**/*.vue",
+				})
+			`,
+			)
+
+			// Create page file
+			const pageDir = join(testDir, "src/pages/PageSettings")
+			mkdirSync(pageDir, { recursive: true })
+			writeFileSync(
+				join(pageDir, "PageSettings.vue"),
+				"<template><div>Settings</div></template>",
+			)
+			writeFileSync(
+				join(pageDir, "screen.meta.ts"),
+				`export const screen = { id: "settings", title: "Settings", route: "/settings" }`,
+			)
+
+			// Create files in various directories that should be excluded by default
+			const dirsToExclude = ["components", "hooks", "utils", "shared"]
+			for (const dir of dirsToExclude) {
+				const excludedDir = join(pageDir, dir)
+				mkdirSync(excludedDir, { recursive: true })
+				writeFileSync(
+					join(excludedDir, "SomeFile.vue"),
+					"<template><div>Excluded</div></template>",
+				)
+			}
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should pass because all excluded directories are filtered out
+			await lintCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should apply excludePatterns in routesFile mode", async () => {
+			// Create Vue Router config with routes pointing to component directories
+			const routerDir = join(testDir, "src/router")
+			mkdirSync(routerDir, { recursive: true })
+			writeFileSync(
+				join(routerDir, "index.ts"),
+				`
+				import { createRouter, createWebHistory } from "vue-router"
+
+				const routes = [
+					{
+						path: "/home",
+						name: "home",
+						component: () => import("@/pages/Home/HomePage.vue"),
+					},
+					{
+						path: "/button",
+						name: "button",
+						component: () => import("@/components/Button/Button.vue"),
+					},
+				]
+
+				export default createRouter({
+					history: createWebHistory(),
+					routes,
+				})
+			`,
+			)
+
+			// Create screenbook config with routesFile
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesFile: "src/router/index.ts",
+				})
+			`,
+			)
+
+			// Create page directory with screen.meta.ts
+			const pageDir = join(testDir, "src/pages/Home")
+			mkdirSync(pageDir, { recursive: true })
+			writeFileSync(
+				join(pageDir, "HomePage.vue"),
+				"<template><div>Home</div></template>",
+			)
+			writeFileSync(
+				join(pageDir, "screen.meta.ts"),
+				`export const screen = { id: "home", title: "Home", route: "/home" }`,
+			)
+
+			// Create component directory WITHOUT screen.meta.ts
+			// This should be excluded by default excludePatterns
+			const componentDir = join(testDir, "src/components/Button")
+			mkdirSync(componentDir, { recursive: true })
+			writeFileSync(
+				join(componentDir, "Button.vue"),
+				"<template><button>Click</button></template>",
+			)
+			// No screen.meta.ts - should NOT cause failure because components/ is excluded
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should pass because components directory is excluded
+			await lintCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should use custom excludePatterns in routesFile mode", async () => {
+			// Create Vue Router config with routes pointing to internal directory
+			const routerDir = join(testDir, "src/router")
+			mkdirSync(routerDir, { recursive: true })
+			writeFileSync(
+				join(routerDir, "index.ts"),
+				`
+				import { createRouter, createWebHistory } from "vue-router"
+
+				const routes = [
+					{
+						path: "/dashboard",
+						name: "dashboard",
+						component: () => import("@/pages/Dashboard/DashboardPage.vue"),
+					},
+					{
+						path: "/admin",
+						name: "admin",
+						component: () => import("@/internal/Admin/AdminPage.vue"),
+					},
+				]
+
+				export default createRouter({
+					history: createWebHistory(),
+					routes,
+				})
+			`,
+			)
+
+			// Create screenbook config with routesFile and custom excludePatterns
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`
+				import { defineConfig } from "@screenbook/core"
+				export default defineConfig({
+					metaPattern: "src/pages/**/screen.meta.ts",
+					routesFile: "src/router/index.ts",
+					excludePatterns: ["**/internal/**"],
+				})
+			`,
+			)
+
+			// Create page directory with screen.meta.ts
+			const pageDir = join(testDir, "src/pages/Dashboard")
+			mkdirSync(pageDir, { recursive: true })
+			writeFileSync(
+				join(pageDir, "DashboardPage.vue"),
+				"<template><div>Dashboard</div></template>",
+			)
+			writeFileSync(
+				join(pageDir, "screen.meta.ts"),
+				`export const screen = { id: "dashboard", title: "Dashboard", route: "/dashboard" }`,
+			)
+
+			// Create internal directory WITHOUT screen.meta.ts
+			// This should be excluded by custom excludePatterns
+			const internalDir = join(testDir, "src/internal/Admin")
+			mkdirSync(internalDir, { recursive: true })
+			writeFileSync(
+				join(internalDir, "AdminPage.vue"),
+				"<template><div>Admin</div></template>",
+			)
+			// No screen.meta.ts - should NOT cause failure because internal/ is excluded
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should pass because internal directory is excluded by custom pattern
+			await lintCommand.run({
+				values: { config: undefined },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+	})
 })

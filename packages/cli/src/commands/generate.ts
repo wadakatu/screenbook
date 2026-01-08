@@ -8,6 +8,10 @@ import { parseAngularRouterConfig } from "../utils/angularRouterParser.js"
 import { analyzeAngularComponent } from "../utils/angularTemplateAnalyzer.js"
 import { analyzeApiImports } from "../utils/apiImportAnalyzer.js"
 import { loadConfig } from "../utils/config.js"
+import {
+	DEFAULT_EXCLUDE_PATTERNS,
+	matchesExcludePattern,
+} from "../utils/constants.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger, setVerbose } from "../utils/logger.js"
 import {
@@ -39,52 +43,6 @@ const VUE_ROUTER_CONFIG_PATHS = [
 	"router/routes.ts",
 	"router/index.ts",
 ]
-
-/**
- * Default patterns to exclude from screen.meta.ts generation.
- * These directories typically contain reusable components, not navigable screens.
- * @see https://github.com/wadakatu/screenbook/issues/170
- */
-export const DEFAULT_EXCLUDE_PATTERNS = [
-	"**/components/**",
-	"**/shared/**",
-	"**/utils/**",
-	"**/hooks/**",
-	"**/composables/**",
-	"**/stores/**",
-	"**/services/**",
-	"**/helpers/**",
-	"**/lib/**",
-	"**/common/**",
-]
-
-/**
- * Check if a path matches any of the exclude patterns
- */
-function matchesExcludePattern(
-	filePath: string,
-	excludePatterns: readonly string[],
-): boolean {
-	// Simple pattern matching for directory-based patterns
-	for (const pattern of excludePatterns) {
-		// Convert glob pattern to a simple check
-		// e.g., "**/components/**" -> path contains "/components/"
-		const cleanPattern = pattern
-			.replace(/\*\*/g, "")
-			.replace(/\*/g, "")
-			.replace(/^\//, "")
-			.replace(/\/$/, "")
-
-		if (cleanPattern && filePath.includes(`/${cleanPattern}/`)) {
-			return true
-		}
-		// Also check if the path starts with the pattern (e.g., "components/...")
-		if (cleanPattern && filePath.startsWith(`${cleanPattern}/`)) {
-			return true
-		}
-	}
-	return false
-}
 
 /**
  * Detect Vue Router configuration file in the project

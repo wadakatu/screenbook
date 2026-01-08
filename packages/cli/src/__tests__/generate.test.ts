@@ -7,10 +7,8 @@ import {
 } from "node:fs"
 import { join } from "node:path"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
-import {
-	DEFAULT_EXCLUDE_PATTERNS,
-	parseCommaSeparated,
-} from "../commands/generate.js"
+import { parseCommaSeparated } from "../commands/generate.js"
+import { DEFAULT_EXCLUDE_PATTERNS } from "../utils/constants.js"
 
 // Mock console.log to suppress output during tests
 vi.spyOn(console, "log").mockImplementation(() => {})
