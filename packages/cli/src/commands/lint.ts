@@ -194,6 +194,14 @@ export const lintCommand = define({
 				const content = readFileSync(screensPath, "utf-8")
 				const screens = JSON.parse(content) as Screen[]
 
+				// Validate that screens is actually an array
+				if (!Array.isArray(screens)) {
+					logger.blank()
+					logger.error("screens.json does not contain a valid array of screens")
+					logger.log(`  ${logger.dim("Run 'screenbook build' to regenerate.")}`)
+					process.exit(1)
+				}
+
 				// Check for orphan screens
 				const orphanSetting = config.lint?.orphans ?? "warn"
 				const orphanResult = checkAndReportOrphanScreens(screens, orphanSetting)
@@ -266,18 +274,42 @@ export const lintCommand = define({
 					}
 				}
 			} catch (error) {
-				// Handle specific error types
+				// Parse errors are critical - we cannot safely continue validation
 				if (error instanceof SyntaxError) {
-					logger.warn("Failed to parse screens.json - file may be corrupted")
-					logger.log(`  ${logger.dim("Run 'screenbook build' to regenerate.")}`)
-					hasWarnings = true
-				} else if (error instanceof Error) {
-					logger.warn(`Failed to analyze screens.json: ${error.message}`)
-					hasWarnings = true
-				} else {
-					logger.warn(`Failed to analyze screens.json: ${String(error)}`)
-					hasWarnings = true
+					logger.blank()
+					logger.error("Failed to parse screens.json")
+					logger.log(
+						`  ${logger.dim("The file contains invalid JSON syntax.")}`,
+					)
+					logger.log(
+						`  ${logger.dim("Run 'screenbook build' to regenerate the file.")}`,
+					)
+					process.exit(1)
 				}
+
+				// File system errors should also fail the lint
+				if (
+					error instanceof Error &&
+					(error.message.includes("EACCES") || error.message.includes("EPERM"))
+				) {
+					logger.blank()
+					logger.error("Permission denied reading screens.json")
+					logger.log(`  ${logger.dim(error.message)}`)
+					logger.log(
+						`  ${logger.dim("Check file permissions on the .screenbook directory.")}`,
+					)
+					process.exit(1)
+				}
+
+				// Any other error is unexpected and should be reported
+				logger.blank()
+				logger.error("Unexpected error reading screens.json")
+				if (error instanceof Error) {
+					logger.log(`  ${logger.dim(error.message)}`)
+				} else {
+					logger.log(`  ${logger.dim(String(error))}`)
+				}
+				process.exit(1)
 			}
 		}
 
@@ -326,26 +358,34 @@ async function lintRoutesFile(
 		const routerType = detectRouterType(content)
 
 		let parseResult: ParseResult
-		if (routerType === "tanstack-router") {
-			parseResult = parseTanStackRouterConfig(absoluteRoutesFile, content)
-		} else if (routerType === "solid-router") {
-			parseResult = parseSolidRouterConfig(absoluteRoutesFile, content)
-		} else if (routerType === "angular-router") {
-			parseResult = parseAngularRouterConfig(absoluteRoutesFile, content)
-		} else if (routerType === "react-router") {
-			parseResult = parseReactRouterConfig(absoluteRoutesFile, content)
-		} else if (routerType === "vue-router") {
-			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
-		} else {
-			// Unknown router type - warn user and attempt Vue Router parser as fallback
-			logger.warn(
-				`Could not auto-detect router type for ${logger.path(routesFile)}. Attempting to parse as Vue Router.`,
-			)
-			logger.log(
-				`  ${logger.dim("If parsing fails, check that your router imports are explicit.")}`,
-			)
-			hasWarnings = true
-			parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
+		try {
+			if (routerType === "tanstack-router") {
+				parseResult = parseTanStackRouterConfig(absoluteRoutesFile, content)
+			} else if (routerType === "solid-router") {
+				parseResult = parseSolidRouterConfig(absoluteRoutesFile, content)
+			} else if (routerType === "angular-router") {
+				parseResult = parseAngularRouterConfig(absoluteRoutesFile, content)
+			} else if (routerType === "react-router") {
+				parseResult = parseReactRouterConfig(absoluteRoutesFile, content)
+			} else if (routerType === "vue-router") {
+				parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
+			} else {
+				// Unknown router type - warn user and attempt Vue Router parser as fallback
+				logger.warn(
+					`Could not auto-detect router type for ${logger.path(routesFile)}. Attempting to parse as Vue Router.`,
+				)
+				logger.log(
+					`  ${logger.dim("If parsing fails, check that your router imports are explicit.")}`,
+				)
+				hasWarnings = true
+				parseResult = parseVueRouterConfig(absoluteRoutesFile, content)
+			}
+		} catch (parseError) {
+			// Parse errors get specific error message
+			const message =
+				parseError instanceof Error ? parseError.message : String(parseError)
+			logger.errorWithHelp(ERRORS.ROUTES_FILE_PARSE_ERROR(routesFile, message))
+			process.exit(1)
 		}
 
 		// Show warnings
@@ -356,8 +396,27 @@ async function lintRoutesFile(
 
 		flatRoutes = flattenRoutes(parseResult.routes)
 	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error)
-		logger.errorWithHelp(ERRORS.ROUTES_FILE_PARSE_ERROR(routesFile, message))
+		// File system errors get different handling
+		if (error instanceof Error) {
+			if (error.message.includes("ENOENT")) {
+				logger.errorWithHelp(ERRORS.ROUTES_FILE_NOT_FOUND(routesFile))
+			} else if (
+				error.message.includes("EACCES") ||
+				error.message.includes("EPERM")
+			) {
+				logger.blank()
+				logger.error(`Permission denied reading ${routesFile}`)
+				logger.log(`  ${logger.dim(error.message)}`)
+				logger.log(`  ${logger.dim("Check file permissions.")}`)
+			} else {
+				logger.blank()
+				logger.error(`Failed to read ${routesFile}`)
+				logger.log(`  ${logger.dim(error.message)}`)
+			}
+		} else {
+			logger.blank()
+			logger.error(`Unexpected error: ${String(error)}`)
+		}
 		process.exit(1)
 	}
 
@@ -498,6 +557,14 @@ async function lintRoutesFile(
 			const content = readFileSync(screensPath, "utf-8")
 			const screens = JSON.parse(content) as Screen[]
 
+			// Validate that screens is actually an array
+			if (!Array.isArray(screens)) {
+				logger.blank()
+				logger.error("screens.json does not contain a valid array of screens")
+				logger.log(`  ${logger.dim("Run 'screenbook build' to regenerate.")}`)
+				process.exit(1)
+			}
+
 			// Check for orphan screens
 			const orphanSetting = config.lint?.orphans ?? "warn"
 			const orphanResult = checkAndReportOrphanScreens(screens, orphanSetting)
@@ -570,17 +637,40 @@ async function lintRoutesFile(
 				}
 			}
 		} catch (error) {
+			// Parse errors are critical - we cannot safely continue validation
 			if (error instanceof SyntaxError) {
-				logger.warn("Failed to parse screens.json - file may be corrupted")
-				logger.log(`  ${logger.dim("Run 'screenbook build' to regenerate.")}`)
-				hasWarnings = true
-			} else if (error instanceof Error) {
-				logger.warn(`Failed to analyze screens.json: ${error.message}`)
-				hasWarnings = true
-			} else {
-				logger.warn(`Failed to analyze screens.json: ${String(error)}`)
-				hasWarnings = true
+				logger.blank()
+				logger.error("Failed to parse screens.json")
+				logger.log(`  ${logger.dim("The file contains invalid JSON syntax.")}`)
+				logger.log(
+					`  ${logger.dim("Run 'screenbook build' to regenerate the file.")}`,
+				)
+				process.exit(1)
 			}
+
+			// File system errors should also fail the lint
+			if (
+				error instanceof Error &&
+				(error.message.includes("EACCES") || error.message.includes("EPERM"))
+			) {
+				logger.blank()
+				logger.error("Permission denied reading screens.json")
+				logger.log(`  ${logger.dim(error.message)}`)
+				logger.log(
+					`  ${logger.dim("Check file permissions on the .screenbook directory.")}`,
+				)
+				process.exit(1)
+			}
+
+			// Any other error is unexpected and should be reported
+			logger.blank()
+			logger.error("Unexpected error reading screens.json")
+			if (error instanceof Error) {
+				logger.log(`  ${logger.dim(error.message)}`)
+			} else {
+				logger.log(`  ${logger.dim(String(error))}`)
+			}
+			process.exit(1)
 		}
 	}
 

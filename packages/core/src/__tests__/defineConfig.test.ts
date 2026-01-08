@@ -114,4 +114,22 @@ describe("defineConfig", () => {
 
 		expect(config.lint).toBeUndefined()
 	})
+
+	it("should reject invalid lint.orphans values", () => {
+		expect(() =>
+			defineConfig({
+				// biome-ignore lint/suspicious/noExplicitAny: Testing invalid enum values
+				lint: { orphans: "ignore" as any },
+			}),
+		).toThrow()
+	})
+
+	it("should reject invalid lint.orphans values like 'warning'", () => {
+		expect(() =>
+			defineConfig({
+				// biome-ignore lint/suspicious/noExplicitAny: Testing invalid enum values
+				lint: { orphans: "warning" as any },
+			}),
+		).toThrow()
+	})
 })
