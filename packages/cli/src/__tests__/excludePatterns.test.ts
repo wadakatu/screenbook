@@ -69,6 +69,47 @@ describe("matchesExcludePattern", () => {
 		)
 		expect(matchesExcludePattern("src/public/api", customPatterns)).toBe(false)
 	})
+
+	it("should handle patterns with trailing slashes", () => {
+		const patternsWithSlash = ["**/components/"]
+		expect(
+			matchesExcludePattern("src/components/Button", patternsWithSlash),
+		).toBe(true)
+	})
+
+	it("should match paths with trailing slashes", () => {
+		// Paths with trailing slashes still contain "/components/" so they match
+		expect(
+			matchesExcludePattern("src/components/", DEFAULT_EXCLUDE_PATTERNS),
+		).toBe(true)
+	})
+
+	it("should return false for empty patterns array", () => {
+		expect(matchesExcludePattern("src/components/Button", [])).toBe(false)
+		expect(matchesExcludePattern("src/hooks/useAuth", [])).toBe(false)
+	})
+
+	it("should handle patterns that become empty after cleanup", () => {
+		// Patterns like "****" or "*" become empty after cleanup
+		const edgePatterns = ["****", "*", "**"]
+		expect(matchesExcludePattern("src/components/Button", edgePatterns)).toBe(
+			false,
+		)
+	})
+
+	it("should NOT match partial directory names", () => {
+		// "components2" should not be matched by "**/components/**"
+		expect(
+			matchesExcludePattern("src/components2/Button", DEFAULT_EXCLUDE_PATTERNS),
+		).toBe(false)
+		// "mycomponents" should not be matched
+		expect(
+			matchesExcludePattern(
+				"src/mycomponents/Button",
+				DEFAULT_EXCLUDE_PATTERNS,
+			),
+		).toBe(false)
+	})
 })
 
 describe("DEFAULT_EXCLUDE_PATTERNS", () => {

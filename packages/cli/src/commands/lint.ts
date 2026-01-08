@@ -17,7 +17,7 @@ import {
 } from "../utils/cycleDetection.js"
 import { validateDependsOnReferences } from "../utils/dependsOnValidation.js"
 import { ERRORS } from "../utils/errors.js"
-import { logger, setVerbose } from "../utils/logger.js"
+import { isVerbose, logger, setVerbose } from "../utils/logger.js"
 import { parseOpenApiSpecs } from "../utils/openApiParser.js"
 import {
 	detectRouterType,
@@ -105,9 +105,23 @@ export const lintCommand = define({
 		// Apply exclude patterns (default or custom)
 		// This filters out component directories like "components/", "hooks/", etc.
 		const excludePatterns = config.excludePatterns ?? DEFAULT_EXCLUDE_PATTERNS
-		routeFiles = routeFiles.filter(
-			(file) => !matchesExcludePattern(file, excludePatterns),
-		)
+		const excludedFiles: string[] = []
+		routeFiles = routeFiles.filter((file) => {
+			if (matchesExcludePattern(file, excludePatterns)) {
+				excludedFiles.push(file)
+				return false
+			}
+			return true
+		})
+
+		// Log excluded files in verbose mode
+		if (isVerbose() && excludedFiles.length > 0) {
+			logger.log(`Excluded by patterns (${excludedFiles.length} files):`)
+			for (const file of excludedFiles) {
+				logger.log(`  ${logger.dim(file)}`)
+			}
+			logger.blank()
+		}
 
 		// In progressive mode, filter to only included patterns
 		if (adoption.mode === "progressive" && adoption.includePatterns?.length) {
@@ -464,6 +478,7 @@ async function lintRoutesFile(
 	// Check each route for screen.meta.ts coverage
 	const missingMeta: FlatRoute[] = []
 	const covered: FlatRoute[] = []
+	const excludedRoutes: Array<{ route: FlatRoute; metaDir: string }> = []
 
 	// Apply exclude patterns (default or custom) for consistent behavior with routesPattern mode
 	const excludePatterns = config.excludePatterns ?? DEFAULT_EXCLUDE_PATTERNS
@@ -477,6 +492,7 @@ async function lintRoutesFile(
 		// Skip routes in excluded directories (e.g., components/, hooks/)
 		const metaDir = determineMetaDir(route, cwd)
 		if (matchesExcludePattern(metaDir, excludePatterns)) {
+			excludedRoutes.push({ route, metaDir })
 			continue
 		}
 
@@ -525,6 +541,15 @@ async function lintRoutesFile(
 		} else {
 			missingMeta.push(route)
 		}
+	}
+
+	// Log excluded routes in verbose mode
+	if (isVerbose() && excludedRoutes.length > 0) {
+		logger.log(`Excluded by patterns (${excludedRoutes.length} routes):`)
+		for (const { route, metaDir } of excludedRoutes) {
+			logger.log(`  ${logger.dim(`${route.fullPath} → ${metaDir}`)}`)
+		}
+		logger.blank()
 	}
 
 	// Report results
