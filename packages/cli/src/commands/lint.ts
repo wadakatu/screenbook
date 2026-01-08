@@ -7,6 +7,10 @@ import { glob } from "tinyglobby"
 import { parseAngularRouterConfig } from "../utils/angularRouterParser.js"
 import { loadConfig } from "../utils/config.js"
 import {
+	DEFAULT_EXCLUDE_PATTERNS,
+	matchesExcludePattern,
+} from "../utils/constants.js"
+import {
 	detectCycles,
 	formatCycleWarnings,
 	getCycleSummary,
@@ -97,6 +101,13 @@ export const lintCommand = define({
 			cwd,
 			ignore: config.ignore,
 		})
+
+		// Apply exclude patterns (default or custom)
+		// This filters out component directories like "components/", "hooks/", etc.
+		const excludePatterns = config.excludePatterns ?? DEFAULT_EXCLUDE_PATTERNS
+		routeFiles = routeFiles.filter(
+			(file) => !matchesExcludePattern(file, excludePatterns),
+		)
 
 		// In progressive mode, filter to only included patterns
 		if (adoption.mode === "progressive" && adoption.includePatterns?.length) {
