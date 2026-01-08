@@ -26,11 +26,52 @@ import {
 	type FlatRoute,
 	flattenRoutes,
 	type ParseResult,
+	type ParseWarning,
 } from "../utils/routeParserUtils.js"
 import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 import { analyzeVueSFC } from "../utils/vueSFCTemplateAnalyzer.js"
+
+/**
+ * Display structured warnings with appropriate formatting
+ * @param warnings - Array of parsed warnings
+ * @param spreadOperatorSetting - Config setting for spread operator warnings ("warn" | "off")
+ */
+function displayWarnings(
+	warnings: ParseWarning[],
+	spreadOperatorSetting: "warn" | "off" = "warn",
+): void {
+	for (const warning of warnings) {
+		if (warning.type === "spread") {
+			// Skip if spread warnings are disabled
+			if (spreadOperatorSetting === "off") {
+				continue
+			}
+
+			const varPart = warning.variableName
+				? `'${warning.variableName}'`
+				: "spread variable"
+
+			logger.warnWithHelp({
+				title: warning.message,
+				message:
+					"Routes from spread operators cannot be statically analyzed by screenbook.",
+				details: [
+					`screenbook won't auto-generate screen.meta.ts for routes in ${varPart}`,
+					"You'll need to manually create screen.meta.ts files for these routes",
+				],
+				suggestions: [
+					"Inline the routes directly in the main routes array",
+					"Manually create screen.meta.ts files for the spread routes",
+					"Ignore this warning if you're OK with manual screen metadata",
+				],
+			})
+		} else {
+			logger.warn(warning.message)
+		}
+	}
+}
 
 /**
  * Common paths where Vue Router configuration files are typically located
@@ -213,6 +254,7 @@ export const generateCommand = define({
 				detectApi,
 				detectNavigation,
 				apiIntegration: config.apiIntegration,
+				spreadOperator: config.lint?.spreadOperator,
 			})
 			return
 		}
@@ -226,6 +268,7 @@ export const generateCommand = define({
 			detectApi,
 			detectNavigation,
 			apiIntegration: config.apiIntegration,
+			spreadOperator: config.lint?.spreadOperator,
 		})
 	},
 })
@@ -237,6 +280,7 @@ interface GenerateFromRoutesFileOptions {
 	readonly detectApi: boolean
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
+	readonly spreadOperator?: "warn" | "off"
 }
 
 /**
@@ -254,6 +298,7 @@ async function generateFromRoutesFile(
 		detectApi,
 		detectNavigation,
 		apiIntegration,
+		spreadOperator,
 	} = options
 	const absoluteRoutesFile = resolve(cwd, routesFile)
 
@@ -315,9 +360,7 @@ async function generateFromRoutesFile(
 	}
 
 	// Show warnings
-	for (const warning of parseResult.warnings) {
-		logger.warn(warning)
-	}
+	displayWarnings(parseResult.warnings, spreadOperator)
 
 	// Flatten routes
 	const flatRoutes = flattenRoutes(parseResult.routes)
@@ -505,6 +548,7 @@ export interface GenerateFromRoutesPatternOptions {
 	readonly detectApi: boolean
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
+	readonly spreadOperator?: "warn" | "off"
 }
 
 /**
@@ -523,6 +567,7 @@ export async function generateFromRoutesPattern(
 		detectApi,
 		detectNavigation,
 		apiIntegration,
+		spreadOperator,
 	} = options
 
 	logger.info("Scanning for route files...")
@@ -560,9 +605,7 @@ export async function generateFromRoutesPattern(
 						`  ${logger.dim(`(using routes from ${relative(cwd, vueRouterConfig)})`)}`,
 					)
 				}
-				for (const warning of parseResult.warnings) {
-					logger.warn(warning)
-				}
+				displayWarnings(parseResult.warnings, spreadOperator)
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error)
 				logger.warn(`Could not parse Vue Router config: ${message}`)
