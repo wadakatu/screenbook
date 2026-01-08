@@ -240,7 +240,7 @@ interface GenerateFromRoutesFileOptions {
 	readonly detectApi: boolean
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
-	readonly spreadOperator?: "warn" | "off"
+	readonly spreadOperator?: "warn" | "off" | "error"
 }
 
 /**
@@ -510,7 +510,7 @@ export interface GenerateFromRoutesPatternOptions {
 	readonly detectApi: boolean
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
-	readonly spreadOperator?: "warn" | "off"
+	readonly spreadOperator?: "warn" | "off" | "error"
 }
 
 /**
