@@ -125,6 +125,462 @@ describe("lint command", () => {
 		expect(mockExit).not.toHaveBeenCalled()
 	})
 
+	describe("orphan screen warnings", () => {
+		it("should show tip instead of warnings when all screens are orphans", async () => {
+			const orphanTestDir = join(testDir, "orphan-all")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx" }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+			writeFileSync(join(orphanTestDir, "src/about.tsx"), "// about")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: [], next: [] });',
+			)
+			writeFileSync(
+				join(orphanTestDir, "src/about.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "about", title: "About", route: "/about", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory and screens.json with all orphan screens
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			const allOrphanScreens = [
+				{
+					id: "home",
+					title: "Home",
+					route: "/",
+					entryPoints: [],
+					next: [],
+				},
+				{
+					id: "about",
+					title: "About",
+					route: "/about",
+					entryPoints: [],
+					next: [],
+				},
+			]
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				JSON.stringify(allOrphanScreens, null, 2),
+			)
+
+			// Restore console.log mock to capture output
+			vi.mocked(console.log).mockRestore()
+			const consoleLogSpy = vi.spyOn(console, "log")
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			await lintCommand.run({
+				values: { config: undefined, allowCycles: false, strict: false },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			// Should show tip, not warning
+			const logCalls = consoleLogSpy.mock.calls.map((call) => call[0])
+			const hasOrphanWarning = logCalls.some((msg) =>
+				msg?.includes?.("Orphan screens detected"),
+			)
+			const hasTip = logCalls.some((msg) =>
+				msg?.includes?.("Tip: All screens are currently disconnected"),
+			)
+
+			expect(hasOrphanWarning).toBe(false)
+			expect(hasTip).toBe(true)
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should show warnings when some (not all) screens are orphans", async () => {
+			const orphanTestDir = join(testDir, "orphan-some")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx" }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+			writeFileSync(join(orphanTestDir, "src/about.tsx"), "// about")
+			writeFileSync(join(orphanTestDir, "src/contact.tsx"), "// contact")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: ["direct"], next: ["about"] });',
+			)
+			writeFileSync(
+				join(orphanTestDir, "src/about.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "about", title: "About", route: "/about", entryPoints: [], next: [] });',
+			)
+			writeFileSync(
+				join(orphanTestDir, "src/contact.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "contact", title: "Contact", route: "/contact", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory and screens.json with mixed connected/orphan screens
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			const mixedScreens = [
+				{
+					id: "home",
+					title: "Home",
+					route: "/",
+					entryPoints: ["direct"],
+					next: ["about"],
+				},
+				{
+					id: "about",
+					title: "About",
+					route: "/about",
+					entryPoints: [],
+					next: [],
+				},
+				{
+					id: "contact",
+					title: "Contact",
+					route: "/contact",
+					entryPoints: [],
+					next: [],
+				},
+			]
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				JSON.stringify(mixedScreens, null, 2),
+			)
+
+			// Restore console.log mock to capture output
+			vi.mocked(console.log).mockRestore()
+			const consoleLogSpy = vi.spyOn(console, "log")
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			await lintCommand.run({
+				values: { config: undefined, allowCycles: false, strict: false },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			// Should show warnings for orphan screens (contact is orphan, about is referenced in home's next)
+			const logCalls = consoleLogSpy.mock.calls.map((call) => call[0])
+			const hasOrphanWarning = logCalls.some((msg) =>
+				msg?.includes?.("Orphan screens detected (1)"),
+			)
+
+			expect(hasOrphanWarning).toBe(true)
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should suppress orphan warnings when lint.orphans is 'off'", async () => {
+			const orphanTestDir = join(testDir, "orphan-off")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config with lint.orphans: "off" and adoption: { minimumCoverage: 0 }
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx", adoption: { minimumCoverage: 0 }, lint: { orphans: "off" } }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory and screens.json with orphan screens
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			const orphanScreens = [
+				{
+					id: "home",
+					title: "Home",
+					route: "/",
+					entryPoints: [],
+					next: [],
+				},
+			]
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				JSON.stringify(orphanScreens, null, 2),
+			)
+
+			// Restore console.log mock to capture output
+			vi.mocked(console.log).mockRestore()
+			const consoleLogSpy = vi.spyOn(console, "log")
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			await lintCommand.run({
+				values: { config: undefined, allowCycles: false, strict: false },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			// Should not show any orphan-related output
+			const logCalls = consoleLogSpy.mock.calls.map((call) => call[0])
+			const hasOrphanWarning = logCalls.some((msg) =>
+				msg?.includes?.("Orphan screens detected"),
+			)
+			const hasTip = logCalls.some((msg) =>
+				msg?.includes?.("Tip: All screens are currently disconnected"),
+			)
+
+			expect(hasOrphanWarning).toBe(false)
+			expect(hasTip).toBe(false)
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should fail when orphans exist and lint.orphans is 'error'", async () => {
+			const orphanTestDir = join(testDir, "orphan-error")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config with lint.orphans: "error" and adoption: { minimumCoverage: 0 }
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx", adoption: { minimumCoverage: 0 }, lint: { orphans: "error" } }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+			writeFileSync(join(orphanTestDir, "src/about.tsx"), "// about")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: ["direct"], next: [] });',
+			)
+			writeFileSync(
+				join(orphanTestDir, "src/about.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "about", title: "About", route: "/about", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory and screens.json with mixed screens
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			const mixedScreens = [
+				{
+					id: "home",
+					title: "Home",
+					route: "/",
+					entryPoints: ["direct"],
+					next: [],
+				},
+				{
+					id: "about",
+					title: "About",
+					route: "/about",
+					entryPoints: [],
+					next: [],
+				},
+			]
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				JSON.stringify(mixedScreens, null, 2),
+			)
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should exit with error
+			try {
+				await lintCommand.run({
+					values: { config: undefined, allowCycles: false, strict: false },
+				} as Parameters<typeof lintCommand.run>[0])
+				// Should not reach here
+				expect.fail("Expected process.exit to be called")
+			} catch (error) {
+				expect(String(error)).toContain("Process exited with code 1")
+			}
+		})
+
+		it("should fail on all-orphan state when lint.orphans is 'error'", async () => {
+			const orphanTestDir = join(testDir, "orphan-error-all")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config with lint.orphans: "error" and adoption: { minimumCoverage: 0 }
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx", adoption: { minimumCoverage: 0 }, lint: { orphans: "error" } }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+			writeFileSync(join(orphanTestDir, "src/about.tsx"), "// about")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: [], next: [] });',
+			)
+			writeFileSync(
+				join(orphanTestDir, "src/about.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "about", title: "About", route: "/about", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory and screens.json with all orphan screens
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			const allOrphanScreens = [
+				{
+					id: "home",
+					title: "Home",
+					route: "/",
+					entryPoints: [],
+					next: [],
+				},
+				{
+					id: "about",
+					title: "About",
+					route: "/about",
+					entryPoints: [],
+					next: [],
+				},
+			]
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				JSON.stringify(allOrphanScreens, null, 2),
+			)
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should exit with error even though all screens are orphans
+			try {
+				await lintCommand.run({
+					values: { config: undefined, allowCycles: false, strict: false },
+				} as Parameters<typeof lintCommand.run>[0])
+				// Should not reach here
+				expect.fail("Expected process.exit to be called")
+			} catch (error) {
+				expect(String(error)).toContain("Process exited with code 1")
+			}
+		})
+
+		it("should handle empty screens.json gracefully", async () => {
+			const orphanTestDir = join(testDir, "empty-screens")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config with adoption: { minimumCoverage: 0 }
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx", adoption: { minimumCoverage: 0 } }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory and empty screens.json
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				JSON.stringify([], null, 2),
+			)
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should not crash or show orphan warnings
+			await lintCommand.run({
+				values: { config: undefined, allowCycles: false, strict: false },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+
+		it("should handle malformed screens.json gracefully in error mode", async () => {
+			const orphanTestDir = join(testDir, "malformed-json-error")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config with lint.orphans: "error" and adoption: { minimumCoverage: 0 }
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx", adoption: { minimumCoverage: 0 }, lint: { orphans: "error" } }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: [], next: [] });',
+			)
+
+			// Create .screenbook directory with malformed JSON
+			mkdirSync(join(orphanTestDir, ".screenbook"), { recursive: true })
+			writeFileSync(
+				join(orphanTestDir, ".screenbook", "screens.json"),
+				"{invalid json}",
+			)
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should exit with error due to parse error
+			try {
+				await lintCommand.run({
+					values: { config: undefined, allowCycles: false, strict: false },
+				} as Parameters<typeof lintCommand.run>[0])
+				// Should not reach here
+				expect.fail("Expected process.exit to be called")
+			} catch (error) {
+				expect(String(error)).toContain("Process exited with code 1")
+			}
+		})
+
+		it("should not fail when screens.json missing even with orphans: error", async () => {
+			const orphanTestDir = join(testDir, "missing-screens-json-error")
+			mkdirSync(orphanTestDir, { recursive: true })
+			process.chdir(orphanTestDir)
+
+			// Create config with lint.orphans: "error" and adoption: { minimumCoverage: 0 }
+			writeFileSync(
+				join(orphanTestDir, "screenbook.config.ts"),
+				`export default { outDir: ".screenbook", metaPattern: "src/**/*.screen.meta.ts", routesPattern: "src/**/*.tsx", adoption: { minimumCoverage: 0 }, lint: { orphans: "error" } }`,
+			)
+
+			// Create dummy route files
+			mkdirSync(join(orphanTestDir, "src"), { recursive: true })
+			writeFileSync(join(orphanTestDir, "src/home.tsx"), "// home")
+
+			// Create screen.meta.ts files
+			writeFileSync(
+				join(orphanTestDir, "src/home.screen.meta.ts"),
+				'import { defineScreen } from "screenbook"; export const screen = defineScreen({ id: "home", title: "Home", route: "/", entryPoints: [], next: [] });',
+			)
+
+			// No screens.json created
+
+			const { lintCommand } = await import("../commands/lint.js")
+
+			// Should pass - missing screens.json is not an error
+			await lintCommand.run({
+				values: { config: undefined, allowCycles: false, strict: false },
+			} as Parameters<typeof lintCommand.run>[0])
+
+			expect(mockExit).not.toHaveBeenCalled()
+		})
+	})
+
 	describe("lintRoutesFile", () => {
 		const routesFileTestDir = join(process.cwd(), ".test-lint-routesfile")
 		let routesFileOriginalCwd: string
