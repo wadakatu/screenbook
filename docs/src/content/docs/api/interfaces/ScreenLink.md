@@ -5,7 +5,7 @@ prev: false
 title: "ScreenLink"
 ---
 
-Defined in: [packages/core/src/types.ts:11](https://github.com/wadakatu/screenbook/blob/0fda59c011aab5f6efc357d9181c480c84f6a890/packages/core/src/types.ts#L11)
+Defined in: [packages/core/src/types.ts:11](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L11)
 
 External link to related resources
 
@@ -15,7 +15,7 @@ External link to related resources
 
 > **label**: `string`
 
-Defined in: [packages/core/src/types.ts:17](https://github.com/wadakatu/screenbook/blob/0fda59c011aab5f6efc357d9181c480c84f6a890/packages/core/src/types.ts#L17)
+Defined in: [packages/core/src/types.ts:17](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L17)
 
 Display label for the link
 
@@ -35,7 +35,7 @@ Display label for the link
 
 > `optional` **type**: [`ScreenLinkType`](/screenbook/api/type-aliases/screenlinktype/)
 
-Defined in: [packages/core/src/types.ts:30](https://github.com/wadakatu/screenbook/blob/0fda59c011aab5f6efc357d9181c480c84f6a890/packages/core/src/types.ts#L30)
+Defined in: [packages/core/src/types.ts:30](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L30)
 
 Type of link for icon display
 If not specified, the type is inferred from the URL
@@ -56,7 +56,7 @@ If not specified, the type is inferred from the URL
 
 > **url**: `string`
 
-Defined in: [packages/core/src/types.ts:23](https://github.com/wadakatu/screenbook/blob/0fda59c011aab5f6efc357d9181c480c84f6a890/packages/core/src/types.ts#L23)
+Defined in: [packages/core/src/types.ts:23](https://github.com/wadakatu/screenbook/blob/4ba6a4e3732f38bc073b7e86b10e48c6943abce4/packages/core/src/types.ts#L23)
 
 URL to the external resource
 
