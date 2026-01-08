@@ -42,11 +42,30 @@ export interface FlatRoute {
 }
 
 /**
+ * Warning type for parser warnings
+ */
+export type ParseWarningType = "spread" | "general"
+
+/**
+ * Structured warning from router config parsing
+ */
+export interface ParseWarning {
+	/** Warning type for conditional handling */
+	type: ParseWarningType
+	/** Human-readable warning message */
+	message: string
+	/** Line number where the warning occurred */
+	line?: number
+	/** Variable name for spread operators (e.g., 'devRoutes' from '...devRoutes') */
+	variableName?: string
+}
+
+/**
  * Result of parsing a router config file
  */
 export interface ParseResult {
 	routes: ParsedRoute[]
-	warnings: string[]
+	warnings: ParseWarning[]
 }
 
 /**

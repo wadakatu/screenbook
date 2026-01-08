@@ -35,6 +35,20 @@ export interface ErrorOptions {
 }
 
 /**
+ * Structured warning options for detailed warning messages
+ */
+export interface WarnOptions {
+	/** Warning title (shown after "Warning:") */
+	title: string
+	/** Additional context message */
+	message?: string
+	/** List of impact details (shown as bullet points) */
+	details?: string[]
+	/** List of actionable suggestions (shown as numbered list) */
+	suggestions?: string[]
+}
+
+/**
  * Logger utility for consistent, color-coded CLI output
  */
 export const logger = {
@@ -119,6 +133,38 @@ export const logger = {
 			}
 		}
 		console.error()
+	},
+
+	/**
+	 * Display a detailed warning with actionable suggestions
+	 */
+	warnWithHelp: (options: WarnOptions): void => {
+		const { title, message, details, suggestions } = options
+
+		console.log()
+		console.log(`${pc.yellow("⚠")} ${pc.yellow(`Warning: ${title}`)}`)
+
+		if (message) {
+			console.log()
+			console.log(`  ${message}`)
+		}
+
+		if (details && details.length > 0) {
+			console.log("  This means:")
+			for (const detail of details) {
+				console.log(`  ${pc.dim("•")} ${detail}`)
+			}
+		}
+
+		if (suggestions && suggestions.length > 0) {
+			console.log()
+			console.log(`  ${pc.cyan("To fix this, either:")}`)
+			for (let i = 0; i < suggestions.length; i++) {
+				console.log(`  ${i + 1}. ${suggestions[i]}`)
+			}
+		}
+
+		console.log()
 	},
 
 	// ============================================
