@@ -4,6 +4,7 @@ import { parse } from "@babel/parser"
 import {
 	type ParsedRoute,
 	type ParseResult,
+	type ParseWarning,
 	resolveImportPath,
 } from "./routeParserUtils.js"
 
@@ -26,7 +27,7 @@ export function parseSolidRouterConfig(
 ): ParseResult {
 	const absolutePath = resolve(filePath)
 	const routesFileDir = dirname(absolutePath)
-	const warnings: string[] = []
+	const warnings: ParseWarning[] = []
 
 	// Read file with proper error handling (skip if content is preloaded)
 	let content: string
@@ -121,9 +122,11 @@ export function parseSolidRouterConfig(
 
 	// Warn if no routes were found
 	if (routes.length === 0) {
-		warnings.push(
-			"No routes found. Supported patterns: 'export const routes = [...]' or 'export default [...]'",
-		)
+		warnings.push({
+			type: "general",
+			message:
+				"No routes found. Supported patterns: 'export const routes = [...]' or 'export default [...]'",
+		})
 	}
 
 	return { routes, warnings }
@@ -136,7 +139,7 @@ function parseRoutesArray(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	arrayNode: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	const routes: ParsedRoute[] = []
 
@@ -145,10 +148,18 @@ function parseRoutesArray(
 
 		// Handle spread elements
 		if (element.type === "SpreadElement") {
-			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-			warnings.push(
-				`Spread operator detected${loc}. Routes from spread cannot be statically analyzed.`,
-			)
+			const line = element.loc?.start.line
+			const variableName =
+				element.argument?.type === "Identifier"
+					? element.argument.name
+					: undefined
+
+			warnings.push({
+				type: "spread",
+				message: `Spread operator detected${line ? ` at line ${line}` : ""}`,
+				line,
+				variableName,
+			})
 			continue
 		}
 
@@ -156,10 +167,12 @@ function parseRoutesArray(
 			const parsedRoutes = parseRouteObject(element, baseDir, warnings)
 			routes.push(...parsedRoutes)
 		} else {
-			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-			warnings.push(
-				`Non-object route element (${element.type})${loc}. Only object literals can be statically analyzed.`,
-			)
+			const line = element.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Non-object route element (${element.type})${line ? ` at line ${line}` : ""}. Only object literals can be statically analyzed.`,
+				line,
+			})
 		}
 	}
 
@@ -174,7 +187,7 @@ function parseRouteObject(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	objectNode: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	let paths: string[] = []
 	let component: string | undefined
@@ -199,16 +212,20 @@ function parseRouteObject(
 					hasPath = paths.length > 0
 					// Warn if path array had elements but none were extractable
 					if (arrayElementCount > 0 && paths.length === 0) {
-						const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
-						warnings.push(
-							`Path array contains only dynamic values${loc}. No static paths could be extracted.`,
-						)
+						const line = prop.loc?.start.line
+						warnings.push({
+							type: "general",
+							message: `Path array contains only dynamic values${line ? ` at line ${line}` : ""}. No static paths could be extracted.`,
+							line,
+						})
 					}
 				} else {
-					const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
-					warnings.push(
-						`Dynamic path value (${prop.value.type})${loc}. Only string literal paths can be statically analyzed.`,
-					)
+					const line = prop.loc?.start.line
+					warnings.push({
+						type: "general",
+						message: `Dynamic path value (${prop.value.type})${line ? ` at line ${line}` : ""}. Only string literal paths can be statically analyzed.`,
+						line,
+					})
 				}
 				break
 
@@ -250,7 +267,7 @@ function parseRouteObject(
 function extractPathArray(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	arrayNode: any,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string[] {
 	const paths: string[] = []
 
@@ -260,10 +277,12 @@ function extractPathArray(
 		if (element.type === "StringLiteral") {
 			paths.push(element.value)
 		} else {
-			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-			warnings.push(
-				`Non-string path in array (${element.type})${loc}. Only string literal paths can be analyzed.`,
-			)
+			const line = element.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Non-string path in array (${element.type})${line ? ` at line ${line}` : ""}. Only string literal paths can be analyzed.`,
+				line,
+			})
 		}
 	}
 
@@ -279,7 +298,7 @@ function extractComponent(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	// Direct component reference: component: Home
 	if (node.type === "Identifier") {
@@ -294,18 +313,22 @@ function extractComponent(
 			if (lazyArg) {
 				return extractLazyImportPath(lazyArg, baseDir, warnings)
 			}
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`lazy() called without arguments${loc}. Expected arrow function with import().`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `lazy() called without arguments${line ? ` at line ${line}` : ""}. Expected arrow function with import().`,
+				line,
+			})
 			return undefined
 		}
 		// Other call expressions not supported - add warning
-		const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+		const line = node.loc?.start.line
 		const calleeName = callee.type === "Identifier" ? callee.name : "unknown"
-		warnings.push(
-			`Unrecognized component pattern: ${calleeName}(...)${loc}. Only 'lazy(() => import(...))' is supported.`,
-		)
+		warnings.push({
+			type: "general",
+			message: `Unrecognized component pattern: ${calleeName}(...)${line ? ` at line ${line}` : ""}. Only 'lazy(() => import(...))' is supported.`,
+			line,
+		})
 		return undefined
 	}
 
@@ -318,32 +341,38 @@ function extractComponent(
 			}
 			// JSXMemberExpression (namespaced components like <UI.Button />)
 			if (openingElement?.name?.type === "JSXMemberExpression") {
-				const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-				warnings.push(
-					`Namespaced JSX component (e.g., <UI.Button />)${loc}. Component extraction not supported for member expressions. Consider using a direct component reference or create a wrapper component.`,
-				)
+				const line = node.loc?.start.line
+				warnings.push({
+					type: "general",
+					message: `Namespaced JSX component (e.g., <UI.Button />)${line ? ` at line ${line}` : ""}. Component extraction not supported for member expressions. Consider using a direct component reference or create a wrapper component.`,
+					line,
+				})
 				return undefined
 			}
 		}
 		// Block body arrow functions
 		if (node.body.type === "BlockStatement") {
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`Arrow function with block body${loc}. Only concise arrow functions returning JSX directly can be analyzed.`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Arrow function with block body${line ? ` at line ${line}` : ""}. Only concise arrow functions returning JSX directly can be analyzed.`,
+				line,
+			})
 			return undefined
 		}
 		// JSX Fragments
 		if (node.body.type === "JSXFragment") {
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`JSX Fragment detected${loc}. Cannot extract component name from fragments.`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `JSX Fragment detected${line ? ` at line ${line}` : ""}. Cannot extract component name from fragments.`,
+				line,
+			})
 			return undefined
 		}
 		// Conditional expressions
 		if (node.body.type === "ConditionalExpression") {
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
+			const line = node.loc?.start.line
 			// Try to extract component names from both branches for context
 			let componentInfo = ""
 			const consequent = node.body.consequent
@@ -356,25 +385,31 @@ function extractComponent(
 				const altName = alternate.openingElement?.name?.name || "unknown"
 				componentInfo = ` (${consName} or ${altName})`
 			}
-			warnings.push(
-				`Conditional component${componentInfo}${loc}. Only static JSX elements can be analyzed. Consider extracting to a separate component.`,
-			)
+			warnings.push({
+				type: "general",
+				message: `Conditional component${componentInfo}${line ? ` at line ${line}` : ""}. Only static JSX elements can be analyzed. Consider extracting to a separate component.`,
+				line,
+			})
 			return undefined
 		}
 		// Unrecognized arrow function body
-		const arrowLoc = node.loc ? ` at line ${node.loc.start.line}` : ""
-		warnings.push(
-			`Unrecognized arrow function body (${node.body.type})${arrowLoc}. Component will not be extracted.`,
-		)
+		const line = node.loc?.start.line
+		warnings.push({
+			type: "general",
+			message: `Unrecognized arrow function body (${node.body.type})${line ? ` at line ${line}` : ""}. Component will not be extracted.`,
+			line,
+		})
 		return undefined
 	}
 
 	// Catch-all for unrecognized component patterns
 	if (node) {
-		const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-		warnings.push(
-			`Unrecognized component pattern (${node.type})${loc}. Component will not be extracted.`,
-		)
+		const line = node.loc?.start.line
+		warnings.push({
+			type: "general",
+			message: `Unrecognized component pattern (${node.type})${line ? ` at line ${line}` : ""}. Component will not be extracted.`,
+			line,
+		})
 	}
 	return undefined
 }
@@ -387,7 +422,7 @@ function extractLazyImportPath(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	// Arrow function: () => import('./path')
 	if (node.type === "ArrowFunctionExpression") {
@@ -398,19 +433,23 @@ function extractLazyImportPath(
 				return resolveImportPath(body.arguments[0].value, baseDir)
 			}
 			// Dynamic import argument
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`Lazy import with dynamic path${loc}. Only string literal imports can be analyzed.`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Lazy import with dynamic path${line ? ` at line ${line}` : ""}. Only string literal imports can be analyzed.`,
+				line,
+			})
 			return undefined
 		}
 	}
 
 	// Unrecognized lazy pattern
-	const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-	warnings.push(
-		`Unrecognized lazy pattern (${node.type})${loc}. Expected arrow function with import().`,
-	)
+	const line = node.loc?.start.line
+	warnings.push({
+		type: "general",
+		message: `Unrecognized lazy pattern (${node.type})${line ? ` at line ${line}` : ""}. Expected arrow function with import().`,
+		line,
+	})
 	return undefined
 }
 

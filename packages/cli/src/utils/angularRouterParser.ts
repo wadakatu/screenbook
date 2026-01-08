@@ -4,11 +4,12 @@ import { parse } from "@babel/parser"
 import {
 	type ParsedRoute,
 	type ParseResult,
+	type ParseWarning,
 	resolveImportPath,
 } from "./routeParserUtils.js"
 
 // Re-export shared types
-export type { ParsedRoute, ParseResult }
+export type { ParsedRoute, ParseResult, ParseWarning }
 
 /**
  * Parse Angular Router configuration file and extract routes.
@@ -34,7 +35,7 @@ export function parseAngularRouterConfig(
 ): ParseResult {
 	const absolutePath = resolve(filePath)
 	const routesFileDir = dirname(absolutePath)
-	const warnings: string[] = []
+	const warnings: ParseWarning[] = []
 
 	// Read file with proper error handling (skip if content is preloaded)
 	let content: string
@@ -185,9 +186,11 @@ export function parseAngularRouterConfig(
 
 	// Warn if no routes were found
 	if (routes.length === 0) {
-		warnings.push(
-			"No routes found. Supported patterns: 'export const routes: Routes = [...]', 'RouterModule.forRoot([...])', or 'RouterModule.forChild([...])'",
-		)
+		warnings.push({
+			type: "general",
+			message:
+				"No routes found. Supported patterns: 'export const routes: Routes = [...]', 'RouterModule.forRoot([...])', or 'RouterModule.forChild([...])'",
+		})
 	}
 
 	return { routes, warnings }
@@ -200,7 +203,7 @@ function extractRoutesFromNgModule(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	callExpr: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	const routes: ParsedRoute[] = []
 
@@ -243,7 +246,7 @@ function extractRoutesFromExpression(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	const routes: ParsedRoute[] = []
 
@@ -274,7 +277,7 @@ function parseRoutesArray(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	arrayNode: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute[] {
 	const routes: ParsedRoute[] = []
 
@@ -283,10 +286,18 @@ function parseRoutesArray(
 
 		// Handle spread elements
 		if (element.type === "SpreadElement") {
-			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-			warnings.push(
-				`Spread operator detected${loc}. Routes from spread cannot be statically analyzed.`,
-			)
+			const line = element.loc?.start.line
+			const variableName =
+				element.argument?.type === "Identifier"
+					? element.argument.name
+					: undefined
+
+			warnings.push({
+				type: "spread",
+				message: `Spread operator detected${line ? ` at line ${line}` : ""}`,
+				line,
+				variableName,
+			})
 			continue
 		}
 
@@ -296,10 +307,12 @@ function parseRoutesArray(
 				routes.push(parsedRoute)
 			}
 		} else {
-			const loc = element.loc ? ` at line ${element.loc.start.line}` : ""
-			warnings.push(
-				`Non-object route element (${element.type})${loc}. Only object literals can be statically analyzed.`,
-			)
+			const line = element.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Non-object route element (${element.type})${line ? ` at line ${line}` : ""}. Only object literals can be statically analyzed.`,
+				line,
+			})
 		}
 	}
 
@@ -313,7 +326,7 @@ function parseRouteObject(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	objectNode: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): ParsedRoute | null {
 	let path: string | undefined
 	let component: string | undefined
@@ -333,10 +346,12 @@ function parseRouteObject(
 					path = prop.value.value
 					hasPath = true
 				} else {
-					const loc = prop.loc ? ` at line ${prop.loc.start.line}` : ""
-					warnings.push(
-						`Dynamic path value (${prop.value.type})${loc}. Only string literal paths can be statically analyzed.`,
-					)
+					const line = prop.loc?.start.line
+					warnings.push({
+						type: "general",
+						message: `Dynamic path value (${prop.value.type})${line ? ` at line ${line}` : ""}. Only string literal paths can be statically analyzed.`,
+						line,
+					})
 				}
 				break
 
@@ -417,7 +432,7 @@ function extractLazyComponent(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	// Arrow function: () => import('./path').then(m => m.Component)
 	if (node.type === "ArrowFunctionExpression") {
@@ -457,10 +472,12 @@ function extractLazyComponent(
 					return importPath
 				}
 				// Dynamic import path - warn the user
-				const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-				warnings.push(
-					`Lazy loadComponent with dynamic path${loc}. Only string literal imports can be analyzed.`,
-				)
+				const line = node.loc?.start.line
+				warnings.push({
+					type: "general",
+					message: `Lazy loadComponent with dynamic path${line ? ` at line ${line}` : ""}. Only string literal imports can be analyzed.`,
+					line,
+				})
 				return undefined
 			}
 		}
@@ -470,18 +487,22 @@ function extractLazyComponent(
 			if (body.arguments[0]?.type === "StringLiteral") {
 				return resolveImportPath(body.arguments[0].value, baseDir)
 			}
-			const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-			warnings.push(
-				`Lazy loadComponent with dynamic path${loc}. Only string literal imports can be analyzed.`,
-			)
+			const line = node.loc?.start.line
+			warnings.push({
+				type: "general",
+				message: `Lazy loadComponent with dynamic path${line ? ` at line ${line}` : ""}. Only string literal imports can be analyzed.`,
+				line,
+			})
 			return undefined
 		}
 	}
 
-	const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-	warnings.push(
-		`Unrecognized loadComponent pattern (${node.type})${loc}. Expected arrow function with import().then().`,
-	)
+	const line = node.loc?.start.line
+	warnings.push({
+		type: "general",
+		message: `Unrecognized loadComponent pattern (${node.type})${line ? ` at line ${line}` : ""}. Expected arrow function with import().then().`,
+		line,
+	})
 	return undefined
 }
 
@@ -493,7 +514,7 @@ function extractLazyPath(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	node: any,
 	baseDir: string,
-	warnings: string[],
+	warnings: ParseWarning[],
 ): string | undefined {
 	if (node.type === "ArrowFunctionExpression") {
 		const body = node.body
@@ -523,10 +544,12 @@ function extractLazyPath(
 		}
 	}
 
-	const loc = node.loc ? ` at line ${node.loc.start.line}` : ""
-	warnings.push(
-		`Unrecognized loadChildren pattern (${node.type})${loc}. Expected arrow function with import().`,
-	)
+	const line = node.loc?.start.line
+	warnings.push({
+		type: "general",
+		message: `Unrecognized loadChildren pattern (${node.type})${line ? ` at line ${line}` : ""}. Expected arrow function with import().`,
+		line,
+	})
 	return undefined
 }
 
