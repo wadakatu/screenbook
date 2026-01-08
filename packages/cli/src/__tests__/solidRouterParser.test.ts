@@ -338,9 +338,11 @@ export const routes = [
 				)
 
 				const result = parseSolidRouterConfig(routesFile)
-				expect(result.warnings.some((w) => w.includes("Spread operator"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some(
+						(w) => w.type === "spread" && w.message.includes("Spread operator"),
+					),
+				).toBe(true)
 			})
 
 			it("should warn on dynamic path value", () => {
@@ -357,9 +359,9 @@ export const routes = [
 				)
 
 				const result = parseSolidRouterConfig(routesFile)
-				expect(result.warnings.some((w) => w.includes("Dynamic path"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some((w) => w.message.includes("Dynamic path")),
+				).toBe(true)
 			})
 
 			it("should warn on non-string in path array", () => {
@@ -377,7 +379,9 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("Non-string path in array")),
+					result.warnings.some((w) =>
+						w.message.includes("Non-string path in array"),
+					),
 				).toBe(true)
 				// Should still extract the string literal path
 				expect(result.routes).toHaveLength(1)
@@ -399,7 +403,9 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("lazy() called without")),
+					result.warnings.some((w) =>
+						w.message.includes("lazy() called without"),
+					),
 				).toBe(true)
 			})
 
@@ -415,9 +421,9 @@ const x = 1
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(0)
-				expect(result.warnings.some((w) => w.includes("No routes found"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some((w) => w.message.includes("No routes found")),
+				).toBe(true)
 			})
 
 			it("should throw on file not found", () => {
@@ -458,7 +464,9 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("Non-object route element")),
+					result.warnings.some((w) =>
+						w.message.includes("Non-object route element"),
+					),
 				).toBe(true)
 				// Should still parse the static route
 				expect(result.routes).toHaveLength(1)
@@ -482,7 +490,9 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("Lazy import with dynamic")),
+					result.warnings.some((w) =>
+						w.message.includes("Lazy import with dynamic"),
+					),
 				).toBe(true)
 			})
 
@@ -503,7 +513,9 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("Unrecognized lazy pattern")),
+					result.warnings.some((w) =>
+						w.message.includes("Unrecognized lazy pattern"),
+					),
 				).toBe(true)
 			})
 
@@ -537,7 +549,7 @@ export const routes = [
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
 					result.warnings.some((w) =>
-						w.includes("Path array contains only dynamic"),
+						w.message.includes("Path array contains only dynamic"),
 					),
 				).toBe(true)
 			})
@@ -556,7 +568,7 @@ export const routes = [
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
 					result.warnings.some((w) =>
-						w.includes("Unrecognized component pattern"),
+						w.message.includes("Unrecognized component pattern"),
 					),
 				).toBe(true)
 			})
@@ -575,7 +587,7 @@ export const routes = [
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
 					result.warnings.some((w) =>
-						w.includes("Arrow function with block body"),
+						w.message.includes("Arrow function with block body"),
 					),
 				).toBe(true)
 			})
@@ -593,7 +605,9 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("JSX Fragment detected")),
+					result.warnings.some((w) =>
+						w.message.includes("JSX Fragment detected"),
+					),
 				).toBe(true)
 			})
 
@@ -610,12 +624,14 @@ export const routes = [
 
 				const result = parseSolidRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("Conditional component")),
+					result.warnings.some((w) =>
+						w.message.includes("Conditional component"),
+					),
 				).toBe(true)
 				// Should include component names in the warning
 				expect(
 					result.warnings.some(
-						(w) => w.includes("Admin") && w.includes("User"),
+						(w) => w.message.includes("Admin") && w.message.includes("User"),
 					),
 				).toBe(true)
 			})

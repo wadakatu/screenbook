@@ -414,9 +414,11 @@ export const routes: Routes = [
 				)
 
 				const result = parseAngularRouterConfig(routesFile)
-				expect(result.warnings.some((w) => w.includes("Spread operator"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some(
+						(w) => w.type === "spread" && w.message.includes("Spread operator"),
+					),
+				).toBe(true)
 			})
 
 			it("should warn on dynamic path value", () => {
@@ -435,9 +437,9 @@ export const routes: Routes = [
 				)
 
 				const result = parseAngularRouterConfig(routesFile)
-				expect(result.warnings.some((w) => w.includes("Dynamic path"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some((w) => w.message.includes("Dynamic path")),
+				).toBe(true)
 			})
 
 			it("should warn if no routes found", () => {
@@ -452,9 +454,9 @@ const x = 1
 
 				const result = parseAngularRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(0)
-				expect(result.warnings.some((w) => w.includes("No routes found"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some((w) => w.message.includes("No routes found")),
+				).toBe(true)
 			})
 
 			it("should throw on file not found", () => {
@@ -497,7 +499,9 @@ export const routes: Routes = [
 
 				const result = parseAngularRouterConfig(routesFile)
 				expect(
-					result.warnings.some((w) => w.includes("Non-object route element")),
+					result.warnings.some((w) =>
+						w.message.includes("Non-object route element"),
+					),
 				).toBe(true)
 				// Should still parse the static route
 				expect(result.routes).toHaveLength(1)
@@ -522,7 +526,7 @@ export const routes: Routes = [
 				const result = parseAngularRouterConfig(routesFile)
 				expect(
 					result.warnings.some((w) =>
-						w.includes("Lazy loadComponent with dynamic"),
+						w.message.includes("Lazy loadComponent with dynamic"),
 					),
 				).toBe(true)
 			})

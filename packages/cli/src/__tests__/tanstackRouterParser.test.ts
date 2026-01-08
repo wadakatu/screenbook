@@ -474,9 +474,11 @@ const routeTree = rootRoute.addChildren([homeRoute, ...otherRoutes])
 
 				const result = parseTanStackRouterConfig(routesFile)
 				expect(result.warnings.length).toBeGreaterThan(0)
-				expect(result.warnings.some((w) => w.includes("Spread operator"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some(
+						(w) => w.type === "spread" && w.message.includes("Spread operator"),
+					),
+				).toBe(true)
 			})
 
 			it("should warn on dynamic getParentRoute", () => {
@@ -502,7 +504,9 @@ const routeTree = rootRoute.addChildren([homeRoute])
 				const result = parseTanStackRouterConfig(routesFile)
 				// Arrow function with non-Identifier body triggers warning
 				expect(
-					result.warnings.some((w) => w.includes("Dynamic getParentRoute")),
+					result.warnings.some((w) =>
+						w.message.includes("Dynamic getParentRoute"),
+					),
 				).toBe(true)
 				// Route still parsed via addChildren
 				expect(result.routes).toHaveLength(1)
@@ -527,7 +531,9 @@ const routeTree = unknownRoute.addChildren([homeRoute])
 				)
 
 				const result = parseTanStackRouterConfig(routesFile)
-				expect(result.warnings.some((w) => w.includes("not found"))).toBe(true)
+				expect(
+					result.warnings.some((w) => w.message.includes("not found")),
+				).toBe(true)
 			})
 
 			it("should warn if no routes found", () => {
@@ -542,9 +548,9 @@ const x = 1
 
 				const result = parseTanStackRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(0)
-				expect(result.warnings.some((w) => w.includes("No routes found"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some((w) => w.message.includes("No routes found")),
+				).toBe(true)
 			})
 
 			it("should throw on file not found", () => {
@@ -590,9 +596,9 @@ const routeTree = rootRoute.addChildren([dynamicRoute])
 				)
 
 				const result = parseTanStackRouterConfig(routesFile)
-				expect(result.warnings.some((w) => w.includes("Dynamic path"))).toBe(
-					true,
-				)
+				expect(
+					result.warnings.some((w) => w.message.includes("Dynamic path")),
+				).toBe(true)
 			})
 		})
 

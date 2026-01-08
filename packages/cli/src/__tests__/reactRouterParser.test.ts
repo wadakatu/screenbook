@@ -428,7 +428,8 @@ const router = createBrowserRouter([
 
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.warnings).toHaveLength(1)
-				expect(result.warnings[0]).toContain("Spread operator")
+				expect(result.warnings[0]?.type).toBe("spread")
+				expect(result.warnings[0]?.message).toContain("Spread operator")
 			})
 
 			it("should handle layout routes (no path, just children)", () => {
@@ -507,7 +508,8 @@ const x = 1
 				const result = parseReactRouterConfig(routesFile)
 				expect(result.routes).toHaveLength(0)
 				expect(result.warnings).toHaveLength(1)
-				expect(result.warnings[0]).toContain("No routes found")
+				expect(result.warnings[0]?.type).toBe("general")
+				expect(result.warnings[0]?.message).toContain("No routes found")
 			})
 
 			it("should throw on file not found", () => {
