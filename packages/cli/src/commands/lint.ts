@@ -16,6 +16,7 @@ import {
 	getCycleSummary,
 } from "../utils/cycleDetection.js"
 import { validateDependsOnReferences } from "../utils/dependsOnValidation.js"
+import { displayWarnings } from "../utils/displayWarnings.js"
 import { ERRORS } from "../utils/errors.js"
 import { isVerbose, logger, setVerbose } from "../utils/logger.js"
 import { parseOpenApiSpecs } from "../utils/openApiParser.js"
@@ -23,62 +24,11 @@ import {
 	detectRouterType,
 	parseReactRouterConfig,
 } from "../utils/reactRouterParser.js"
-import type {
-	FlatRoute,
-	ParseResult,
-	ParseWarning,
-} from "../utils/routeParserUtils.js"
+import type { FlatRoute, ParseResult } from "../utils/routeParserUtils.js"
 import { flattenRoutes } from "../utils/routeParserUtils.js"
 import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
-
-/**
- * Display structured warnings with appropriate formatting
- * @param warnings - Array of parsed warnings
- * @param spreadOperatorSetting - Config setting for spread operator warnings ("warn" | "off")
- */
-function displayWarnings(
-	warnings: ParseWarning[],
-	spreadOperatorSetting: "warn" | "off" = "warn",
-): boolean {
-	let hasWarnings = false
-
-	for (const warning of warnings) {
-		if (warning.type === "spread") {
-			// Skip if spread warnings are disabled
-			if (spreadOperatorSetting === "off") {
-				continue
-			}
-
-			hasWarnings = true
-
-			const varPart = warning.variableName
-				? `'${warning.variableName}'`
-				: "spread variable"
-
-			logger.warnWithHelp({
-				title: warning.message,
-				message:
-					"Routes from spread operators cannot be statically analyzed by screenbook.",
-				details: [
-					`screenbook won't detect missing screen.meta.ts for routes in ${varPart}`,
-					"These routes may appear to pass lint even without screen.meta.ts files",
-				],
-				suggestions: [
-					"Inline the routes directly in the main routes array",
-					"Manually ensure screen.meta.ts files exist for the spread routes",
-					"Ignore this warning if you're OK with manual coverage tracking",
-				],
-			})
-		} else {
-			hasWarnings = true
-			logger.warn(warning.message)
-		}
-	}
-
-	return hasWarnings
-}
 
 export const lintCommand = define({
 	name: "lint",
@@ -470,8 +420,14 @@ async function lintRoutesFile(
 		}
 
 		// Show warnings
-		if (displayWarnings(parseResult.warnings, config.lint?.spreadOperator)) {
+		const warningsResult = displayWarnings(parseResult.warnings, {
+			spreadOperatorSetting: config.lint?.spreadOperator,
+		})
+		if (warningsResult.hasWarnings) {
 			hasWarnings = true
+		}
+		if (warningsResult.shouldFailLint) {
+			shouldFailLint = true
 		}
 
 		flatRoutes = flattenRoutes(parseResult.routes)

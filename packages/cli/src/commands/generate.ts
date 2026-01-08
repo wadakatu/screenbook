@@ -12,6 +12,7 @@ import {
 	DEFAULT_EXCLUDE_PATTERNS,
 	matchesExcludePattern,
 } from "../utils/constants.js"
+import { displayGenerateWarnings } from "../utils/displayWarnings.js"
 import { ERRORS } from "../utils/errors.js"
 import { logger, setVerbose } from "../utils/logger.js"
 import {
@@ -26,52 +27,11 @@ import {
 	type FlatRoute,
 	flattenRoutes,
 	type ParseResult,
-	type ParseWarning,
 } from "../utils/routeParserUtils.js"
 import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
 import { parseVueRouterConfig } from "../utils/vueRouterParser.js"
 import { analyzeVueSFC } from "../utils/vueSFCTemplateAnalyzer.js"
-
-/**
- * Display structured warnings with appropriate formatting
- * @param warnings - Array of parsed warnings
- * @param spreadOperatorSetting - Config setting for spread operator warnings ("warn" | "off")
- */
-function displayWarnings(
-	warnings: ParseWarning[],
-	spreadOperatorSetting: "warn" | "off" = "warn",
-): void {
-	for (const warning of warnings) {
-		if (warning.type === "spread") {
-			// Skip if spread warnings are disabled
-			if (spreadOperatorSetting === "off") {
-				continue
-			}
-
-			const varPart = warning.variableName
-				? `'${warning.variableName}'`
-				: "spread variable"
-
-			logger.warnWithHelp({
-				title: warning.message,
-				message:
-					"Routes from spread operators cannot be statically analyzed by screenbook.",
-				details: [
-					`screenbook won't auto-generate screen.meta.ts for routes in ${varPart}`,
-					"You'll need to manually create screen.meta.ts files for these routes",
-				],
-				suggestions: [
-					"Inline the routes directly in the main routes array",
-					"Manually create screen.meta.ts files for the spread routes",
-					"Ignore this warning if you're OK with manual screen metadata",
-				],
-			})
-		} else {
-			logger.warn(warning.message)
-		}
-	}
-}
 
 /**
  * Common paths where Vue Router configuration files are typically located
@@ -360,7 +320,9 @@ async function generateFromRoutesFile(
 	}
 
 	// Show warnings
-	displayWarnings(parseResult.warnings, spreadOperator)
+	displayGenerateWarnings(parseResult.warnings, {
+		spreadOperatorSetting: spreadOperator,
+	})
 
 	// Flatten routes
 	const flatRoutes = flattenRoutes(parseResult.routes)
@@ -605,7 +567,9 @@ export async function generateFromRoutesPattern(
 						`  ${logger.dim(`(using routes from ${relative(cwd, vueRouterConfig)})`)}`,
 					)
 				}
-				displayWarnings(parseResult.warnings, spreadOperator)
+				displayGenerateWarnings(parseResult.warnings, {
+					spreadOperatorSetting: spreadOperator,
+				})
 			} catch (error) {
 				const message = error instanceof Error ? error.message : String(error)
 				logger.warn(`Could not parse Vue Router config: ${message}`)
