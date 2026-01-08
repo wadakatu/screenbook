@@ -343,7 +343,12 @@ async function lintRoutesFile(
 	cwd: string,
 	config: Pick<
 		Config,
-		"metaPattern" | "outDir" | "ignore" | "apiIntegration" | "lint"
+		| "metaPattern"
+		| "outDir"
+		| "ignore"
+		| "apiIntegration"
+		| "lint"
+		| "excludePatterns"
 	>,
 	adoption: AdoptionConfig,
 	allowCycles: boolean,
@@ -460,9 +465,18 @@ async function lintRoutesFile(
 	const missingMeta: FlatRoute[] = []
 	const covered: FlatRoute[] = []
 
+	// Apply exclude patterns (default or custom) for consistent behavior with routesPattern mode
+	const excludePatterns = config.excludePatterns ?? DEFAULT_EXCLUDE_PATTERNS
+
 	for (const route of flatRoutes) {
 		// Skip layout routes (components ending with "Layout" that typically don't need screen.meta)
 		if (route.componentPath?.endsWith("Layout")) {
+			continue
+		}
+
+		// Skip routes in excluded directories (e.g., components/, hooks/)
+		const metaDir = determineMetaDir(route, cwd)
+		if (matchesExcludePattern(metaDir, excludePatterns)) {
 			continue
 		}
 
@@ -470,8 +484,7 @@ async function lintRoutesFile(
 		let matched = false
 
 		// Strategy 1: Check by determineMetaDir (path-based matching)
-		const metaPath = determineMetaDir(route, cwd)
-		if (metaDirs.has(metaPath)) {
+		if (metaDirs.has(metaDir)) {
 			matched = true
 		}
 
