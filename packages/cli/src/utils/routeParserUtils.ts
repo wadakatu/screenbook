@@ -200,6 +200,14 @@ export function flattenRoutes(
 }
 
 /**
+ * Check if a segment is a Vue Router catch-all pattern.
+ * Examples: :pathMatch(.*)*, :catchAll(.*)*, :path(.*)
+ */
+function isVueCatchallPattern(segment: string): boolean {
+	return /^:[a-zA-Z_][a-zA-Z0-9_]*\(.*\)\*?$/.test(segment)
+}
+
+/**
  * Action segments that provide semantic context.
  * When a parameter is followed by one of these, the parameter is preserved.
  */
@@ -329,16 +337,21 @@ export function pathToScreenId(
 		const nextSegment = segments[i + 1]
 
 		if (segment.startsWith(":")) {
-			// Parameter segment
-			const { resolved, suggestion } = resolveParameter(
-				segment,
-				isLast,
-				nextSegment,
-				options,
-			)
-			resolvedSegments.push(resolved)
-			if (suggestion) {
-				allSuggestions.push(suggestion)
+			// Check for Vue Router catch-all pattern first
+			if (isVueCatchallPattern(segment)) {
+				resolvedSegments.push("not-found")
+			} else {
+				// Parameter segment
+				const { resolved, suggestion } = resolveParameter(
+					segment,
+					isLast,
+					nextSegment,
+					options,
+				)
+				resolvedSegments.push(resolved)
+				if (suggestion) {
+					allSuggestions.push(suggestion)
+				}
 			}
 		} else if (segment.startsWith("*")) {
 			// Catchall segment
@@ -368,11 +381,17 @@ export function pathToScreenTitle(path: string): string {
 		return "Home"
 	}
 
-	const segments = path
-		.replace(/^\//, "")
-		.replace(/\/$/, "")
-		.split("/")
-		.filter((s) => !s.startsWith(":") && !s.startsWith("*"))
+	const allSegments = path.replace(/^\//, "").replace(/\/$/, "").split("/")
+
+	// Check if the last segment is a Vue Router catch-all pattern
+	const lastRawSegment = allSegments[allSegments.length - 1]
+	if (lastRawSegment && isVueCatchallPattern(lastRawSegment)) {
+		return "Not Found"
+	}
+
+	const segments = allSegments.filter(
+		(s) => !s.startsWith(":") && !s.startsWith("*"),
+	)
 
 	const lastSegment = segments[segments.length - 1] || "Home"
 

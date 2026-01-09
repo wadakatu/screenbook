@@ -3,6 +3,7 @@ import {
 	flattenRoutes,
 	type ParsedRoute,
 	pathToScreenId,
+	pathToScreenTitle,
 } from "../utils/routeParserUtils.js"
 
 describe("routeParserUtils", () => {
@@ -259,6 +260,67 @@ describe("routeParserUtils", () => {
 
 			expect(flat).toHaveLength(1)
 			expect(flat[0]?.screenId).toBe("posts.article")
+		})
+	})
+
+	describe("pathToScreenId - Vue Router catch-all patterns", () => {
+		it("should convert :pathMatch(.*)* to not-found", () => {
+			expect(pathToScreenId("/:pathMatch(.*)*")).toEqual({
+				screenId: "not-found",
+			})
+		})
+
+		it("should convert :catchAll(.*)* to not-found", () => {
+			expect(pathToScreenId("/:catchAll(.*)*")).toEqual({
+				screenId: "not-found",
+			})
+		})
+
+		it("should convert :pathMatch(.*) without trailing asterisk to not-found", () => {
+			expect(pathToScreenId("/:pathMatch(.*)")).toEqual({
+				screenId: "not-found",
+			})
+		})
+
+		it("should handle catch-all with prefix path", () => {
+			expect(pathToScreenId("/admin/:pathMatch(.*)*")).toEqual({
+				screenId: "admin.not-found",
+			})
+		})
+
+		it("should handle catch-all with nested path", () => {
+			expect(pathToScreenId("/docs/guide/:pathMatch(.*)*")).toEqual({
+				screenId: "docs.guide.not-found",
+			})
+		})
+
+		it("should not affect regular parameters with parentheses in name", () => {
+			// Regular parameters should still work
+			expect(pathToScreenId("/users/:id")).toEqual({
+				screenId: "users.id",
+			})
+		})
+	})
+
+	describe("pathToScreenTitle - Vue Router catch-all patterns", () => {
+		it("should return 'Not Found' for :pathMatch(.*)* pattern", () => {
+			expect(pathToScreenTitle("/:pathMatch(.*)*")).toBe("Not Found")
+		})
+
+		it("should return 'Not Found' for :catchAll(.*)* pattern", () => {
+			expect(pathToScreenTitle("/:catchAll(.*)*")).toBe("Not Found")
+		})
+
+		it("should return 'Not Found' for catch-all with prefix path", () => {
+			expect(pathToScreenTitle("/admin/:pathMatch(.*)*")).toBe("Not Found")
+		})
+
+		it("should return normal title for regular paths", () => {
+			expect(pathToScreenTitle("/users/profile")).toBe("Profile")
+		})
+
+		it("should return Home for root path", () => {
+			expect(pathToScreenTitle("/")).toBe("Home")
 		})
 	})
 })

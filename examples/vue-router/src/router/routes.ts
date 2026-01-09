@@ -49,4 +49,11 @@ export const routes: RouteRecordRaw[] = [
 		name: "admin",
 		component: () => import("../views/PageAdmin/components/AdminLayout.vue"),
 	},
+	// Issue #202: Catch-all route for 404 pages
+	// Tests that :pathMatch(.*)* generates valid ID and tags
+	{
+		path: "/:pathMatch(.*)*",
+		name: "PageNotFound",
+		component: () => import("../views/PageNotFound/index.vue"),
+	},
 ]
