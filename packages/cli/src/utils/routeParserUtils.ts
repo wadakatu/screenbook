@@ -249,8 +249,9 @@ function resolveParameter(
 	options: PathToScreenIdOptions,
 ): { resolved: string; suggestion?: string } {
 	// 1. Check custom mapping first (highest priority)
-	if (options.parameterMapping?.[segment]) {
-		return { resolved: options.parameterMapping[segment] }
+	const mappingKey = segment as `:${string}`
+	if (options.parameterMapping?.[mappingKey]) {
+		return { resolved: options.parameterMapping[mappingKey] }
 	}
 
 	// 2. Apply smart defaults if enabled
