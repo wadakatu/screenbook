@@ -34,7 +34,7 @@ export function createDetectedNavigation(
 	const cleanPath = pathWithoutQuery.split("#")[0] ?? pathWithoutQuery
 	return {
 		path,
-		screenId: pathToScreenId(cleanPath),
+		screenId: pathToScreenId(cleanPath).screenId,
 		type,
 		line,
 	}

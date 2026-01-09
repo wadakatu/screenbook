@@ -268,8 +268,11 @@ describe("displayGenerateWarnings", () => {
 			},
 		]
 
-		displayGenerateWarnings(warnings)
+		const result = displayGenerateWarnings(warnings)
 
+		expect(result.hasWarnings).toBe(true)
+		expect(result.spreadCount).toBe(1)
+		expect(result.generalCount).toBe(0)
 		expect(logger.warnWithHelp).toHaveBeenCalledWith(
 			expect.objectContaining({
 				title: "Spread operator detected",
@@ -281,17 +284,74 @@ describe("displayGenerateWarnings", () => {
 		)
 	})
 
-	it("should skip spread warnings when spreadOperatorSetting is 'off'", () => {
+	it("should display spread warnings with fallback when variableName is undefined", () => {
+		const warnings: ParseWarning[] = [
+			{
+				type: "spread",
+				message: "Spread operator detected at line 10",
+				line: 10,
+			},
+		]
+
+		const result = displayGenerateWarnings(warnings)
+
+		expect(result.hasWarnings).toBe(true)
+		expect(result.spreadCount).toBe(1)
+		expect(logger.warnWithHelp).toHaveBeenCalledWith(
+			expect.objectContaining({
+				details: expect.arrayContaining([
+					expect.stringContaining("spread variable"),
+				]),
+			}),
+		)
+	})
+
+	it("should skip spread warnings and log suppression count when spreadOperatorSetting is 'off'", () => {
 		const warnings: ParseWarning[] = [
 			{
 				type: "spread",
 				message: "Spread detected",
 				variableName: "devRoutes",
 			},
+			{
+				type: "spread",
+				message: "Spread detected 2",
+				variableName: "prodRoutes",
+			},
 		]
 
-		displayGenerateWarnings(warnings, { spreadOperatorSetting: "off" })
+		const result = displayGenerateWarnings(warnings, {
+			spreadOperatorSetting: "off",
+		})
 
+		expect(result.hasWarnings).toBe(false)
+		expect(result.spreadCount).toBe(0)
+		expect(logger.warnWithHelp).not.toHaveBeenCalled()
+		expect(logger.log).toHaveBeenCalledWith(
+			expect.stringContaining("2 spread operator warning(s) suppressed"),
+		)
+	})
+
+	it("should display spread as error when spreadOperatorSetting is 'error'", () => {
+		const warnings: ParseWarning[] = [
+			{
+				type: "spread",
+				message: "Spread operator detected at line 5",
+				line: 5,
+				variableName: "devRoutes",
+			},
+		]
+
+		const result = displayGenerateWarnings(warnings, {
+			spreadOperatorSetting: "error",
+		})
+
+		expect(result.hasWarnings).toBe(true)
+		expect(result.spreadCount).toBe(1)
+		expect(result.shouldFailLint).toBe(true)
+		expect(logger.error).toHaveBeenCalledWith(
+			"Spread operator detected at line 5",
+		)
 		expect(logger.warnWithHelp).not.toHaveBeenCalled()
 	})
 
@@ -303,8 +363,23 @@ describe("displayGenerateWarnings", () => {
 			},
 		]
 
-		displayGenerateWarnings(warnings)
+		const result = displayGenerateWarnings(warnings)
 
+		expect(result.hasWarnings).toBe(true)
+		expect(result.spreadCount).toBe(0)
+		expect(result.generalCount).toBe(1)
 		expect(logger.warn).toHaveBeenCalledWith("Could not resolve component path")
+	})
+
+	it("should handle empty warnings array", () => {
+		const warnings: ParseWarning[] = []
+
+		const result = displayGenerateWarnings(warnings)
+
+		expect(result.hasWarnings).toBe(false)
+		expect(result.spreadCount).toBe(0)
+		expect(result.generalCount).toBe(0)
+		expect(logger.warn).not.toHaveBeenCalled()
+		expect(logger.warnWithHelp).not.toHaveBeenCalled()
 	})
 })

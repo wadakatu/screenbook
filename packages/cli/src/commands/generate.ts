@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { basename, dirname, join, relative, resolve } from "node:path"
-import type { ApiIntegrationConfig, Screen } from "@screenbook/core"
+import type {
+	ApiIntegrationConfig,
+	GenerateConfig,
+	Screen,
+} from "@screenbook/core"
 import { define } from "gunshi"
 import prompts from "prompts"
 import { glob } from "tinyglobby"
@@ -27,6 +31,7 @@ import {
 	type FlatRoute,
 	flattenRoutes,
 	type ParseResult,
+	type PathToScreenIdOptions,
 } from "../utils/routeParserUtils.js"
 import { parseSolidRouterConfig } from "../utils/solidRouterParser.js"
 import { parseTanStackRouterConfig } from "../utils/tanstackRouterParser.js"
@@ -215,6 +220,7 @@ export const generateCommand = define({
 				detectNavigation,
 				apiIntegration: config.apiIntegration,
 				spreadOperator: config.lint?.spreadOperator,
+				generate: config.generate,
 			})
 			return
 		}
@@ -229,6 +235,7 @@ export const generateCommand = define({
 			detectNavigation,
 			apiIntegration: config.apiIntegration,
 			spreadOperator: config.lint?.spreadOperator,
+			generate: config.generate,
 		})
 	},
 })
@@ -241,6 +248,7 @@ interface GenerateFromRoutesFileOptions {
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
 	readonly spreadOperator?: "warn" | "off" | "error"
+	readonly generate?: GenerateConfig
 }
 
 /**
@@ -259,7 +267,15 @@ async function generateFromRoutesFile(
 		detectNavigation,
 		apiIntegration,
 		spreadOperator,
+		generate,
 	} = options
+
+	// Build PathToScreenIdOptions from generate config
+	const screenIdOptions: PathToScreenIdOptions = {
+		smartParameterNaming: generate?.smartParameterNaming,
+		parameterMapping: generate?.parameterMapping,
+		unmappedParameterStrategy: generate?.unmappedParameterStrategy,
+	}
 	const absoluteRoutesFile = resolve(cwd, routesFile)
 
 	// Check if routes file exists
@@ -324,8 +340,8 @@ async function generateFromRoutesFile(
 		spreadOperatorSetting: spreadOperator,
 	})
 
-	// Flatten routes
-	const flatRoutes = flattenRoutes(parseResult.routes)
+	// Flatten routes with screen ID options
+	const flatRoutes = flattenRoutes(parseResult.routes, "", 0, screenIdOptions)
 
 	if (flatRoutes.length === 0) {
 		logger.warn("No routes found in the config file")
@@ -462,6 +478,7 @@ async function generateFromRoutesFile(
 				tags: result.tags,
 				dependsOn: detectedApis,
 				next: detectedNext,
+				suggestions: route.suggestions,
 			})
 
 			if (dryRun) {
@@ -481,6 +498,7 @@ async function generateFromRoutesFile(
 			const content = generateScreenMetaContent(screenMeta, {
 				dependsOn: detectedApis,
 				next: detectedNext,
+				suggestions: route.suggestions,
 			})
 
 			if (dryRun) {
@@ -511,6 +529,7 @@ export interface GenerateFromRoutesPatternOptions {
 	readonly detectNavigation: boolean
 	readonly apiIntegration?: ApiIntegrationConfig
 	readonly spreadOperator?: "warn" | "off" | "error"
+	readonly generate?: GenerateConfig
 }
 
 /**
@@ -530,7 +549,15 @@ export async function generateFromRoutesPattern(
 		detectNavigation,
 		apiIntegration,
 		spreadOperator,
+		generate,
 	} = options
+
+	// Build PathToScreenIdOptions from generate config
+	const screenIdOptions: PathToScreenIdOptions = {
+		smartParameterNaming: generate?.smartParameterNaming,
+		parameterMapping: generate?.parameterMapping,
+		unmappedParameterStrategy: generate?.unmappedParameterStrategy,
+	}
 
 	logger.info("Scanning for route files...")
 	logger.blank()
@@ -560,7 +587,12 @@ export async function generateFromRoutesPattern(
 		if (vueRouterConfig) {
 			try {
 				const parseResult = parseVueRouterConfig(vueRouterConfig)
-				const flatRoutes = flattenRoutes(parseResult.routes)
+				const flatRoutes = flattenRoutes(
+					parseResult.routes,
+					"",
+					0,
+					screenIdOptions,
+				)
 				if (flatRoutes.length > 0) {
 					routeComponentMap = buildRouteComponentMap(flatRoutes, cwd)
 					logger.log(
@@ -685,6 +717,7 @@ export async function generateFromRoutesPattern(
 				tags: result.tags,
 				dependsOn: detectedApis,
 				next: detectedNext,
+				suggestions: matchedRoute?.suggestions,
 			})
 
 			if (dryRun) {
@@ -704,6 +737,7 @@ export async function generateFromRoutesPattern(
 			const content = generateScreenMetaContent(screenMeta, {
 				dependsOn: detectedApis,
 				next: detectedNext,
+				suggestions: matchedRoute?.suggestions,
 			})
 
 			if (dryRun) {
@@ -997,7 +1031,10 @@ function inferScreenMeta(
 
 type GenerateOptions = Partial<
 	Pick<Screen, "owner" | "tags" | "dependsOn" | "next">
->
+> & {
+	/** Suggestions for alternative screen IDs (for TODO comments) */
+	suggestions?: string[]
+}
 
 /**
  * Generate screen.meta.ts file content
@@ -1014,6 +1051,7 @@ function generateScreenMetaContent(
 			: [meta.id.split(".")[0] || "general"]
 	const dependsOn = options?.dependsOn ?? []
 	const next = options?.next ?? []
+	const suggestions = options?.suggestions ?? []
 
 	const ownerStr =
 		owner.length > 0 ? `[${owner.map((o) => `"${o}"`).join(", ")}]` : "[]"
@@ -1038,10 +1076,14 @@ function generateScreenMetaContent(
 			? "// Auto-detected navigation targets (add more as needed)"
 			: "// Screen IDs this screen can navigate to"
 
+	// Generate TODO comment for ID suggestions (when unmappedParameterStrategy is "warn")
+	const idComment =
+		suggestions.length > 0 ? `// TODO: ${suggestions.join("; ")}\n\t` : ""
+
 	return `import { defineScreen } from "screenbook"
 
 export const screen = defineScreen({
-	id: "${meta.id}",
+	${idComment}id: "${meta.id}",
 	title: "${meta.title}",
 	route: "${meta.route}",
 

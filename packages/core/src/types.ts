@@ -517,6 +517,49 @@ export interface LintConfig {
 }
 
 /**
+ * Configuration for screen ID generation in the generate command.
+ * Controls how route parameters like `:id` are converted to screen IDs.
+ *
+ * @example
+ * ```ts
+ * const generate: GenerateConfig = {
+ *   smartParameterNaming: true,
+ *   parameterMapping: { ":id": "detail", ":userId": "user" },
+ * }
+ * ```
+ */
+export interface GenerateConfig {
+	/**
+	 * Enable smart parameter inference for screen IDs.
+	 * When true, applies intelligent defaults:
+	 * - `:id` at path end → `detail`
+	 * - `:xxxId` pattern → extracts entity name (e.g., `:userId` → `user`)
+	 * - `:id` before action segments (edit/new) → preserved for context
+	 * @default false (preserves backward compatibility)
+	 * @example true
+	 */
+	smartParameterNaming?: boolean
+
+	/**
+	 * Custom parameter mappings for screen ID generation.
+	 * Maps route parameter names (must start with `:`) to semantic screen ID segments.
+	 * Takes precedence over smart defaults when both are enabled.
+	 * @example { ":id": "detail", ":userId": "user", ":postId": "post" }
+	 */
+	parameterMapping?: Record<`:${string}`, string>
+
+	/**
+	 * Strategy for handling parameters not covered by mappings or smart defaults.
+	 * - "preserve": Keep the parameter name as-is (e.g., `:userId` → `userId`) (default)
+	 * - "detail": Convert all unmapped parameters to "detail"
+	 * - "warn": Preserve but add a TODO comment suggesting alternatives
+	 * @default "preserve"
+	 * @example "warn"
+	 */
+	unmappedParameterStrategy?: "preserve" | "detail" | "warn"
+}
+
+/**
  * Schema for OpenAPI configuration (runtime validation)
  * @internal
  */
@@ -531,6 +574,18 @@ export const openApiConfigSchema = z.object({
 export const lintConfigSchema = z.object({
 	orphans: z.enum(["warn", "off", "error"]).default("warn"),
 	spreadOperator: z.enum(["warn", "off", "error"]).default("warn"),
+})
+
+/**
+ * Schema for generate configuration (runtime validation)
+ * @internal
+ */
+export const generateConfigSchema = z.object({
+	smartParameterNaming: z.boolean().default(false),
+	parameterMapping: z.record(z.string(), z.string()).optional(),
+	unmappedParameterStrategy: z
+		.enum(["preserve", "detail", "warn"])
+		.default("preserve"),
 })
 
 /**
@@ -616,6 +671,12 @@ export interface Config {
 	 * @example { orphans: "off" }
 	 */
 	lint?: LintConfig
+
+	/**
+	 * Configuration for screen ID generation in the generate command
+	 * @example { smartParameterNaming: true }
+	 */
+	generate?: GenerateConfig
 }
 
 /**
@@ -688,6 +749,11 @@ export interface ConfigInput {
 	 * Lint configuration for controlling warning behavior
 	 */
 	lint?: LintConfig
+
+	/**
+	 * Configuration for screen ID generation in the generate command
+	 */
+	generate?: GenerateConfig
 }
 
 /**
@@ -705,6 +771,7 @@ export const configSchema = z
 		adoption: adoptionSchema.optional(),
 		apiIntegration: apiIntegrationSchema.optional(),
 		lint: lintConfigSchema.optional(),
+		generate: generateConfigSchema.optional(),
 	})
 	.refine((data) => !(data.routesPattern && data.routesFile), {
 		message:

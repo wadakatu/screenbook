@@ -8,6 +8,9 @@ export {
 	type Config,
 	type ConfigInput,
 	configSchema,
+	// Generate config types
+	type GenerateConfig,
+	generateConfigSchema,
 	type LintConfig,
 	lintConfigSchema,
 	// Mock types
