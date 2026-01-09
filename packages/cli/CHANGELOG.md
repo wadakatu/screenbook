@@ -1,5 +1,26 @@
 # @screenbook/cli
 
+## 1.8.0
+
+### Minor Changes
+
+- 42dcedb: ### @screenbook/core
+  - Add `GenerateConfig` type for smart screen ID generation options
+
+  ### @screenbook/cli
+  - Add `excludePatterns` support to lint command for excluding specific routes
+  - Add smart screen ID generation from route paths in generate command
+    - Converts route paths like `/billing/invoices/:id` to `billing.invoice.detail`
+  - Improve spread operator warnings with structured `ParseWarning` type
+  - Add `warnWithHelp` logger and `displayWarnings` helper for detailed warning output
+  - Suppress orphan warnings on initial screen.meta.ts generation
+  - Improve error handling and validation for screens.json
+
+### Patch Changes
+
+- Updated dependencies [42dcedb]
+  - @screenbook/core@1.8.0
+
 ## 1.7.2
 
 ### Patch Changes
