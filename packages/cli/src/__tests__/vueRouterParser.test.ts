@@ -731,6 +731,9 @@ export const routes = [
 					(w) => w.type === "spread",
 				) as SpreadWarning | undefined
 				expect(spreadWarning?.resolved).toBe(false)
+				expect(spreadWarning?.resolutionFailureReason).toBe(
+					"Function call results cannot be statically resolved",
+				)
 			})
 
 			it("should warn for undefined variables", () => {
@@ -755,6 +758,252 @@ export const routes = [
 					(w) => w.type === "spread",
 				) as SpreadWarning | undefined
 				expect(spreadWarning?.resolved).toBe(false)
+				expect(spreadWarning?.resolutionFailureReason).toContain(
+					"unknownRoutes",
+				)
+			})
+
+			it("should handle non-existent imported route files gracefully", () => {
+				const routesFile = join(testDir, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { missingRoutes } from './does-not-exist'
+
+export const routes = [
+  {
+    path: '/',
+    component: () => import('./views/Home.vue'),
+  },
+  ...missingRoutes,
+]
+`,
+				)
+
+				const result = parseVueRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+
+				// Should have a warning about the missing file
+				const fileNotFoundWarning = result.warnings.find(
+					(w) =>
+						w.type === "general" &&
+						w.message.includes("Could not find imported routes file"),
+				)
+				expect(fileNotFoundWarning).toBeDefined()
+			})
+
+			it("should handle syntax errors in imported route files gracefully", () => {
+				// Create a file with syntax error
+				const brokenFile = join(testDir, "broken-routes.ts")
+				writeFileSync(
+					brokenFile,
+					`
+export const brokenRoutes = [
+  { path: '/broken' // Missing closing brace - syntax error
+]
+`,
+				)
+
+				const routesFile = join(testDir, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { brokenRoutes } from './broken-routes'
+
+export const routes = [
+  {
+    path: '/',
+    component: () => import('./views/Home.vue'),
+  },
+  ...brokenRoutes,
+]
+`,
+				)
+
+				const result = parseVueRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+
+				// Should have a warning about syntax error
+				const syntaxErrorWarning = result.warnings.find(
+					(w) => w.type === "general" && w.message.includes("Syntax error"),
+				)
+				expect(syntaxErrorWarning).toBeDefined()
+			})
+
+			it("should warn when imported variable not exported in file", () => {
+				// Create file that exports a different variable
+				const otherFile = join(testDir, "other-routes.ts")
+				writeFileSync(
+					otherFile,
+					`
+export const differentRoutes = [
+  { path: '/different', component: () => import('./views/Different.vue') },
+]
+`,
+				)
+
+				const routesFile = join(testDir, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { expectedRoutes } from './other-routes'
+
+export const routes = [
+  {
+    path: '/',
+    component: () => import('./views/Home.vue'),
+  },
+  ...expectedRoutes,
+]
+`,
+				)
+
+				const result = parseVueRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+
+				// Should have a warning about export not found
+				const exportNotFoundWarning = result.warnings.find(
+					(w) =>
+						w.type === "general" &&
+						w.message.includes("not found in") &&
+						w.message.includes("expectedRoutes"),
+				)
+				expect(exportNotFoundWarning).toBeDefined()
+			})
+
+			it("should hint about route naming heuristic for non-route imports", () => {
+				const routesFile = join(testDir, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { pages } from './pages'
+
+export const routes = [
+  {
+    path: '/',
+    component: () => import('./views/Home.vue'),
+  },
+  ...pages,
+]
+`,
+				)
+
+				const result = parseVueRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+				// Should mention the naming heuristic
+				expect(spreadWarning?.resolutionFailureReason).toContain(
+					"Only imports with 'route' in the name are tracked",
+				)
+			})
+		})
+
+		describe("depth limiting", () => {
+			it("should warn when maximum import depth is reached", () => {
+				// Create a chain of imports that exceeds maxDepth (3)
+				const level3 = join(testDir, "level3-routes.ts")
+				writeFileSync(
+					level3,
+					`
+export const level3Routes = [
+  { path: '/level3', component: () => import('./views/L3.vue') },
+]
+`,
+				)
+
+				const level2 = join(testDir, "level2-routes.ts")
+				writeFileSync(
+					level2,
+					`
+import { level3Routes } from './level3-routes'
+export const level2Routes = [...level3Routes]
+`,
+				)
+
+				const level1 = join(testDir, "level1-routes.ts")
+				writeFileSync(
+					level1,
+					`
+import { level2Routes } from './level2-routes'
+export const level1Routes = [...level2Routes]
+`,
+				)
+
+				const level0 = join(testDir, "level0-routes.ts")
+				writeFileSync(
+					level0,
+					`
+import { level1Routes } from './level1-routes'
+export const level0Routes = [...level1Routes]
+`,
+				)
+
+				const routesFile = join(testDir, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { level0Routes } from './level0-routes'
+export const routes = [...level0Routes]
+`,
+				)
+
+				const result = parseVueRouterConfig(routesFile)
+
+				// Should have a warning about max depth
+				const depthWarning = result.warnings.find(
+					(w) =>
+						w.type === "general" && w.message.includes("Maximum import depth"),
+				)
+				expect(depthWarning).toBeDefined()
+				expect(depthWarning?.message).toContain("3")
+			})
+		})
+
+		describe("cache behavior", () => {
+			it("should cache imported routes and reuse them", () => {
+				const adminRoutesFile = join(testDir, "admin-routes.ts")
+				writeFileSync(
+					adminRoutesFile,
+					`
+export const adminRoutes = [
+  { path: '/admin', component: () => import('./views/Admin.vue') },
+]
+`,
+				)
+
+				const routesFile = join(testDir, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { adminRoutes } from './admin-routes'
+export const routes = [
+  ...adminRoutes,
+  ...adminRoutes,
+]
+`,
+				)
+
+				const result = parseVueRouterConfig(routesFile)
+
+				// Should have 2 routes (same route resolved twice from cache)
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("/admin")
+				expect(result.routes[1]?.path).toBe("/admin")
 			})
 		})
 	})

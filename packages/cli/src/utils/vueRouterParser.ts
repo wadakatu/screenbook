@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { parse } from "@babel/parser"
 import {
@@ -209,7 +209,14 @@ function buildImportMap(
 	return importMap
 }
 
-/** Cache for imported routes to avoid re-parsing */
+/**
+ * Cache for imported routes to avoid re-parsing.
+ *
+ * Note: This is a module-level cache that persists for the lifetime of the Node.js process.
+ * For CLI usage (single runs), this is optimal. For long-running processes (dev server, watch mode),
+ * the cache should be cleared when source files change using `clearImportedRoutesCache()`.
+ * The cache is keyed by `${filePath}:${variableName}` to handle multiple exports from the same file.
+ */
 const importedRoutesCache = new Map<string, ParsedRoute[]>()
 
 /**
@@ -248,7 +255,15 @@ function buildRouteVariableMap(
 
 /**
  * Build a map of imported route array variables to their source files.
- * Only tracks imports that look like route arrays (name contains 'route' or 'Routes').
+ *
+ * Uses a heuristic: only tracks imports whose local name contains 'route' (case-insensitive).
+ * This avoids resolving unrelated imports while catching common patterns like:
+ * - `adminRoutes`, `devRoutes`, `publicRoutes`
+ * - `routeConfig`, `routeDefinitions`
+ *
+ * **Limitation**: Route arrays with other naming conventions (e.g., `pages`, `screens`, `navigation`)
+ * will NOT be resolved automatically. Users should rename such imports to include 'route' in the name,
+ * or define the routes directly in the main routes file.
  */
 function buildRouteImportMap(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -343,7 +358,14 @@ function resolveIdentifierSpread(
 
 /**
  * Resolve conditional spread (e.g., ...(condition ? routes : []))
+ *
  * Strategy: Parse both branches and merge results.
+ * Since we perform static analysis without runtime evaluation, we cannot determine
+ * which branch will be taken at runtime. Including routes from both branches ensures
+ * comprehensive coverage for screen catalog generation.
+ *
+ * Example: `...(import.meta.env.PROD ? prodRoutes : devRoutes)` will include both
+ * prodRoutes and devRoutes in the generated catalog.
  */
 function resolveConditionalSpread(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -388,7 +410,14 @@ function resolveConditionalSpread(
 
 /**
  * Resolve logical expression spread (e.g., ...(isDev && devRoutes))
- * Strategy: Try to resolve the right operand.
+ *
+ * Strategy varies by operator:
+ * - `&&`: Resolve the right operand only (the left is typically a condition).
+ *   Example: `...(isDev && devRoutes)` - only devRoutes is resolved.
+ * - `||`: Resolve both operands (either could be used at runtime).
+ *   Example: `...(primaryRoutes || fallbackRoutes)` - both are resolved.
+ *
+ * This approach provides comprehensive coverage while handling common patterns.
  */
 function resolveLogicalSpread(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -441,6 +470,59 @@ function resolveLogicalSpread(
 }
 
 /**
+ * Get a descriptive failure reason for an unresolved spread element.
+ */
+function getSpreadFailureReason(
+	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
+	element: any,
+	context?: SpreadResolutionContext,
+): string {
+	if (!context) {
+		return "Spread resolution not available in this context"
+	}
+
+	const argument = element.argument
+	if (!argument) {
+		return "Invalid spread element (missing argument)"
+	}
+
+	// Identifier spread (e.g., ...devRoutes)
+	if (argument.type === "Identifier") {
+		const variableName = argument.name
+		const isLocalDefined = context.localRouteVariables.has(variableName)
+		const isImported = context.importedRouteVariables.has(variableName)
+
+		if (!isLocalDefined && !isImported) {
+			// Check if it looks like a route variable but wasn't tracked
+			if (!variableName.toLowerCase().includes("route")) {
+				return `Variable '${variableName}' not found. Note: Only imports with 'route' in the name are tracked for resolution.`
+			}
+			return `Variable '${variableName}' not found in local scope or imports`
+		}
+		// If it was defined but resolution still failed, it's likely a parsing issue
+		return `Failed to resolve '${variableName}' - see other warnings for details`
+	}
+
+	// Conditional expression (e.g., ...(condition ? routes : []))
+	if (argument.type === "ConditionalExpression") {
+		return "Could not resolve conditional expression - both branches failed to resolve"
+	}
+
+	// Logical expression (e.g., ...(isDev && devRoutes))
+	if (argument.type === "LogicalExpression") {
+		return `Could not resolve logical expression (${argument.operator}) - operands failed to resolve`
+	}
+
+	// Function call (e.g., ...getRoutes())
+	if (argument.type === "CallExpression") {
+		return "Function call results cannot be statically resolved"
+	}
+
+	// Other unsupported patterns
+	return `Unsupported spread pattern: ${argument.type}`
+}
+
+/**
  * Resolve a spread argument which could be an identifier, array, or expression
  */
 function resolveSpreadArgument(
@@ -480,6 +562,16 @@ function resolveSpreadArgument(
 
 /**
  * Resolve routes from an imported file.
+ *
+ * Features:
+ * - Respects `maxDepth` to prevent infinite recursion from circular imports
+ * - Results are cached by file path and variable name to avoid redundant parsing
+ * - Automatically tries common file extensions (.ts, .tsx, .js, .jsx) if path lacks extension
+ *
+ * Error handling:
+ * - Warns when file cannot be found or read
+ * - Warns when file has syntax errors
+ * - Warns when the expected export is not found in the file
  */
 function resolveImportedRoutes(
 	filePath: string,
@@ -509,16 +601,32 @@ function resolveImportedRoutes(
 	let actualPath = filePath
 
 	for (const ext of extensions) {
+		actualPath = filePath + ext
+
+		// Check if file exists before attempting to read
+		if (!existsSync(actualPath)) {
+			continue
+		}
+
 		try {
-			actualPath = filePath + ext
 			content = readFileSync(actualPath, "utf-8")
 			break
-		} catch {
-			// Try next extension
+		} catch (error) {
+			// Log unexpected read errors (permission denied, I/O errors, etc.)
+			const message = error instanceof Error ? error.message : String(error)
+			warnings.push({
+				type: "general",
+				message: `Failed to read '${actualPath}' while resolving '${variableName}': ${message}`,
+			})
+			// Continue trying other extensions
 		}
 	}
 
 	if (!content) {
+		warnings.push({
+			type: "general",
+			message: `Could not find imported routes file for '${variableName}'. Tried: ${extensions.map((ext) => `'${filePath}${ext}'`).join(", ")}`,
+		})
 		return null
 	}
 
@@ -561,8 +669,25 @@ function resolveImportedRoutes(
 			}
 		}
 
+		// Export not found in file
+		warnings.push({
+			type: "general",
+			message: `Export '${variableName}' not found in '${actualPath}'. The file was parsed successfully but the variable is not exported as an array.`,
+		})
 		return null
-	} catch {
+	} catch (error) {
+		if (error instanceof SyntaxError) {
+			warnings.push({
+				type: "general",
+				message: `Syntax error in imported routes file '${actualPath}' while resolving '${variableName}': ${error.message}`,
+			})
+		} else {
+			const message = error instanceof Error ? error.message : String(error)
+			warnings.push({
+				type: "general",
+				message: `Failed to parse imported routes file '${actualPath}' while resolving '${variableName}': ${message}`,
+			})
+		}
 		return null
 	}
 }
@@ -675,9 +800,10 @@ function parseRoutesArray(
 			// If resolution fails or no context, add unresolved warning
 			const spreadWarning = createSpreadWarning(element)
 			spreadWarning.resolved = false
-			spreadWarning.resolutionFailureReason = resolutionContext
-				? "Could not resolve the spread target"
-				: "Spread resolution not available"
+			spreadWarning.resolutionFailureReason = getSpreadFailureReason(
+				element,
+				resolutionContext,
+			)
 			warnings.push(spreadWarning)
 			continue
 		}
