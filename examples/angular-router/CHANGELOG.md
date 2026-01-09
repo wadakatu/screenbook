@@ -1,5 +1,11 @@
 # example-angular-router
 
+## 0.0.9
+
+### Patch Changes
+
+- screenbook@1.8.0
+
 ## 0.0.8
 
 ### Patch Changes

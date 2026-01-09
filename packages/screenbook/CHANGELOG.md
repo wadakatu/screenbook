@@ -1,5 +1,14 @@
 # screenbook
 
+## 1.8.0
+
+### Patch Changes
+
+- Updated dependencies [42dcedb]
+  - @screenbook/core@1.8.0
+  - @screenbook/cli@1.8.0
+  - @screenbook/ui@1.8.0
+
 ## 1.7.2
 
 ### Patch Changes
