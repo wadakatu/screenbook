@@ -301,4 +301,134 @@ describe("build command", () => {
 		expect(coverage.missing).toHaveLength(2)
 		expect(coverage.percentage).toBe(60)
 	})
+
+	it("should exclude components subdirectory from coverage calculation (issue #203)", async () => {
+		// This test reproduces issue #203:
+		// When routesPattern is "src/pages/**/*.vue", files in components/ subdirectories
+		// should be excluded from coverage calculation by default
+
+		const configFile = "screenbook-issue203.config.ts"
+		writeFileSync(
+			join(testDir, configFile),
+			`
+			export default {
+				metaPattern: "src/pages/**/screen.meta.ts",
+				routesPattern: "src/pages/**/*.vue",
+				outDir: ".screenbook",
+				ignore: ["node_modules/**"],
+			}
+		`,
+		)
+
+		// Create page directories
+		const projectsDir = join(testDir, "src/pages/PageProjects")
+		const componentsDir = join(testDir, "src/pages/PageProjects/components")
+
+		mkdirSync(projectsDir, { recursive: true })
+		mkdirSync(componentsDir, { recursive: true })
+
+		// Actual route component
+		writeFileSync(
+			join(projectsDir, "PageProjects.vue"),
+			"<template>Projects</template>",
+		)
+		writeFileSync(
+			join(projectsDir, "screen.meta.ts"),
+			`export const screen = { id: "projects", title: "Projects", route: "/projects" }`,
+		)
+
+		// Component files (NOT routes, should be excluded)
+		writeFileSync(
+			join(componentsDir, "ProjectCard.vue"),
+			"<template>Card</template>",
+		)
+		writeFileSync(
+			join(componentsDir, "EditProjectDialog.vue"),
+			"<template>Dialog</template>",
+		)
+
+		const { buildCommand } = await import("../commands/build.js")
+
+		await buildCommand.run({
+			values: { config: configFile, outDir: undefined },
+		} as Parameters<typeof buildCommand.run>[0])
+
+		const coveragePath = join(testDir, ".screenbook/coverage.json")
+		const coverage = JSON.parse(readFileSync(coveragePath, "utf-8"))
+
+		// Should only count the actual route file (PageProjects.vue)
+		// NOT the component files in components/ subdirectory
+		expect(coverage.total).toBe(1)
+		expect(coverage.covered).toBe(1)
+		expect(coverage.percentage).toBe(100)
+		expect(coverage.missing).toHaveLength(0)
+	})
+
+	it("should use custom excludePatterns from config", async () => {
+		// Test that custom excludePatterns override default patterns
+		// When excludePatterns is set, only those patterns are excluded (not DEFAULT_EXCLUDE_PATTERNS)
+
+		const configFile = "screenbook-custom-exclude.config.ts"
+		writeFileSync(
+			join(testDir, configFile),
+			`
+			export default {
+				metaPattern: "src/pages/**/screen.meta.ts",
+				routesPattern: "src/pages/**/*.vue",
+				outDir: ".screenbook",
+				ignore: ["node_modules/**"],
+				excludePatterns: ["**/internal/**"],
+			}
+		`,
+		)
+
+		// Create page directories
+		const homeDir = join(testDir, "src/pages/home")
+		const componentsDir = join(testDir, "src/pages/home/components")
+		const internalDir = join(testDir, "src/pages/home/internal")
+
+		mkdirSync(homeDir, { recursive: true })
+		mkdirSync(componentsDir, { recursive: true })
+		mkdirSync(internalDir, { recursive: true })
+
+		// Route file with screen.meta.ts
+		writeFileSync(join(homeDir, "Home.vue"), "<template>Home</template>")
+		writeFileSync(
+			join(homeDir, "screen.meta.ts"),
+			`export const screen = { id: "home", title: "Home", route: "/" }`,
+		)
+
+		// Components directory with screen.meta.ts (would be excluded by default, but not with custom pattern)
+		writeFileSync(
+			join(componentsDir, "Widget.vue"),
+			"<template>Widget</template>",
+		)
+		writeFileSync(
+			join(componentsDir, "screen.meta.ts"),
+			`export const screen = { id: "widget", title: "Widget", route: "/widget" }`,
+		)
+
+		// Internal - excluded with custom pattern
+		writeFileSync(
+			join(internalDir, "Helper.vue"),
+			"<template>Helper</template>",
+		)
+
+		const { buildCommand } = await import("../commands/build.js")
+
+		await buildCommand.run({
+			values: { config: configFile, outDir: undefined },
+		} as Parameters<typeof buildCommand.run>[0])
+
+		const coveragePath = join(testDir, ".screenbook/coverage.json")
+		const coverage = JSON.parse(readFileSync(coveragePath, "utf-8"))
+
+		// With custom excludePatterns: ["**/internal/**"]
+		// - Home.vue: counted (route)
+		// - Widget.vue: counted (components/ not excluded by custom pattern)
+		// - Helper.vue: NOT counted (excluded by custom pattern)
+		expect(coverage.total).toBe(2)
+		expect(coverage.covered).toBe(2) // Both dirs have screen.meta.ts
+		expect(coverage.percentage).toBe(100)
+	})
 })

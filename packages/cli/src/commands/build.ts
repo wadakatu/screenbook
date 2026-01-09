@@ -6,6 +6,10 @@ import { createJiti } from "jiti"
 import { glob } from "tinyglobby"
 import { loadConfig } from "../utils/config.js"
 import {
+	DEFAULT_EXCLUDE_PATTERNS,
+	matchesExcludePattern,
+} from "../utils/constants.js"
+import {
 	detectCycles,
 	formatCycleWarnings,
 	getCycleSummary,
@@ -173,7 +177,12 @@ export const buildCommand = define({
 })
 
 async function generateCoverageData(
-	config: { routesPattern?: string; metaPattern: string; ignore: string[] },
+	config: {
+		routesPattern?: string
+		metaPattern: string
+		ignore: string[]
+		excludePatterns?: string[]
+	},
 	cwd: string,
 	screens: Array<Screen & { filePath?: string }>,
 ): Promise<CoverageData> {
@@ -184,6 +193,13 @@ async function generateCoverageData(
 			cwd,
 			ignore: config.ignore,
 		})
+
+		// Apply exclude patterns (consistent with lint command)
+		// This filters out component directories like "components/", "hooks/", etc.
+		const excludePatterns = config.excludePatterns ?? DEFAULT_EXCLUDE_PATTERNS
+		routeFiles = routeFiles.filter(
+			(file) => !matchesExcludePattern(file, excludePatterns),
+		)
 	}
 
 	// Build a set of directories that have screen.meta.ts
