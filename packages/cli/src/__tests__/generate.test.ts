@@ -706,6 +706,163 @@ export const routes = [
 			// Should use "/admin" from Vue Router config, not "/PageAdmin" from directory name
 			expect(content).toContain('route: "/admin"')
 			expect(content).not.toContain('route: "/PageAdmin"')
+			// ID should also be derived from Vue Router route name or path
+			expect(content).toContain('id: "admin"')
+			expect(content).not.toContain('id: "PageAdmin"')
+		})
+
+		it("should match routes when component is in deeply nested subdirectory", async () => {
+			// Create Vue Router config file
+			const routerDir = join(testDir, "src/router")
+			const pagesDir = join(testDir, "src/pages/PageSettings")
+			const deepDir = join(
+				testDir,
+				"src/pages/PageSettings/components/sections",
+			)
+			mkdirSync(routerDir, { recursive: true })
+			mkdirSync(deepDir, { recursive: true })
+
+			// Vue Router config with component in deeply nested subdirectory
+			writeFileSync(
+				join(routerDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: "/settings",
+    name: "settings",
+    component: () => import("../pages/PageSettings/components/sections/SettingsLayout.vue"),
+  },
+]
+`,
+			)
+
+			// Create the Vue component in deeply nested subdirectory
+			writeFileSync(
+				join(deepDir, "SettingsLayout.vue"),
+				"<template><div>Settings Layout</div></template>",
+			)
+
+			// Create the page index file
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Settings Page</div></template>",
+			)
+
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/index.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			const metaPath = join(pagesDir, "screen.meta.ts")
+			expect(existsSync(metaPath)).toBe(true)
+
+			const content = readFileSync(metaPath, "utf-8")
+			// Should use "/settings" from Vue Router config
+			expect(content).toContain('route: "/settings"')
+			expect(content).not.toContain('route: "/PageSettings"')
+			expect(content).toContain('id: "settings"')
+		})
+
+		it("should handle multiple page directories with subdirectory components", async () => {
+			// Create Vue Router config file
+			const routerDir = join(testDir, "src/router")
+			const usersDir = join(testDir, "src/pages/PageUsers")
+			const usersComponentsDir = join(testDir, "src/pages/PageUsers/components")
+			const productsDir = join(testDir, "src/pages/PageProducts")
+			const productsViewsDir = join(testDir, "src/pages/PageProducts/views")
+			mkdirSync(routerDir, { recursive: true })
+			mkdirSync(usersComponentsDir, { recursive: true })
+			mkdirSync(productsViewsDir, { recursive: true })
+
+			// Vue Router config with multiple routes pointing to subdirectory components
+			writeFileSync(
+				join(routerDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: "/users",
+    name: "users",
+    component: () => import("../pages/PageUsers/components/UserList.vue"),
+  },
+  {
+    path: "/products",
+    name: "products",
+    component: () => import("../pages/PageProducts/views/ProductGrid.vue"),
+  },
+]
+`,
+			)
+
+			// Create components in subdirectories
+			writeFileSync(
+				join(usersComponentsDir, "UserList.vue"),
+				"<template><div>User List</div></template>",
+			)
+			writeFileSync(
+				join(productsViewsDir, "ProductGrid.vue"),
+				"<template><div>Product Grid</div></template>",
+			)
+
+			// Create page index files
+			writeFileSync(
+				join(usersDir, "index.vue"),
+				"<template><div>Users Page</div></template>",
+			)
+			writeFileSync(
+				join(productsDir, "index.vue"),
+				"<template><div>Products Page</div></template>",
+			)
+
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/index.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check users page
+			const usersMetaPath = join(usersDir, "screen.meta.ts")
+			expect(existsSync(usersMetaPath)).toBe(true)
+			const usersContent = readFileSync(usersMetaPath, "utf-8")
+			expect(usersContent).toContain('route: "/users"')
+			expect(usersContent).toContain('id: "users"')
+
+			// Check products page
+			const productsMetaPath = join(productsDir, "screen.meta.ts")
+			expect(existsSync(productsMetaPath)).toBe(true)
+			const productsContent = readFileSync(productsMetaPath, "utf-8")
+			expect(productsContent).toContain('route: "/products"')
+			expect(productsContent).toContain('id: "products"')
 		})
 
 		it("should fall back to path-based inference when Vue Router config not found", async () => {

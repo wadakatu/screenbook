@@ -128,16 +128,15 @@ function findMatchingRoute(
 
 	// Try to find a component in a subdirectory of the route directory
 	// This handles cases where components are in subdirectories (e.g., components/, views/)
+	const normalizedRouteDir = routeDir.replace(/\\/g, "/")
 	for (const [, route] of routeComponentMap) {
 		if (route.componentPath) {
-			// Convert absolute componentPath to relative path for comparison
 			const relativeComponentPath = relative(cwd, route.componentPath)
-			const componentDir = dirname(relativeComponentPath)
-			// Normalize paths for cross-platform comparison
-			const normalizedRouteDir = routeDir.replace(/\\/g, "/")
-			const normalizedComponentDir = componentDir.replace(/\\/g, "/")
+			const normalizedComponentDir = dirname(relativeComponentPath).replace(
+				/\\/g,
+				"/",
+			)
 
-			// Check if component is in a subdirectory of the route directory
 			if (normalizedComponentDir.startsWith(`${normalizedRouteDir}/`)) {
 				return route
 			}
