@@ -39,6 +39,30 @@ export interface FlatRoute {
 	screenTitle: string
 	/** Nesting depth */
 	depth: number
+	/** Suggestions for alternative IDs (when unmappedParameterStrategy is "warn") */
+	suggestions?: string[]
+}
+
+/**
+ * Options for screen ID generation from route paths
+ */
+export interface PathToScreenIdOptions {
+	/** Enable smart parameter inference for screen IDs */
+	smartParameterNaming?: boolean
+	/** Custom parameter mappings (e.g., { ":id": "detail" }) */
+	parameterMapping?: Record<string, string>
+	/** Strategy for unmapped parameters: "preserve" | "detail" | "warn" */
+	unmappedParameterStrategy?: "preserve" | "detail" | "warn"
+}
+
+/**
+ * Result of screen ID generation
+ */
+export interface PathToScreenIdResult {
+	/** The generated screen ID */
+	screenId: string
+	/** Suggestions for alternative IDs (when strategy is "warn") */
+	suggestions?: string[]
 }
 
 /**
@@ -102,6 +126,7 @@ export function flattenRoutes(
 	routes: ParsedRoute[],
 	parentPath = "",
 	depth = 0,
+	options: PathToScreenIdOptions = {},
 ): FlatRoute[] {
 	const result: FlatRoute[] = []
 
@@ -134,19 +159,23 @@ export function flattenRoutes(
 
 		// Only add routes with components (skip abstract parent routes)
 		if (route.component || !route.children) {
+			const { screenId, suggestions } = pathToScreenId(fullPath, options)
 			result.push({
 				fullPath,
 				name: route.name,
 				componentPath: route.component,
-				screenId: pathToScreenId(fullPath),
+				screenId,
 				screenTitle: pathToScreenTitle(fullPath),
 				depth,
+				suggestions,
 			})
 		}
 
 		// Process children
 		if (route.children) {
-			result.push(...flattenRoutes(route.children, fullPath, depth + 1))
+			result.push(
+				...flattenRoutes(route.children, fullPath, depth + 1, options),
+			)
 		}
 	}
 
@@ -154,34 +183,162 @@ export function flattenRoutes(
 }
 
 /**
- * Convert route path to screen ID
- * /user/:id/profile -> user.id.profile
+ * Action segments that provide semantic context.
+ * When a parameter is followed by one of these, the parameter is preserved.
  */
-export function pathToScreenId(path: string): string {
-	if (path === "/" || path === "") {
-		return "home"
+const ACTION_SEGMENTS = new Set([
+	"edit",
+	"new",
+	"create",
+	"delete",
+	"settings",
+	"view",
+	"update",
+])
+
+/**
+ * Check if a segment is an action segment
+ */
+function isActionSegment(segment: string | undefined): boolean {
+	return segment !== undefined && ACTION_SEGMENTS.has(segment.toLowerCase())
+}
+
+/**
+ * Infer semantic alternatives for a parameter
+ */
+function inferSemanticAlternatives(param: string, isLast: boolean): string[] {
+	const alternatives: string[] = []
+
+	if (isLast) {
+		alternatives.push("detail", "view")
 	}
 
-	return path
+	// Extract entity name from :xxxId pattern
+	const entityMatch = param.match(/^:(\w+)Id$/i)
+	if (entityMatch?.[1]) {
+		alternatives.push(entityMatch[1].toLowerCase())
+	}
+
+	return alternatives
+}
+
+/**
+ * Resolve a parameter segment to a screen ID segment
+ */
+function resolveParameter(
+	segment: string,
+	isLastSegment: boolean,
+	nextSegment: string | undefined,
+	options: PathToScreenIdOptions,
+): { resolved: string; suggestion?: string } {
+	// 1. Check custom mapping first (highest priority)
+	if (options.parameterMapping?.[segment]) {
+		return { resolved: options.parameterMapping[segment] }
+	}
+
+	// 2. Apply smart defaults if enabled
+	if (options.smartParameterNaming) {
+		// Generic :id at path end -> "detail"
+		if (segment === ":id" && isLastSegment) {
+			return { resolved: "detail" }
+		}
+
+		// :xxxId pattern at path end -> extract entity name
+		const entityMatch = segment.match(/^:(\w+)Id$/i)
+		if (entityMatch?.[1] && isLastSegment) {
+			return { resolved: entityMatch[1].toLowerCase() }
+		}
+
+		// Parameter followed by action segment -> preserve for context
+		if (!isLastSegment && isActionSegment(nextSegment)) {
+			return { resolved: segment.slice(1) }
+		}
+
+		// Generic :id not at end with smart naming -> "detail" only if truly last meaningful segment
+		if (segment === ":id" && !isActionSegment(nextSegment)) {
+			return { resolved: "detail" }
+		}
+	}
+
+	// 3. Handle based on unmapped strategy
+	const cleanParam = segment.slice(1)
+
+	switch (options.unmappedParameterStrategy) {
+		case "detail":
+			return { resolved: "detail" }
+		case "warn": {
+			const alternatives = inferSemanticAlternatives(segment, isLastSegment)
+			return {
+				resolved: cleanParam,
+				suggestion:
+					alternatives.length > 0
+						? `Consider renaming to: ${alternatives.join(", ")}`
+						: undefined,
+			}
+		}
+		default:
+			// "preserve" or undefined - keep the parameter name as-is
+			return { resolved: cleanParam }
+	}
+}
+
+/**
+ * Convert route path to screen ID with options
+ * /user/:id/profile -> user.id.profile (default)
+ * /user/:id/profile -> user.detail.profile (with smartParameterNaming)
+ */
+export function pathToScreenId(
+	path: string,
+	options: PathToScreenIdOptions = {},
+): PathToScreenIdResult {
+	if (path === "/" || path === "") {
+		return { screenId: "home" }
+	}
+
+	const segments = path
 		.replace(/^\//, "") // Remove leading slash
 		.replace(/\/$/, "") // Remove trailing slash
 		.split("/")
-		.map((segment) => {
-			// Convert :param to param
-			if (segment.startsWith(":")) {
-				return segment.slice(1)
+
+	const resolvedSegments: string[] = []
+	const allSuggestions: string[] = []
+
+	for (let i = 0; i < segments.length; i++) {
+		const segment = segments[i]
+		if (!segment) continue
+
+		const isLast = i === segments.length - 1
+		const nextSegment = segments[i + 1]
+
+		if (segment.startsWith(":")) {
+			// Parameter segment
+			const { resolved, suggestion } = resolveParameter(
+				segment,
+				isLast,
+				nextSegment,
+				options,
+			)
+			resolvedSegments.push(resolved)
+			if (suggestion) {
+				allSuggestions.push(suggestion)
 			}
-			// Convert *catchall or ** to catchall
-			if (segment.startsWith("*")) {
-				// Handle ** (Angular) as catchall
-				if (segment === "**") {
-					return "catchall"
-				}
-				return segment.slice(1) || "catchall"
+		} else if (segment.startsWith("*")) {
+			// Catchall segment
+			if (segment === "**") {
+				resolvedSegments.push("catchall")
+			} else {
+				resolvedSegments.push(segment.slice(1) || "catchall")
 			}
-			return segment
-		})
-		.join(".")
+		} else {
+			// Static segment
+			resolvedSegments.push(segment)
+		}
+	}
+
+	return {
+		screenId: resolvedSegments.join("."),
+		suggestions: allSuggestions.length > 0 ? allSuggestions : undefined,
+	}
 }
 
 /**
