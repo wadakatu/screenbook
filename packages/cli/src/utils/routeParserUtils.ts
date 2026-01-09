@@ -72,6 +72,26 @@ export interface SpreadWarning {
 	line?: number
 	/** Variable name for spread operators (e.g., 'devRoutes' from '...devRoutes') */
 	variableName?: string
+	/** Whether the spread was successfully resolved */
+	resolved?: boolean
+	/** Reason why resolution failed (if applicable) */
+	resolutionFailureReason?: string
+}
+
+/**
+ * Context for spread resolution during route parsing
+ */
+export interface SpreadResolutionContext {
+	/** Map of local variable names to their route array AST nodes */
+	localRouteVariables: Map<string, unknown>
+	/** Map of imported variable names to their resolved file paths */
+	importedRouteVariables: Map<string, string>
+	/** Base directory for resolving imports */
+	baseDir: string
+	/** Maximum depth for recursive file resolution (default: 3) */
+	maxDepth: number
+	/** Current recursion depth */
+	currentDepth: number
 }
 
 /**
