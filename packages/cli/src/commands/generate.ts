@@ -100,6 +100,7 @@ function buildRouteComponentMap(
 function findMatchingRoute(
 	routeFile: string,
 	routeComponentMap: Map<string, FlatRoute>,
+	cwd: string,
 ): FlatRoute | null {
 	const routeDir = dirname(routeFile)
 	const routeDirName = basename(routeDir)
@@ -120,6 +121,24 @@ function findMatchingRoute(
 			const componentDir = dirname(route.componentPath)
 			const componentDirName = basename(componentDir)
 			if (componentDirName === routeDirName) {
+				return route
+			}
+		}
+	}
+
+	// Try to find a component in a subdirectory of the route directory
+	// This handles cases where components are in subdirectories (e.g., components/, views/)
+	for (const [, route] of routeComponentMap) {
+		if (route.componentPath) {
+			// Convert absolute componentPath to relative path for comparison
+			const relativeComponentPath = relative(cwd, route.componentPath)
+			const componentDir = dirname(relativeComponentPath)
+			// Normalize paths for cross-platform comparison
+			const normalizedRouteDir = routeDir.replace(/\\/g, "/")
+			const normalizedComponentDir = componentDir.replace(/\\/g, "/")
+
+			// Check if component is in a subdirectory of the route directory
+			if (normalizedComponentDir.startsWith(`${normalizedRouteDir}/`)) {
 				return route
 			}
 		}
@@ -634,7 +653,7 @@ export async function generateFromRoutesPattern(
 		// Try to find matching route from Vue Router config first
 		let screenMeta: InferredScreenMeta
 		const matchedRoute = routeComponentMap
-			? findMatchingRoute(routeFile, routeComponentMap)
+			? findMatchingRoute(routeFile, routeComponentMap, cwd)
 			: null
 
 		if (matchedRoute) {

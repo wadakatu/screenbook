@@ -41,4 +41,12 @@ export const routes: RouteRecordRaw[] = [
 		name: "admin-dashboard",
 		component: () => import("../views/AdminDashboard/index.vue"),
 	},
+	// Issue #201: Component in subdirectory
+	// The route references a component in a subdirectory (components/AdminLayout.vue)
+	// The generated screen.meta.ts should use "/admin" from config, not "/PageAdmin" from directory
+	{
+		path: "/admin",
+		name: "admin",
+		component: () => import("../views/PageAdmin/components/AdminLayout.vue"),
+	},
 ]

@@ -643,6 +643,71 @@ export const routes = [
 			expect(content).not.toContain('route: "/PageProjects"')
 		})
 
+		it("should match routes when component is in subdirectory of page directory", async () => {
+			// Create Vue Router config file
+			const routerDir = join(testDir, "src/router")
+			const pagesDir = join(testDir, "src/pages/PageAdmin")
+			const componentsDir = join(testDir, "src/pages/PageAdmin/components")
+			mkdirSync(routerDir, { recursive: true })
+			mkdirSync(componentsDir, { recursive: true })
+
+			// Vue Router config with component in subdirectory
+			writeFileSync(
+				join(routerDir, "routes.ts"),
+				`
+export const routes = [
+  {
+    path: "/admin",
+    component: () => import("../pages/PageAdmin/components/AdminLayout.vue"),
+  },
+]
+`,
+			)
+
+			// Create the Vue component in subdirectory
+			writeFileSync(
+				join(componentsDir, "AdminLayout.vue"),
+				"<template><div>Admin Layout</div></template>",
+			)
+
+			// Create the page index file (this is what routesPattern scans)
+			writeFileSync(
+				join(pagesDir, "index.vue"),
+				"<template><div>Admin Page</div></template>",
+			)
+
+			// Config using routesPattern with ignore for components
+			writeFileSync(
+				join(testDir, "screenbook.config.ts"),
+				`export default {
+  outDir: ".screenbook",
+  metaPattern: "src/**/screen.meta.ts",
+  routesPattern: "src/pages/**/index.vue",
+  ignore: [],
+}`,
+			)
+
+			const { generateCommand } = await import("../commands/generate.js")
+
+			await generateCommand.run({
+				values: {
+					config: undefined,
+					dryRun: false,
+					force: false,
+					interactive: false,
+				},
+			} as Parameters<typeof generateCommand.run>[0])
+
+			// Check that screen.meta.ts was created with correct route from Vue Router
+			const metaPath = join(pagesDir, "screen.meta.ts")
+			expect(existsSync(metaPath)).toBe(true)
+
+			const content = readFileSync(metaPath, "utf-8")
+			// Should use "/admin" from Vue Router config, not "/PageAdmin" from directory name
+			expect(content).toContain('route: "/admin"')
+			expect(content).not.toContain('route: "/PageAdmin"')
+		})
+
 		it("should fall back to path-based inference when Vue Router config not found", async () => {
 			// Create only the page file, no router config
 			const pagesDir = join(testDir, "src/pages/dashboard")
