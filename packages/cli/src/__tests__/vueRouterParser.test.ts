@@ -439,25 +439,25 @@ export const routes = [
 
 	describe("pathToScreenId", () => {
 		it("should convert root path to home", () => {
-			expect(pathToScreenId("/")).toBe("home")
-			expect(pathToScreenId("")).toBe("home")
+			expect(pathToScreenId("/").screenId).toBe("home")
+			expect(pathToScreenId("").screenId).toBe("home")
 		})
 
 		it("should convert simple paths", () => {
-			expect(pathToScreenId("/users")).toBe("users")
-			expect(pathToScreenId("/admin/settings")).toBe("admin.settings")
+			expect(pathToScreenId("/users").screenId).toBe("users")
+			expect(pathToScreenId("/admin/settings").screenId).toBe("admin.settings")
 		})
 
 		it("should convert dynamic segments", () => {
-			expect(pathToScreenId("/user/:id")).toBe("user.id")
-			expect(pathToScreenId("/posts/:postId/comments/:commentId")).toBe(
-				"posts.postId.comments.commentId",
-			)
+			expect(pathToScreenId("/user/:id").screenId).toBe("user.id")
+			expect(
+				pathToScreenId("/posts/:postId/comments/:commentId").screenId,
+			).toBe("posts.postId.comments.commentId")
 		})
 
 		it("should handle catchall segments", () => {
-			expect(pathToScreenId("/docs/*path")).toBe("docs.path")
-			expect(pathToScreenId("/files/*")).toBe("files.catchall")
+			expect(pathToScreenId("/docs/*path").screenId).toBe("docs.path")
+			expect(pathToScreenId("/files/*").screenId).toBe("files.catchall")
 		})
 	})
 
