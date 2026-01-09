@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { configSchema, screenSchema } from "../types.js"
+import {
+	configSchema,
+	generateConfigSchema,
+	lintConfigSchema,
+	screenSchema,
+} from "../types.js"
 
 describe("screenSchema", () => {
 	it("should validate minimal screen", () => {
@@ -161,5 +166,102 @@ describe("configSchema", () => {
 		})
 
 		expect(result.ignore).toEqual(["**/test/**", "**/fixtures/**"])
+	})
+})
+
+describe("lintConfigSchema", () => {
+	it("should provide default values", () => {
+		const result = lintConfigSchema.parse({})
+
+		expect(result.orphans).toBe("warn")
+		expect(result.spreadOperator).toBe("warn")
+	})
+
+	it("should accept valid orphans values", () => {
+		expect(lintConfigSchema.parse({ orphans: "warn" }).orphans).toBe("warn")
+		expect(lintConfigSchema.parse({ orphans: "off" }).orphans).toBe("off")
+		expect(lintConfigSchema.parse({ orphans: "error" }).orphans).toBe("error")
+	})
+
+	it("should accept valid spreadOperator values", () => {
+		expect(
+			lintConfigSchema.parse({ spreadOperator: "warn" }).spreadOperator,
+		).toBe("warn")
+		expect(
+			lintConfigSchema.parse({ spreadOperator: "off" }).spreadOperator,
+		).toBe("off")
+		expect(
+			lintConfigSchema.parse({ spreadOperator: "error" }).spreadOperator,
+		).toBe("error")
+	})
+
+	it("should reject invalid orphans values", () => {
+		const result = lintConfigSchema.safeParse({ orphans: "invalid" })
+		expect(result.success).toBe(false)
+	})
+
+	it("should reject invalid spreadOperator values", () => {
+		const result = lintConfigSchema.safeParse({ spreadOperator: "invalid" })
+		expect(result.success).toBe(false)
+	})
+})
+
+describe("generateConfigSchema", () => {
+	it("should provide default values", () => {
+		const result = generateConfigSchema.parse({})
+
+		expect(result.smartParameterNaming).toBe(false)
+		expect(result.unmappedParameterStrategy).toBe("preserve")
+	})
+
+	it("should accept valid smartParameterNaming boolean", () => {
+		expect(
+			generateConfigSchema.parse({ smartParameterNaming: true })
+				.smartParameterNaming,
+		).toBe(true)
+		expect(
+			generateConfigSchema.parse({ smartParameterNaming: false })
+				.smartParameterNaming,
+		).toBe(false)
+	})
+
+	it("should accept valid parameterMapping object", () => {
+		const result = generateConfigSchema.parse({
+			parameterMapping: { ":id": "detail", ":userId": "user" },
+		})
+
+		expect(result.parameterMapping).toEqual({
+			":id": "detail",
+			":userId": "user",
+		})
+	})
+
+	it("should accept valid unmappedParameterStrategy values", () => {
+		expect(
+			generateConfigSchema.parse({ unmappedParameterStrategy: "preserve" })
+				.unmappedParameterStrategy,
+		).toBe("preserve")
+		expect(
+			generateConfigSchema.parse({ unmappedParameterStrategy: "detail" })
+				.unmappedParameterStrategy,
+		).toBe("detail")
+		expect(
+			generateConfigSchema.parse({ unmappedParameterStrategy: "warn" })
+				.unmappedParameterStrategy,
+		).toBe("warn")
+	})
+
+	it("should reject invalid unmappedParameterStrategy values", () => {
+		const result = generateConfigSchema.safeParse({
+			unmappedParameterStrategy: "invalid",
+		})
+		expect(result.success).toBe(false)
+	})
+
+	it("should reject non-boolean smartParameterNaming", () => {
+		const result = generateConfigSchema.safeParse({
+			smartParameterNaming: "true",
+		})
+		expect(result.success).toBe(false)
 	})
 })

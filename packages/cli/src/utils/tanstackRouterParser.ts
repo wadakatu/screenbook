@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs"
 import { dirname, resolve } from "node:path"
 import { parse } from "@babel/parser"
 import {
+	createSpreadWarning,
 	type ParsedRoute,
 	type ParseResult,
 	type ParseWarning,
@@ -504,18 +505,7 @@ function processAddChildrenExpression(
 				}
 				// Spread operator
 				else if (element.type === "SpreadElement") {
-					const line = element.loc?.start.line
-					const variableName =
-						element.argument?.type === "Identifier"
-							? element.argument.name
-							: undefined
-
-					warnings.push({
-						type: "spread",
-						message: `Spread operator detected${line ? ` at line ${line}` : ""}`,
-						line,
-						variableName,
-					})
+					warnings.push(createSpreadWarning(element))
 				}
 			}
 

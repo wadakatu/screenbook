@@ -542,11 +542,11 @@ export interface GenerateConfig {
 
 	/**
 	 * Custom parameter mappings for screen ID generation.
-	 * Maps route parameter names to semantic screen ID segments.
+	 * Maps route parameter names (must start with `:`) to semantic screen ID segments.
 	 * Takes precedence over smart defaults when both are enabled.
 	 * @example { ":id": "detail", ":userId": "user", ":postId": "post" }
 	 */
-	parameterMapping?: Record<string, string>
+	parameterMapping?: Record<`:${string}`, string>
 
 	/**
 	 * Strategy for handling parameters not covered by mappings or smart defaults.

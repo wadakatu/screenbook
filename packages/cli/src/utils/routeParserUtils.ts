@@ -1,4 +1,5 @@
 import { resolve } from "node:path"
+import type { GenerateConfig } from "@screenbook/core"
 
 /**
  * Supported router types for auto-detection.
@@ -44,16 +45,10 @@ export interface FlatRoute {
 }
 
 /**
- * Options for screen ID generation from route paths
+ * Options for screen ID generation from route paths.
+ * Alias for GenerateConfig from @screenbook/core.
  */
-export interface PathToScreenIdOptions {
-	/** Enable smart parameter inference for screen IDs */
-	smartParameterNaming?: boolean
-	/** Custom parameter mappings (e.g., { ":id": "detail" }) */
-	parameterMapping?: Record<string, string>
-	/** Strategy for unmapped parameters: "preserve" | "detail" | "warn" */
-	unmappedParameterStrategy?: "preserve" | "detail" | "warn"
-}
+export type PathToScreenIdOptions = GenerateConfig
 
 /**
  * Result of screen ID generation
@@ -64,11 +59,6 @@ export interface PathToScreenIdResult {
 	/** Suggestions for alternative IDs (when strategy is "warn") */
 	suggestions?: string[]
 }
-
-/**
- * Warning type for parser warnings
- */
-export type ParseWarningType = "spread" | "general"
 
 /**
  * Spread operator warning with optional variable name context
@@ -102,11 +92,38 @@ export interface GeneralWarning {
 export type ParseWarning = SpreadWarning | GeneralWarning
 
 /**
+ * Warning type for parser warnings (derived from ParseWarning union)
+ */
+export type ParseWarningType = ParseWarning["type"]
+
+/**
  * Result of parsing a router config file
  */
 export interface ParseResult {
 	routes: ParsedRoute[]
 	warnings: ParseWarning[]
+}
+
+/**
+ * Create a spread warning from an AST element.
+ * Extracts line number and variable name for better error messages.
+ * @param element - AST element (SpreadElement)
+ * @returns SpreadWarning object
+ */
+export function createSpreadWarning(
+	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
+	element: any,
+): SpreadWarning {
+	const line = element.loc?.start.line
+	const variableName =
+		element.argument?.type === "Identifier" ? element.argument.name : undefined
+
+	return {
+		type: "spread",
+		message: `Spread operator detected${line ? ` at line ${line}` : ""}`,
+		line,
+		variableName,
+	}
 }
 
 /**
