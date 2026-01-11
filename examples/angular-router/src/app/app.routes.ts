@@ -21,9 +21,7 @@ const devRoutes = [
 	{
 		path: "dev/debug",
 		loadComponent: () =>
-			import("./pages/dev/debug/debug.component").then(
-				(m) => m.DebugComponent,
-			),
+			import("./pages/dev/debug/debug.component").then((m) => m.DebugComponent),
 	},
 ]
 
@@ -52,5 +50,6 @@ export const routes: Routes = [
 	},
 	// Spread operator examples
 	...adminRoutes,
+	// biome-ignore lint/correctness/noConstantCondition: Intentional demonstration of conditional spread
 	...(true ? devRoutes : []),
 ]
