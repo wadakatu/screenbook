@@ -708,6 +708,7 @@ function buildRouteImportMap(
 
 /**
  * Attempt to resolve a spread element to its route definitions.
+ * Delegates to resolveSpreadArgument after extracting the spread argument.
  */
 function resolveSpreadElement(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -715,25 +716,7 @@ function resolveSpreadElement(
 	context: SpreadResolutionContext,
 	warnings: ParseWarning[],
 ): ParsedRoute[] | null {
-	const argument = element.argument
-
-	// Case 1: Simple identifier (e.g., ...devRoutes)
-	if (argument.type === "Identifier") {
-		return resolveIdentifierSpread(argument.name, context, warnings)
-	}
-
-	// Case 2: Conditional expression (e.g., ...(condition ? routes : []))
-	if (argument.type === "ConditionalExpression") {
-		return resolveConditionalSpread(argument, context, warnings)
-	}
-
-	// Case 3: Logical expression (e.g., ...(isDev && devRoutes))
-	if (argument.type === "LogicalExpression") {
-		return resolveLogicalSpread(argument, context, warnings)
-	}
-
-	// Unresolvable pattern
-	return null
+	return resolveSpreadArgument(element.argument, context, warnings)
 }
 
 /**
@@ -760,6 +743,30 @@ function resolveIdentifierSpread(
 }
 
 /**
+ * Collect routes from multiple AST nodes, merging results.
+ * Returns null only if no nodes could be resolved.
+ */
+function collectRoutesFromNodes(
+	nodes: unknown[],
+	context: SpreadResolutionContext,
+	warnings: ParseWarning[],
+): ParsedRoute[] | null {
+	const routes: ParsedRoute[] = []
+	let resolved = false
+
+	for (const node of nodes) {
+		if (!node) continue
+		const nodeRoutes = resolveSpreadArgument(node, context, warnings)
+		if (nodeRoutes) {
+			routes.push(...nodeRoutes)
+			resolved = true
+		}
+	}
+
+	return resolved ? routes : null
+}
+
+/**
  * Resolve conditional spread (e.g., ...(condition ? routes : []))
  *
  * Strategy: Parse both branches and merge results.
@@ -776,36 +783,11 @@ function resolveConditionalSpread(
 	context: SpreadResolutionContext,
 	warnings: ParseWarning[],
 ): ParsedRoute[] | null {
-	const routes: ParsedRoute[] = []
-	let resolved = false
-
-	// Try consequent (true branch)
-	if (conditionalExpr.consequent) {
-		const consequentRoutes = resolveSpreadArgument(
-			conditionalExpr.consequent,
-			context,
-			warnings,
-		)
-		if (consequentRoutes) {
-			routes.push(...consequentRoutes)
-			resolved = true
-		}
-	}
-
-	// Try alternate (false branch) - usually empty array
-	if (conditionalExpr.alternate) {
-		const alternateRoutes = resolveSpreadArgument(
-			conditionalExpr.alternate,
-			context,
-			warnings,
-		)
-		if (alternateRoutes) {
-			routes.push(...alternateRoutes)
-			resolved = true
-		}
-	}
-
-	return resolved ? routes : null
+	return collectRoutesFromNodes(
+		[conditionalExpr.consequent, conditionalExpr.alternate],
+		context,
+		warnings,
+	)
 }
 
 /**
@@ -825,40 +807,22 @@ function resolveLogicalSpread(
 	context: SpreadResolutionContext,
 	warnings: ParseWarning[],
 ): ParsedRoute[] | null {
-	// For && operator, try to resolve the right operand
-	if (logicalExpr.operator === "&&") {
-		return resolveSpreadArgument(logicalExpr.right, context, warnings)
+	switch (logicalExpr.operator) {
+		case "&&":
+			// For &&, only the right operand contains routes (left is the condition)
+			return resolveSpreadArgument(logicalExpr.right, context, warnings)
+
+		case "||":
+			// For ||, either operand could be used at runtime
+			return collectRoutesFromNodes(
+				[logicalExpr.left, logicalExpr.right],
+				context,
+				warnings,
+			)
+
+		default:
+			return null
 	}
-
-	// For || operator, try both operands
-	if (logicalExpr.operator === "||") {
-		const routes: ParsedRoute[] = []
-		let resolved = false
-
-		const leftRoutes = resolveSpreadArgument(
-			logicalExpr.left,
-			context,
-			warnings,
-		)
-		if (leftRoutes) {
-			routes.push(...leftRoutes)
-			resolved = true
-		}
-
-		const rightRoutes = resolveSpreadArgument(
-			logicalExpr.right,
-			context,
-			warnings,
-		)
-		if (rightRoutes) {
-			routes.push(...rightRoutes)
-			resolved = true
-		}
-
-		return resolved ? routes : null
-	}
-
-	return null
 }
 
 /**
@@ -870,32 +834,25 @@ function resolveSpreadArgument(
 	context: SpreadResolutionContext,
 	warnings: ParseWarning[],
 ): ParsedRoute[] | null {
-	// Empty array: []
-	if (node.type === "ArrayExpression" && node.elements.length === 0) {
-		return []
-	}
+	switch (node.type) {
+		case "ArrayExpression":
+			// Empty array returns empty, otherwise parse routes
+			return node.elements.length === 0
+				? []
+				: parseRoutesArray(node, context.baseDir, warnings, context)
 
-	// Array with routes
-	if (node.type === "ArrayExpression") {
-		return parseRoutesArray(node, context.baseDir, warnings, context)
-	}
+		case "Identifier":
+			return resolveIdentifierSpread(node.name, context, warnings)
 
-	// Identifier reference
-	if (node.type === "Identifier") {
-		return resolveIdentifierSpread(node.name, context, warnings)
-	}
+		case "ConditionalExpression":
+			return resolveConditionalSpread(node, context, warnings)
 
-	// Nested conditional
-	if (node.type === "ConditionalExpression") {
-		return resolveConditionalSpread(node, context, warnings)
-	}
+		case "LogicalExpression":
+			return resolveLogicalSpread(node, context, warnings)
 
-	// Nested logical
-	if (node.type === "LogicalExpression") {
-		return resolveLogicalSpread(node, context, warnings)
+		default:
+			return null
 	}
-
-	return null
 }
 
 /**
@@ -915,40 +872,35 @@ function getSpreadFailureReason(
 		return "Invalid spread element (missing argument)"
 	}
 
-	// Identifier spread (e.g., ...devRoutes)
-	if (argument.type === "Identifier") {
-		const variableName = argument.name
-		const isLocalDefined = context.localRouteVariables.has(variableName)
-		const isImported = context.importedRouteVariables.has(variableName)
+	switch (argument.type) {
+		case "Identifier": {
+			const variableName = argument.name
+			const isLocalDefined = context.localRouteVariables.has(variableName)
+			const isImported = context.importedRouteVariables.has(variableName)
 
-		if (!isLocalDefined && !isImported) {
-			// Check if it looks like a route variable but wasn't tracked
-			if (!variableName.toLowerCase().includes("route")) {
-				return `Variable '${variableName}' not found. Note: Only imports with 'route' in the name are tracked for resolution.`
+			if (!isLocalDefined && !isImported) {
+				// Hint about naming heuristic if variable doesn't contain 'route'
+				if (!variableName.toLowerCase().includes("route")) {
+					return `Variable '${variableName}' not found. Note: Only imports with 'route' in the name are tracked for resolution.`
+				}
+				return `Variable '${variableName}' not found in local scope or imports`
 			}
-			return `Variable '${variableName}' not found in local scope or imports`
+			// Variable was found but resolution still failed
+			return `Failed to resolve '${variableName}' - see other warnings for details`
 		}
-		// If it was defined but resolution still failed, it's likely a parsing issue
-		return `Failed to resolve '${variableName}' - see other warnings for details`
-	}
 
-	// Conditional expression (e.g., ...(condition ? routes : []))
-	if (argument.type === "ConditionalExpression") {
-		return "Could not resolve conditional expression - both branches failed to resolve"
-	}
+		case "ConditionalExpression":
+			return "Could not resolve conditional expression - both branches failed to resolve"
 
-	// Logical expression (e.g., ...(isDev && devRoutes))
-	if (argument.type === "LogicalExpression") {
-		return `Could not resolve logical expression (${argument.operator}) - operands failed to resolve`
-	}
+		case "LogicalExpression":
+			return `Could not resolve logical expression (${argument.operator}) - operands failed to resolve`
 
-	// Function call (e.g., ...getRoutes())
-	if (argument.type === "CallExpression") {
-		return "Function call results cannot be statically resolved"
-	}
+		case "CallExpression":
+			return "Function call results cannot be statically resolved"
 
-	// Other unsupported patterns
-	return `Unsupported spread pattern: ${argument.type}`
+		default:
+			return `Unsupported spread pattern: ${argument.type}`
+	}
 }
 
 /**
