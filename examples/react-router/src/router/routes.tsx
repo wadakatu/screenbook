@@ -5,6 +5,15 @@ import { Home } from "../pages/Home"
 import { Settings } from "../pages/Settings"
 import { User } from "../pages/User"
 import { UserProfile } from "../pages/User/Profile"
+import { adminRoutes } from "./adminRoutes"
+
+// Issue #209: Local route variable for spread operator resolution test
+const devRoutes = [
+	{
+		path: "dev",
+		element: <div>Dev Tools</div>,
+	},
+]
 
 export const router = createBrowserRouter([
 	{
@@ -33,6 +42,10 @@ export const router = createBrowserRouter([
 					},
 				],
 			},
+			// Issue #209: Spread operator - local variable resolution
+			...devRoutes,
+			// Issue #209: Spread operator - imported routes resolution
+			...adminRoutes,
 		],
 	},
 ])
