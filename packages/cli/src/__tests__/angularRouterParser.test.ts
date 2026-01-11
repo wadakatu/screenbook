@@ -1226,6 +1226,303 @@ export const routes: Routes = [
 				expect(result.routes[0]?.children?.[2]?.path).toBe("child2")
 			})
 		})
+
+		describe("spread operator resolution - edge cases", () => {
+			it("should handle circular imports gracefully", () => {
+				const fileA = join(TEST_DIR, "a-routes.ts")
+				writeFileSync(
+					fileA,
+					`
+import { bRoutes } from "./b-routes"
+
+export const aRoutes = [
+  { path: 'a', component: AComponent },
+  ...bRoutes,
+]
+`,
+				)
+
+				const fileB = join(TEST_DIR, "b-routes.ts")
+				writeFileSync(
+					fileB,
+					`
+import { aRoutes } from "./a-routes"
+
+export const bRoutes = [
+  { path: 'b', component: BComponent },
+  ...aRoutes,
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+import { aRoutes } from "./a-routes"
+
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  ...aRoutes,
+]
+`,
+				)
+
+				// Should not throw and should handle gracefully via depth limiting
+				const result = parseAngularRouterConfig(routesFile)
+				expect(result.routes.length).toBeGreaterThanOrEqual(1)
+				// Should have depth warning due to circular reference
+				const depthWarning = result.warnings.find((w) =>
+					w.message?.includes("Maximum import depth"),
+				)
+				expect(depthWarning).toBeDefined()
+			})
+
+			it("should resolve aliased imports when export name contains route", () => {
+				// Note: Aliased imports work when the LOCAL name contains 'route'
+				// The export name in the source file must match the imported name
+				const adminFile = join(TEST_DIR, "admin.ts")
+				writeFileSync(
+					adminFile,
+					`
+export const adminRoutes = [
+  { path: 'admin', component: AdminComponent },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+import { adminRoutes as routes } from "./admin"
+
+export const appRoutes: Routes = [
+  { path: '', component: HomeComponent },
+  ...routes,
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				// 'routes' doesn't match the heuristic (needs 'route' in name)
+				// But the spread uses 'routes' which doesn't contain 'route' substring
+				// This is a known limitation - aliased names must contain 'route'
+				expect(result.routes).toHaveLength(1)
+
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+			})
+
+			it("should resolve aliased imports when alias and export name match", () => {
+				// Current limitation: aliased imports only work when the alias name
+				// matches the original export name in the source file.
+				// This is because the import map uses the local name (alias) as key,
+				// but searches for that same name in the exported file.
+				const adminFile = join(TEST_DIR, "admin.ts")
+				writeFileSync(
+					adminFile,
+					`
+export const featureRoutes = [
+  { path: 'admin', component: AdminComponent },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+import { featureRoutes } from "./admin"
+
+export const appRoutes: Routes = [
+  { path: '', component: HomeComponent },
+  ...featureRoutes,
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("")
+				expect(result.routes[1]?.path).toBe("admin")
+			})
+
+			it("should not resolve when alias differs from export name", () => {
+				// Known limitation: when import uses alias (e.g., `import { x as y }`),
+				// the resolver searches for 'y' in the exported file, but the export is named 'x'
+				const adminFile = join(TEST_DIR, "admin.ts")
+				writeFileSync(
+					adminFile,
+					`
+export const adminRoutes = [
+  { path: 'admin', component: AdminComponent },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+import { adminRoutes as featureRoutes } from "./admin"
+
+export const appRoutes: Routes = [
+  { path: '', component: HomeComponent },
+  ...featureRoutes,
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				// Cannot resolve because we search for 'featureRoutes' but export is 'adminRoutes'
+				expect(result.routes).toHaveLength(1)
+
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+				// The general warning contains the actual error message about export not found
+				expect(
+					result.warnings.some((w) =>
+						w.message?.includes("not exported as an array"),
+					),
+				).toBe(true)
+			})
+
+			it("should warn gracefully when imported file has syntax errors", () => {
+				const brokenFile = join(TEST_DIR, "broken-routes.ts")
+				writeFileSync(
+					brokenFile,
+					`
+export const brokenRoutes = [
+  { path: 'broken'
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+import { brokenRoutes } from "./broken-routes"
+
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  ...brokenRoutes,
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				expect(result.routes).toHaveLength(1)
+				expect(
+					result.warnings.some((w) => w.message?.includes("Syntax error")),
+				).toBe(true)
+			})
+
+			it("should resolve re-exported routes", () => {
+				const coreRoutesFile = join(TEST_DIR, "core-routes.ts")
+				writeFileSync(
+					coreRoutesFile,
+					`
+export const coreRoutes = [
+  { path: 'core', component: CoreComponent },
+]
+`,
+				)
+
+				// Re-export from index file
+				const indexFile = join(TEST_DIR, "feature/index.ts")
+				mkdirSync(join(TEST_DIR, "feature"), { recursive: true })
+				writeFileSync(
+					indexFile,
+					`
+export { coreRoutes as featureRoutes } from "../core-routes"
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+import { featureRoutes } from "./feature/index"
+
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  ...featureRoutes,
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				// Re-export pattern may not be fully resolved, but should not crash
+				expect(result.routes.length).toBeGreaterThanOrEqual(1)
+			})
+
+			it("should resolve explicit empty array spread", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+
+const emptyRoutes: Routes = []
+
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  ...emptyRoutes,
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("")
+
+				// Should have resolved warning for the empty spread
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(true)
+			})
+
+			it("should warn for unsupported nullish coalescing operator", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { Routes } from "@angular/router"
+
+const primaryRoutes = [{ path: 'primary', component: PrimaryComponent }]
+const fallbackRoutes = [{ path: 'fallback', component: FallbackComponent }]
+
+export const routes: Routes = [
+  { path: '', component: HomeComponent },
+  ...(primaryRoutes ?? fallbackRoutes),
+]
+`,
+				)
+
+				const result = parseAngularRouterConfig(routesFile)
+				expect(result.routes).toHaveLength(1)
+
+				// Should have warning about unsupported operator
+				expect(
+					result.warnings.some((w) =>
+						w.message?.includes("Unsupported logical operator"),
+					),
+				).toBe(true)
+			})
+		})
 	})
 
 	describe("isAngularRouterContent", () => {

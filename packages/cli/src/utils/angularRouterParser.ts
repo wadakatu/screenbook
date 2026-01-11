@@ -24,7 +24,8 @@ export type { ParsedRoute, ParseResult, ParseWarning }
 const importedRoutesCache = new Map<string, ParsedRoute[]>()
 
 /**
- * Clear the imported routes cache (useful for testing)
+ * Clear the imported routes cache.
+ * Call this when source files change (watch mode, dev server) or during testing.
  */
 export function clearImportedRoutesCache(): void {
 	importedRoutesCache.clear()
@@ -639,7 +640,7 @@ function extractLazyPath(
 
 /**
  * Build a map of route array variables defined in the same file.
- * Scans for const/let declarations of arrays that could be route definitions.
+ * Scans for variable declarations (const, let, var) initialized with array expressions.
  */
 function buildRouteVariableMap(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -654,7 +655,6 @@ function buildRouteVariableMap(
 					decl.id.type === "Identifier" &&
 					decl.init?.type === "ArrayExpression"
 				) {
-					// Store the array expression for later resolution
 					routeVarMap.set(decl.id.name, decl.init)
 				}
 			}
@@ -696,7 +696,6 @@ function buildRouteImportMap(
 			const localName = specifier.local?.name
 			if (!localName) continue
 
-			// Heuristic: variable names containing 'route' are likely route arrays
 			if (localName.toLowerCase().includes("route")) {
 				importMap.set(localName, resolvedPath)
 			}
@@ -745,6 +744,10 @@ function resolveIdentifierSpread(
 /**
  * Collect routes from multiple AST nodes, merging results.
  * Returns null only if no nodes could be resolved.
+ *
+ * @param nodes - Array of AST nodes to resolve (e.g., branches of a conditional)
+ * @param context - Spread resolution context
+ * @param warnings - Array to append warnings to
  */
 function collectRoutesFromNodes(
 	nodes: unknown[],
@@ -800,6 +803,12 @@ function resolveConditionalSpread(
  *   Example: `...(primaryRoutes || fallbackRoutes)` - both are resolved.
  *
  * This approach provides comprehensive coverage while handling common patterns.
+ *
+ * **Limitation**: For `&&`, this assumes the pattern `condition && routes` where the left operand
+ * is a boolean condition. If both operands contain route arrays (e.g., `routes && moreRoutes`),
+ * only the right side will be captured.
+ *
+ * **Note**: The `??` (nullish coalescing) operator is not supported and will generate a warning.
  */
 function resolveLogicalSpread(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
@@ -821,6 +830,11 @@ function resolveLogicalSpread(
 			)
 
 		default:
+			warnings.push({
+				type: "general",
+				message: `Unsupported logical operator '${logicalExpr.operator}' in spread expression. Only '&&' and '||' are supported.`,
+				line: logicalExpr.loc?.start.line,
+			})
 			return null
 	}
 }
@@ -857,6 +871,14 @@ function resolveSpreadArgument(
 
 /**
  * Get a descriptive failure reason for an unresolved spread element.
+ *
+ * Returns human-readable messages that help users understand why resolution failed:
+ * - For identifiers: whether variable is missing or has wrong naming convention
+ * - For expressions: which expression type couldn't be resolved
+ * - For function calls: explains static analysis limitation
+ *
+ * @param element - The SpreadElement AST node
+ * @param context - Resolution context (may be undefined if not available)
  */
 function getSpreadFailureReason(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
