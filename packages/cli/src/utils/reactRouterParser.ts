@@ -159,7 +159,9 @@ function resolveIdentifierSpread(
 	}
 
 	// Try imported variable
-	const importPath = context.importedRouteVariables.get(variableName)
+	const importPath = context.importedRouteVariables.get(variableName) as
+		| string
+		| undefined
 	if (importPath) {
 		return resolveImportedRoutes(importPath, variableName, context, warnings)
 	}
