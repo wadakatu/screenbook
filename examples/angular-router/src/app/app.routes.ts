@@ -1,5 +1,30 @@
 import type { Routes } from "@angular/router"
 
+// Admin routes for spread operator resolution example
+const adminRoutes = [
+	{
+		path: "admin",
+		loadComponent: () =>
+			import("./pages/admin/admin.component").then((m) => m.AdminComponent),
+	},
+	{
+		path: "admin/settings",
+		loadComponent: () =>
+			import("./pages/admin/settings/settings.component").then(
+				(m) => m.SettingsComponent,
+			),
+	},
+]
+
+// Dev routes (conditional spread example)
+const devRoutes = [
+	{
+		path: "dev/debug",
+		loadComponent: () =>
+			import("./pages/dev/debug/debug.component").then((m) => m.DebugComponent),
+	},
+]
+
 export const routes: Routes = [
 	{
 		path: "",
@@ -23,4 +48,8 @@ export const routes: Routes = [
 		loadComponent: () =>
 			import("./pages/user/user.component").then((m) => m.UserComponent),
 	},
+	// Spread operator examples
+	...adminRoutes,
+	// biome-ignore lint/correctness/noConstantCondition: Intentional demonstration of conditional spread
+	...(true ? devRoutes : []),
 ]
