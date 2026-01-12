@@ -84,8 +84,13 @@ export interface SpreadWarning {
 export interface SpreadResolutionContext {
 	/** Map of local variable names to their route array AST nodes */
 	localRouteVariables: Map<string, unknown>
-	/** Map of imported variable names to their resolved file paths */
-	importedRouteVariables: Map<string, string>
+	/**
+	 * Map of imported variable names to their resolution info.
+	 * The value can be:
+	 * - A string (file path) for simple imports
+	 * - An object with path and importedName for aliased imports
+	 */
+	importedRouteVariables: Map<string, unknown>
 	/** Base directory for resolving imports */
 	baseDir: string
 	/** Maximum depth for recursive file resolution (default: 3) */

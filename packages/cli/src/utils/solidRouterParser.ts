@@ -576,6 +576,12 @@ function buildRouteVariableMap(
 	return routeVarMap
 }
 
+/** Import info containing file path and the original exported name */
+interface ImportInfo {
+	path: string
+	importedName: string
+}
+
 /**
  * Build a map of imported route array variables to their source files.
  *
@@ -592,8 +598,8 @@ function buildRouteImportMap(
 	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
 	body: any[],
 	baseDir: string,
-): Map<string, string> {
-	const importMap = new Map<string, string>()
+): Map<string, ImportInfo> {
+	const importMap = new Map<string, ImportInfo>()
 
 	for (const node of body) {
 		if (node.type !== "ImportDeclaration") continue
@@ -609,7 +615,13 @@ function buildRouteImportMap(
 			if (!localName) continue
 
 			if (localName.toLowerCase().includes("route")) {
-				importMap.set(localName, resolvedPath)
+				// For aliased imports: `import { config as adminRoutes }`,
+				// specifier.imported.name is 'config', specifier.local.name is 'adminRoutes'
+				const importedName =
+					specifier.type === "ImportSpecifier"
+						? specifier.imported?.name || localName
+						: localName
+				importMap.set(localName, { path: resolvedPath, importedName })
 			}
 		}
 	}
@@ -645,9 +657,17 @@ function resolveIdentifierSpread(
 	}
 
 	// Try imported variable
-	const importPath = context.importedRouteVariables.get(variableName)
-	if (importPath) {
-		return resolveImportedRoutes(importPath, variableName, context, warnings)
+	const importInfo = context.importedRouteVariables.get(variableName) as
+		| ImportInfo
+		| undefined
+	if (importInfo) {
+		// Use the original imported name to look up in the file
+		return resolveImportedRoutes(
+			importInfo.path,
+			importInfo.importedName,
+			context,
+			warnings,
+		)
 	}
 
 	return null
@@ -777,6 +797,12 @@ function resolveSpreadArgument(
 			return resolveLogicalSpread(node, context, warnings)
 
 		default:
+			// Add warning for unsupported spread argument types
+			warnings.push({
+				type: "general",
+				message: `Unsupported spread argument type '${node.type}'. Only identifiers, arrays, conditionals, and logical expressions are supported.`,
+				line: node.loc?.start.line,
+			})
 			return null
 	}
 }
@@ -930,6 +956,9 @@ function resolveImportedRoutes(
 			currentDepth: context.currentDepth + 1,
 		}
 
+		// Collect named exports (e.g., `export { foo, bar }`)
+		const namedExports = collectNamedExports(ast.program.body)
+
 		// Look for the exported variable in the AST
 		for (const node of ast.program.body) {
 			const routes = extractRoutesFromExport(
@@ -937,6 +966,7 @@ function resolveImportedRoutes(
 				variableName,
 				nestedContext,
 				warnings,
+				namedExports,
 			)
 			if (routes) {
 				importedRoutesCache.set(cacheKey, routes)
@@ -968,6 +998,30 @@ function resolveImportedRoutes(
 }
 
 /**
+ * Collect named exports from a file (e.g., `export { foo, bar }`).
+ * Returns a set of exported variable names.
+ */
+function collectNamedExports(
+	// biome-ignore lint/suspicious/noExplicitAny: AST node types are complex
+	body: any[],
+): Set<string> {
+	const exports = new Set<string>()
+
+	for (const node of body) {
+		// Handle: export { foo, bar }
+		if (node.type === "ExportNamedDeclaration" && !node.declaration) {
+			for (const specifier of node.specifiers) {
+				if (specifier.type === "ExportSpecifier" && specifier.local?.name) {
+					exports.add(specifier.local.name)
+				}
+			}
+		}
+	}
+
+	return exports
+}
+
+/**
  * Extract routes from an export statement matching the variable name
  */
 function extractRoutesFromExport(
@@ -976,6 +1030,7 @@ function extractRoutesFromExport(
 	variableName: string,
 	context: SpreadResolutionContext,
 	warnings: ParseWarning[],
+	namedExports: Set<string>,
 ): ParsedRoute[] | null {
 	// Handle: export const varName = [...]
 	if (
@@ -994,7 +1049,8 @@ function extractRoutesFromExport(
 	}
 
 	// Handle: const varName = [...]; (for later export { varName })
-	if (node.type === "VariableDeclaration") {
+	// Only match if the variable is in the named exports set
+	if (node.type === "VariableDeclaration" && namedExports.has(variableName)) {
 		for (const decl of node.declarations) {
 			if (
 				decl.id.type === "Identifier" &&

@@ -1313,5 +1313,484 @@ export const adminRoutes = [
 				expect(result3.routes[0]?.path).toBe("/admin/v2")
 			})
 		})
+
+		describe("maxDepth warning", () => {
+			it("should warn when maxDepth is exceeded", () => {
+				// Create 5-level deep import chain (exceeds maxDepth of 3)
+				const level4File = join(TEST_DIR, "level4-routes.ts")
+				writeFileSync(
+					level4File,
+					`
+import { lazy } from "solid-js"
+
+export const level4Routes = [
+  {
+    path: "/level4",
+    component: lazy(() => import("./pages/Level4")),
+  },
+]
+`,
+				)
+
+				const level3File = join(TEST_DIR, "level3-routes.ts")
+				writeFileSync(
+					level3File,
+					`
+import { lazy } from "solid-js"
+import { level4Routes } from "./level4-routes"
+
+export const level3Routes = [
+  {
+    path: "/level3",
+    component: lazy(() => import("./pages/Level3")),
+  },
+  ...level4Routes,
+]
+`,
+				)
+
+				const level2File = join(TEST_DIR, "level2-routes.ts")
+				writeFileSync(
+					level2File,
+					`
+import { lazy } from "solid-js"
+import { level3Routes } from "./level3-routes"
+
+export const level2Routes = [
+  {
+    path: "/level2",
+    component: lazy(() => import("./pages/Level2")),
+  },
+  ...level3Routes,
+]
+`,
+				)
+
+				const level1File = join(TEST_DIR, "level1-routes.ts")
+				writeFileSync(
+					level1File,
+					`
+import { lazy } from "solid-js"
+import { level2Routes } from "./level2-routes"
+
+export const level1Routes = [
+  {
+    path: "/level1",
+    component: lazy(() => import("./pages/Level1")),
+  },
+  ...level2Routes,
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { level1Routes } from "./level1-routes"
+
+export const routes = [
+  ...level1Routes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should have a maxDepth warning
+				const maxDepthWarning = result.warnings.find((w) =>
+					w.message.includes("Maximum import depth"),
+				)
+				expect(maxDepthWarning).toBeDefined()
+				expect(maxDepthWarning?.message).toContain("Maximum import depth (3)")
+				expect(maxDepthWarning?.message).toContain("level4Routes")
+			})
+		})
+
+		describe("naming heuristic edge cases", () => {
+			it("should NOT resolve imports without 'route' in the name", () => {
+				// Create a file with routes named 'pages' (not 'routes')
+				const pagesFile = join(TEST_DIR, "admin-pages.ts")
+				writeFileSync(
+					pagesFile,
+					`
+import { lazy } from "solid-js"
+
+export const adminPages = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { adminPages } from "./admin-pages"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...adminPages,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should only have the home route (adminPages not resolved)
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/")
+
+				// Should have an unresolved spread warning with naming hint
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+				expect(spreadWarning?.resolutionFailureReason).toContain(
+					"Only imports with 'route' in the name are tracked",
+				)
+			})
+
+			it("should resolve imports with 'Route' (case-insensitive)", () => {
+				const pagesFile = join(TEST_DIR, "admin-Route.ts")
+				writeFileSync(
+					pagesFile,
+					`
+import { lazy } from "solid-js"
+
+export const AdminRoute = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { AdminRoute } from "./admin-Route"
+
+export const routes = [
+  ...AdminRoute,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should resolve (case-insensitive match)
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/admin")
+			})
+		})
+
+		describe("nullish coalescing operator", () => {
+			it("should warn for ?? (nullish coalescing) operator", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const primaryRoutes = [
+  {
+    path: "/primary",
+    component: lazy(() => import("./pages/Primary")),
+  },
+]
+
+const fallbackRoutes = [
+  {
+    path: "/fallback",
+    component: lazy(() => import("./pages/Fallback")),
+  },
+]
+
+export const routes = [
+  ...(primaryRoutes ?? fallbackRoutes),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should warn about unsupported operator
+				const operatorWarning = result.warnings.find(
+					(w) =>
+						w.message.includes("Unsupported logical operator") &&
+						w.message.includes("??"),
+				)
+				expect(operatorWarning).toBeDefined()
+				expect(operatorWarning?.message).toContain(
+					"Only '&&' and '||' are supported",
+				)
+			})
+		})
+
+		describe("aliased imports", () => {
+			it("should resolve aliased imports with route in alias name", () => {
+				const adminFile = join(TEST_DIR, "admin.ts")
+				writeFileSync(
+					adminFile,
+					`
+import { lazy } from "solid-js"
+
+export const config = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { config as adminRoutes } from "./admin"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...adminRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should resolve because alias 'adminRoutes' contains 'route'
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes.map((r) => r.path)).toContain("/")
+				expect(result.routes.map((r) => r.path)).toContain("/admin")
+			})
+		})
+
+		describe("spread in nested children", () => {
+			it("should resolve spreads inside children arrays", () => {
+				const childRoutesFile = join(TEST_DIR, "child-routes.ts")
+				writeFileSync(
+					childRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+export const childRoutes = [
+  {
+    path: "settings",
+    component: lazy(() => import("./pages/Settings")),
+  },
+  {
+    path: "profile",
+    component: lazy(() => import("./pages/Profile")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { childRoutes } from "./child-routes"
+
+export const routes = [
+  {
+    path: "/dashboard",
+    component: lazy(() => import("./pages/Dashboard")),
+    children: [
+      { path: "", component: lazy(() => import("./pages/DashboardHome")) },
+      ...childRoutes,
+    ],
+  },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/dashboard")
+				expect(result.routes[0]?.children).toHaveLength(3)
+				expect(result.routes[0]?.children?.map((c) => c.path)).toContain("")
+				expect(result.routes[0]?.children?.map((c) => c.path)).toContain(
+					"settings",
+				)
+				expect(result.routes[0]?.children?.map((c) => c.path)).toContain(
+					"profile",
+				)
+
+				// Should have resolved warnings for spreads
+				const resolvedSpreads = result.warnings.filter(
+					(w) => w.type === "spread" && (w as SpreadWarning).resolved,
+				)
+				expect(resolvedSpreads.length).toBeGreaterThan(0)
+			})
+		})
+
+		describe("imported file syntax error", () => {
+			it("should warn when imported file has syntax error", () => {
+				const invalidRoutesFile = join(TEST_DIR, "invalid-routes.ts")
+				writeFileSync(
+					invalidRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+// This is invalid syntax - missing bracket
+export const invalidRoutes = [
+  {
+    path: "/invalid"
+    component: lazy(() => import("./pages/Invalid")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { invalidRoutes } from "./invalid-routes"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...invalidRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should have the home route only
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/")
+
+				// Should have a syntax error warning
+				const syntaxWarning = result.warnings.find(
+					(w) =>
+						w.message.includes("Syntax error") &&
+						w.message.includes("invalid-routes"),
+				)
+				expect(syntaxWarning).toBeDefined()
+			})
+		})
+
+		describe("non-exported variable", () => {
+			it("should warn when variable is not exported in imported file", () => {
+				const privateRoutesFile = join(TEST_DIR, "private-routes.ts")
+				writeFileSync(
+					privateRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+// Variable is NOT exported
+const privateRoutes = [
+  {
+    path: "/private",
+    component: lazy(() => import("./pages/Private")),
+  },
+]
+
+// Export something else
+export const someOtherThing = "hello"
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { privateRoutes } from "./private-routes"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...privateRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should have the home route only
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/")
+
+				// Should have a warning about export not found
+				const exportWarning = result.warnings.find(
+					(w) =>
+						w.message.includes("Export") &&
+						w.message.includes("privateRoutes") &&
+						w.message.includes("not found"),
+				)
+				expect(exportWarning).toBeDefined()
+			})
+		})
+
+		describe("unsupported spread argument types", () => {
+			it("should warn for member expression spread", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const config = {
+  routes: [
+    {
+      path: "/from-config",
+      component: lazy(() => import("./pages/FromConfig")),
+    },
+  ],
+}
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...config.routes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should have the home route only
+				expect(result.routes).toHaveLength(1)
+				expect(result.routes[0]?.path).toBe("/")
+
+				// Should have a warning about unsupported spread type
+				const spreadWarning = result.warnings.find(
+					(w) =>
+						w.message.includes("Unsupported spread argument type") &&
+						w.message.includes("MemberExpression"),
+				)
+				expect(spreadWarning).toBeDefined()
+			})
+		})
 	})
 })
