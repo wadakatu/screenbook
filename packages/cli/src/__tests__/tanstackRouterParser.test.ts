@@ -3,6 +3,7 @@ import { join } from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
 import { flattenRoutes } from "../utils/routeParserUtils.js"
 import {
+	clearImportedRoutesCache,
 	isTanStackRouterContent,
 	parseTanStackRouterConfig,
 } from "../utils/tanstackRouterParser.js"
@@ -810,6 +811,370 @@ const routeTree = rootRoute.addChildren([routeA])
 
 		it("should return false for plain JavaScript", () => {
 			expect(isTanStackRouterContent("const routes = []")).toBe(false)
+		})
+	})
+
+	describe("spread operator resolution", () => {
+		beforeEach(() => {
+			clearImportedRoutesCache()
+		})
+
+		it("should resolve local variable spread", () => {
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+// Local array variable for spread
+const adminRoutes = [
+  { path: '/admin', component: Admin },
+  { path: '/admin/settings', component: AdminSettings },
+]
+
+const routeTree = rootRoute.addChildren([homeRoute, ...adminRoutes])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			expect(flat).toHaveLength(3)
+			expect(flat.map((r) => r.fullPath).sort()).toEqual([
+				"/",
+				"/admin",
+				"/admin/settings",
+			])
+
+			// Check that spread was resolved
+			const spreadWarning = result.warnings.find((w) => w.type === "spread")
+			expect(spreadWarning?.resolved).toBe(true)
+		})
+
+		it("should resolve imported variable spread", () => {
+			// Create imported routes file
+			const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+			writeFileSync(
+				adminRoutesFile,
+				`
+export const adminRoutes = [
+  { path: '/admin', component: Admin },
+  { path: '/admin/users', component: AdminUsers },
+]
+`,
+			)
+
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+import { adminRoutes } from './admin-routes'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const routeTree = rootRoute.addChildren([homeRoute, ...adminRoutes])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			expect(flat).toHaveLength(3)
+			expect(flat.map((r) => r.fullPath).sort()).toEqual([
+				"/",
+				"/admin",
+				"/admin/users",
+			])
+
+			const spreadWarning = result.warnings.find((w) => w.type === "spread")
+			expect(spreadWarning?.resolved).toBe(true)
+		})
+
+		it("should resolve conditional spread (ternary)", () => {
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const devRoutes = [{ path: '/dev', component: Dev }]
+const prodRoutes = [{ path: '/prod', component: Prod }]
+
+// biome-ignore lint/correctness/noConstantCondition: Test
+const routeTree = rootRoute.addChildren([homeRoute, ...(true ? devRoutes : prodRoutes)])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			// Both branches should be included (static analysis)
+			expect(flat.map((r) => r.fullPath).sort()).toEqual(["/", "/dev", "/prod"])
+		})
+
+		it("should resolve logical && spread", () => {
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const devRoutes = [{ path: '/debug', component: Debug }]
+
+const routeTree = rootRoute.addChildren([homeRoute, ...(process.env.DEV && devRoutes)])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			// && resolves only the right operand
+			expect(flat.map((r) => r.fullPath).sort()).toEqual(["/", "/debug"])
+		})
+
+		it("should resolve logical || spread", () => {
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const primaryRoutes = [{ path: '/primary', component: Primary }]
+const fallbackRoutes = [{ path: '/fallback', component: Fallback }]
+
+const routeTree = rootRoute.addChildren([homeRoute, ...(primaryRoutes || fallbackRoutes)])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			// || resolves both operands
+			expect(flat.map((r) => r.fullPath).sort()).toEqual([
+				"/",
+				"/fallback",
+				"/primary",
+			])
+		})
+
+		it("should handle unresolvable spread with warning", () => {
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+// Import without 'route' in name won't be tracked for resolution
+import { pages } from './pages'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const routeTree = rootRoute.addChildren([homeRoute, ...pages])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+
+			// Spread should be unresolved because 'pages' import doesn't contain 'route' in name
+			const spreadWarning = result.warnings.find((w) => w.type === "spread")
+			expect(spreadWarning?.resolved).toBe(false)
+			expect(spreadWarning?.resolutionFailureReason).toContain("pages")
+		})
+
+		it("should handle named exports pattern", () => {
+			// Create file with named exports pattern
+			const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+			writeFileSync(
+				adminRoutesFile,
+				`
+const adminRoutes = [
+  { path: '/admin', component: Admin },
+]
+
+export { adminRoutes }
+`,
+			)
+
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+import { adminRoutes } from './admin-routes'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const routeTree = rootRoute.addChildren([homeRoute, ...adminRoutes])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			expect(flat.map((r) => r.fullPath).sort()).toEqual(["/", "/admin"])
+		})
+
+		it("should handle aliased imports", () => {
+			// Create file with different export name
+			const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+			writeFileSync(
+				adminRoutesFile,
+				`
+export const config = [
+  { path: '/admin', component: Admin },
+]
+`,
+			)
+
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+import { config as adminRoutes } from './admin-routes'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const routeTree = rootRoute.addChildren([homeRoute, ...adminRoutes])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			expect(flat.map((r) => r.fullPath).sort()).toEqual(["/", "/admin"])
+		})
+
+		it("should normalize paths in resolved spreads", () => {
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+// TanStack Router uses $param syntax
+const dynamicRoutes = [
+  { path: '/users/$userId', component: User },
+  { path: '/posts/$postId/comments/$commentId', component: Comment },
+]
+
+const routeTree = rootRoute.addChildren([homeRoute, ...dynamicRoutes])
+`,
+			)
+
+			const result = parseTanStackRouterConfig(routesFile)
+			const flat = flattenRoutes(result.routes)
+
+			// Paths should be normalized from $param to :param
+			expect(flat.map((r) => r.fullPath).sort()).toEqual([
+				"/",
+				"/posts/:postId/comments/:commentId",
+				"/users/:userId",
+			])
+		})
+
+		it("should cache resolved imports", () => {
+			// Create imported routes file
+			const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+			writeFileSync(
+				adminRoutesFile,
+				`
+export const adminRoutes = [
+  { path: '/admin', component: Admin },
+]
+`,
+			)
+
+			const routesFile = join(TEST_DIR, "routes.tsx")
+			writeFileSync(
+				routesFile,
+				`
+import { createRootRoute, createRoute } from '@tanstack/react-router'
+import { adminRoutes } from './admin-routes'
+
+const rootRoute = createRootRoute({})
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  component: Home,
+})
+
+const routeTree = rootRoute.addChildren([homeRoute, ...adminRoutes])
+`,
+			)
+
+			// Parse twice to test caching
+			parseTanStackRouterConfig(routesFile)
+			const result2 = parseTanStackRouterConfig(routesFile)
+
+			// Should still work with cache
+			const flat = flattenRoutes(result2.routes)
+			expect(flat.map((r) => r.fullPath).sort()).toEqual(["/", "/admin"])
 		})
 	})
 })
