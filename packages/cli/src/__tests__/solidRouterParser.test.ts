@@ -1,8 +1,9 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { afterEach, beforeEach, describe, expect, it } from "vitest"
-import { flattenRoutes } from "../utils/routeParserUtils.js"
+import { flattenRoutes, type SpreadWarning } from "../utils/routeParserUtils.js"
 import {
+	clearImportedRoutesCache,
 	isSolidRouterContent,
 	parseSolidRouterConfig,
 } from "../utils/solidRouterParser.js"
@@ -752,6 +753,565 @@ const routes = [
 
 		it("should return false for plain JavaScript", () => {
 			expect(isSolidRouterContent("const routes = []")).toBe(false)
+		})
+	})
+
+	describe("spread operator resolution", () => {
+		beforeEach(() => {
+			clearImportedRoutesCache()
+		})
+
+		describe("local variable resolution", () => {
+			it("should resolve spread of local variable with routes", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const devRoutes = [
+  {
+    path: "/dev",
+    component: lazy(() => import("./pages/Dev")),
+  },
+  {
+    path: "/debug",
+    component: lazy(() => import("./pages/Debug")),
+  },
+]
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...devRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(3)
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/dev")
+				expect(result.routes[2]?.path).toBe("/debug")
+				// Should have resolved warning
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(true)
+			})
+
+			it("should resolve spread of local variable defined after routes", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...adminRoutes,
+]
+
+const adminRoutes = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/admin")
+			})
+
+			it("should resolve nested spreads in local variables", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const innerRoutes = [
+  {
+    path: "/inner",
+    component: lazy(() => import("./pages/Inner")),
+  },
+]
+
+const outerRoutes = [
+  {
+    path: "/outer",
+    component: lazy(() => import("./pages/Outer")),
+  },
+  ...innerRoutes,
+]
+
+export const routes = [
+  ...outerRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("/outer")
+				expect(result.routes[1]?.path).toBe("/inner")
+			})
+		})
+
+		describe("conditional spread resolution", () => {
+			it("should resolve ternary with array on true branch", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  // biome-ignore lint/correctness/noConstantCondition: Intentional for testing
+  ...(true ? [{ path: "/dev", component: lazy(() => import("./pages/Dev")) }] : []),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/dev")
+			})
+
+			it("should merge routes from both branches of conditional", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const devRoutes = [
+  {
+    path: "/dev",
+    component: lazy(() => import("./pages/Dev")),
+  },
+]
+
+const prodRoutes = [
+  {
+    path: "/prod",
+    component: lazy(() => import("./pages/Prod")),
+  },
+]
+
+export const routes = [
+  ...(import.meta.env.PROD ? prodRoutes : devRoutes),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Static analysis merges both branches
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes.map((r) => r.path)).toContain("/dev")
+				expect(result.routes.map((r) => r.path)).toContain("/prod")
+			})
+		})
+
+		describe("logical expression spread resolution", () => {
+			it("should resolve && operator with right operand", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const devRoutes = [
+  {
+    path: "/dev",
+    component: lazy(() => import("./pages/Dev")),
+  },
+]
+
+const isDev = true
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...(isDev && devRoutes),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/dev")
+			})
+
+			it("should resolve || operator with both operands", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+const primaryRoutes = [
+  {
+    path: "/primary",
+    component: lazy(() => import("./pages/Primary")),
+  },
+]
+
+const fallbackRoutes = [
+  {
+    path: "/fallback",
+    component: lazy(() => import("./pages/Fallback")),
+  },
+]
+
+export const routes = [
+  ...(primaryRoutes || fallbackRoutes),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Static analysis includes both operands
+				expect(result.routes).toHaveLength(2)
+				expect(result.routes.map((r) => r.path)).toContain("/primary")
+				expect(result.routes.map((r) => r.path)).toContain("/fallback")
+			})
+		})
+
+		describe("imported routes resolution", () => {
+			it("should resolve spread from named import", () => {
+				// Create the imported routes file
+				const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+				writeFileSync(
+					adminRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+export const adminRoutes = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+  {
+    path: "/admin/users",
+    component: lazy(() => import("./pages/AdminUsers")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { adminRoutes } from "./admin-routes"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...adminRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(3)
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/admin")
+				expect(result.routes[2]?.path).toBe("/admin/users")
+			})
+
+			it("should resolve spread from multiple imported files", () => {
+				// Create admin routes file
+				const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+				writeFileSync(
+					adminRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+export const adminRoutes = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+]
+`,
+				)
+
+				// Create dev routes file
+				const devRoutesFile = join(TEST_DIR, "dev-routes.ts")
+				writeFileSync(
+					devRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+export const devRoutes = [
+  {
+    path: "/dev",
+    component: lazy(() => import("./pages/Dev")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { adminRoutes } from "./admin-routes"
+import { devRoutes } from "./dev-routes"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...adminRoutes,
+  ...devRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(3)
+				expect(result.routes[0]?.path).toBe("/")
+				expect(result.routes[1]?.path).toBe("/admin")
+				expect(result.routes[2]?.path).toBe("/dev")
+			})
+
+			it("should respect maxDepth limit", () => {
+				// Create deeply nested import chain
+				const level3File = join(TEST_DIR, "level3-routes.ts")
+				writeFileSync(
+					level3File,
+					`
+import { lazy } from "solid-js"
+
+export const level3Routes = [
+  {
+    path: "/level3",
+    component: lazy(() => import("./pages/Level3")),
+  },
+]
+`,
+				)
+
+				const level2File = join(TEST_DIR, "level2-routes.ts")
+				writeFileSync(
+					level2File,
+					`
+import { lazy } from "solid-js"
+import { level3Routes } from "./level3-routes"
+
+export const level2Routes = [
+  {
+    path: "/level2",
+    component: lazy(() => import("./pages/Level2")),
+  },
+  ...level3Routes,
+]
+`,
+				)
+
+				const level1File = join(TEST_DIR, "level1-routes.ts")
+				writeFileSync(
+					level1File,
+					`
+import { lazy } from "solid-js"
+import { level2Routes } from "./level2-routes"
+
+export const level1Routes = [
+  {
+    path: "/level1",
+    component: lazy(() => import("./pages/Level1")),
+  },
+  ...level2Routes,
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { level1Routes } from "./level1-routes"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...level1Routes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				// Should resolve up to depth 3
+				expect(result.routes).toHaveLength(4)
+				expect(result.routes.map((r) => r.path)).toContain("/")
+				expect(result.routes.map((r) => r.path)).toContain("/level1")
+				expect(result.routes.map((r) => r.path)).toContain("/level2")
+				expect(result.routes.map((r) => r.path)).toContain("/level3")
+			})
+		})
+
+		describe("unresolvable cases", () => {
+			it("should warn for function call results", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+function getRoutes() {
+  return [{ path: "/dynamic", component: lazy(() => import("./pages/Dynamic")) }]
+}
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...getRoutes(),
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+				expect(spreadWarning?.resolutionFailureReason).toContain(
+					"Function call results cannot be statically resolved",
+				)
+			})
+
+			it("should warn for undefined variables", () => {
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+
+export const routes = [
+  {
+    path: "/",
+    component: lazy(() => import("./pages/Home")),
+  },
+  ...unknownRoutes,
+]
+`,
+				)
+
+				const result = parseSolidRouterConfig(routesFile)
+
+				expect(result.routes).toHaveLength(1)
+				const spreadWarning = result.warnings.find(
+					(w) => w.type === "spread",
+				) as SpreadWarning | undefined
+				expect(spreadWarning?.resolved).toBe(false)
+				expect(spreadWarning?.resolutionFailureReason).toContain(
+					"Variable 'unknownRoutes' not found",
+				)
+			})
+		})
+
+		describe("cache management", () => {
+			it("should clear cache with clearImportedRoutesCache()", () => {
+				// Create an imported routes file
+				const adminRoutesFile = join(TEST_DIR, "admin-routes.ts")
+				writeFileSync(
+					adminRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+export const adminRoutes = [
+  {
+    path: "/admin",
+    component: lazy(() => import("./pages/Admin")),
+  },
+]
+`,
+				)
+
+				const routesFile = join(TEST_DIR, "routes.ts")
+				writeFileSync(
+					routesFile,
+					`
+import { lazy } from "solid-js"
+import { adminRoutes } from "./admin-routes"
+
+export const routes = [
+  ...adminRoutes,
+]
+`,
+				)
+
+				// First parse
+				const result1 = parseSolidRouterConfig(routesFile)
+				expect(result1.routes).toHaveLength(1)
+				expect(result1.routes[0]?.path).toBe("/admin")
+
+				// Modify the imported file
+				writeFileSync(
+					adminRoutesFile,
+					`
+import { lazy } from "solid-js"
+
+export const adminRoutes = [
+  {
+    path: "/admin/v2",
+    component: lazy(() => import("./pages/AdminV2")),
+  },
+]
+`,
+				)
+
+				// Parse again without clearing cache - should return old result
+				const result2 = parseSolidRouterConfig(routesFile)
+				expect(result2.routes[0]?.path).toBe("/admin")
+
+				// Clear cache and parse again
+				clearImportedRoutesCache()
+				const result3 = parseSolidRouterConfig(routesFile)
+				expect(result3.routes[0]?.path).toBe("/admin/v2")
+			})
 		})
 	})
 })
