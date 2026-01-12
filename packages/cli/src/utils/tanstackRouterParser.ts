@@ -975,6 +975,11 @@ function resolveSpreadArgument(
 		case "LogicalExpression":
 			return resolveLogicalSpread(node, context, warnings)
 
+		// Handle TypeScript type assertions: ...(routes as any) or ...<any>routes
+		case "TSAsExpression":
+		case "TSTypeAssertion":
+			return resolveSpreadArgument(node.expression, context, warnings)
+
 		default:
 			// Add warning for unsupported spread argument types
 			warnings.push({
