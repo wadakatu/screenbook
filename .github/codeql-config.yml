@@ -1,0 +1,8 @@
+name: "Screenbook CodeQL Config"
+
+# Exclude test files from security analysis
+paths-ignore:
+  - "**/__tests__/**"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+  - "**/node_modules/**"
